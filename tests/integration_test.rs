@@ -139,6 +139,14 @@ fn bar_line_plot_renders() {
     assert!(tikz.contains("ybar"), "missing ybar option");
     assert!(tikz.contains("\\definecolor{epBar}"), "missing bar color definition");
     assert!(tikz.contains("\\definecolor{epLine}"), "missing line color definition");
+    // Both axes must use the dynamically computed right-side padding.
+    assert!(
+        tikz.contains("width={\\dimexpr \\linewidth - \\epRpad\\relax}"),
+        "missing dynamic width expression"
+    );
+    // The padding setup must include a compile-time font measurement.
+    assert!(tikz.contains("\\settowidth{\\epRpad}"), "missing \\settowidth for tick label");
+    assert!(tikz.contains("\\settoheight{\\epRlabelH}"), "missing \\settoheight for ylabel");
 }
 
 #[test]
@@ -174,6 +182,42 @@ fn bar_line_plot_legend_entries() {
     assert!(
         tikz.contains(r"\addlegendentry{\si{\giga\flop\per\second}}"),
         "missing line legend entry"
+    );
+}
+
+#[test]
+fn bar_line_plot_width_adapts_to_data_magnitude() {
+    // Small values: gflop_s ≈ 0.4 → tick estimate is a short string.
+    let tikz_small = BarLinePlot::new(load_1thread().group_by("powercap"))
+        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
+        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+        .render();
+
+    // Large values: multiply to simulate a large-number axis (e.g. 10 000×).
+    let df_large = DataFrame::from_csv(test_csv())
+        .unwrap()
+        .filter(|r| r["threads"] == 1.0)
+        .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
+        .with_column("big_line", |r| r["insns"] / r["runtime"] / 1e9 * 10_000.0);
+    let tikz_large = BarLinePlot::new(df_large.group_by("powercap"))
+        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
+        .line("big_line", palette::RED, "Big label")
+        .render();
+
+    // Extract the sample string passed to \settowidth in both outputs.
+    fn extract_settowidth_arg(tikz: &str) -> &str {
+        let marker = r"\settowidth{\epRpad}{\eplabelfont ";
+        let start = tikz.find(marker).expect("missing settowidth") + marker.len();
+        let end = tikz[start..].find('}').expect("missing closing brace") + start;
+        &tikz[start..end]
+    }
+
+    let small_arg = extract_settowidth_arg(&tikz_small);
+    let large_arg = extract_settowidth_arg(&tikz_large);
+
+    assert!(
+        large_arg.len() > small_arg.len(),
+        "large-value tick estimate '{large_arg}' should be longer than small-value '{small_arg}'"
     );
 }
 

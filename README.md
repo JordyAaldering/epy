@@ -113,11 +113,12 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
 \usepgfplotslibrary{groupplots,dateplot}
 \usetikzlibrary{patterns,shapes.arrows}
 
-\newlength{\yaxispadding}
-\setlength{\yaxispadding}{1.0em}
-
 \newif\ifcommonplotxgrid
 \commonplotxgridfalse
+
+% Font used for all axis labels and tick labels.  Override before \input-ting
+% any generated plot file to change the font size across all plots at once.
+\newcommand{\eplabelfont}{\scriptsize}
 
 \definecolor{commonplottext}{RGB}{38,38,38}
 \definecolor{commonplotgrid}{RGB}{204,204,204}
@@ -126,13 +127,13 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
 \pgfplotsset{
   compat=newest,
   common/twin-shared/.style={
-    width={\dimexpr \linewidth - \yaxispadding\relax},
+    scale only axis,
     axis line style={commonplotgrid},
     x grid style={commonplotgrid},
     y grid style={commonplotgrid},
-    label style={font=\scriptsize,text=commonplottext,inner sep=0pt},
-    tick label style={font=\scriptsize,text=commonplottext,inner sep=2pt},
-    legend style={font=\scriptsize,draw=commonplotgrid,fill opacity=0.8,draw opacity=1,text opacity=1},
+    label style={font=\eplabelfont,text=commonplottext,inner sep=0pt},
+    tick label style={font=\eplabelfont,text=commonplottext,inner sep=2pt},
+    legend style={font=\eplabelfont,draw=commonplotgrid,fill opacity=0.8,draw opacity=1,text opacity=1},
     major tick length=3pt,
     major tick style={draw=commonplotgrid},
     xtick style={color=commonplottick},
@@ -146,19 +147,20 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
   common/twin-main/.style={
     common/twin-shared,
     name=mainaxis,
+    trim axis right,
   },
   common/twin/.style={
     common/twin-shared,
     at={(mainaxis.south west)},
     anchor=south west,
-    overlay,
+    trim axis left,
     axis x line=none,
     xmajorgrids=false,
     ymajorgrids=false,
     xtick=\empty,
     xticklabels=\empty,
-    ylabel style={font=\scriptsize},
-    yticklabel style={font=\scriptsize},
+    ylabel style={font=\eplabelfont},
+    yticklabel style={font=\eplabelfont},
   },
   every axis/.append style={
     axis on top=false,
@@ -167,17 +169,17 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
     y grid style={commonplotgrid},
     xmajorgrids=\ifcommonplotxgrid true\else false\fi,
     ymajorgrids,
-    label style={font=\scriptsize,text=commonplottext,inner sep=2pt},
-    tick label style={font=\scriptsize,text=commonplottext,inner sep=2pt},
-    legend style={font=\scriptsize,draw=commonplotgrid,fill opacity=0.8,draw opacity=1,text opacity=1},
+    label style={font=\eplabelfont,text=commonplottext,inner sep=2pt},
+    tick label style={font=\eplabelfont,text=commonplottext,inner sep=2pt},
+    legend style={font=\eplabelfont,draw=commonplotgrid,fill opacity=0.8,draw opacity=1,text opacity=1},
     xtick style={color=commonplottick},
     ytick style={color=commonplottick},
     major tick length=3pt,
   },
-  every axis x label/.append style={font=\scriptsize,text=commonplottext},
-  every axis y label/.append style={font=\scriptsize,text=commonplottext},
-  every axis x tick label/.append style={font=\scriptsize,text=commonplottext},
-  every axis y tick label/.append style={font=\scriptsize,text=commonplottext},
+  every axis x label/.append style={font=\eplabelfont,text=commonplottext},
+  every axis y label/.append style={font=\eplabelfont,text=commonplottext},
+  every axis x tick label/.append style={font=\eplabelfont,text=commonplottext},
+  every axis y tick label/.append style={font=\eplabelfont,text=commonplottext},
   every axis/.append style={
     extra y ticks={\pgfkeysvalueof{/pgfplots/ymax}},
     extra y tick labels={\vphantom{Ag}},

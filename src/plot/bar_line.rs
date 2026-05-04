@@ -10,9 +10,15 @@
 
 use crate::color::Color;
 use crate::data::GroupedFrame;
-use crate::plot::{emit_color_defs, fmt_f, group_stats, wrap_tikzpicture};
+use crate::plot::{emit_color_defs, fmt_f, group_stats};
 
 // ── BarLinePlot ───────────────────────────────────────────────────────────
+
+/// Extra multiplier applied to the data maximum when estimating the longest
+/// right-axis tick label.  pgfplots rounds the axis maximum up to the next
+/// "nice" tick value, so the actual label is slightly larger than the data
+/// maximum; 10 % is a conservative overshoot that covers most cases.
+const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 
 /// A combined bar (left y-axis) and line (right y-axis) twin-axis plot.
 ///
@@ -116,11 +122,75 @@ impl BarLinePlot {
             (&self.line_color, "epLine"),
         ]);
 
+        let setup = self.render_twin_setup();
         let left = self.render_left_axis(bar_col, line_col);
         let right = self.render_right_axis(line_col);
 
-        let body = format!("{left}\n{right}");
-        wrap_tikzpicture(&defs, &body)
+        let mut out = String::from("\\begin{tikzpicture}\n");
+        if !defs.is_empty() {
+            out.push_str(&defs);
+            out.push_str("\n\n");
+        }
+        out.push_str(&setup);
+        out.push('\n');
+        out.push_str(&left);
+        out.push('\n');
+        out.push_str(&right);
+        out.push_str("\\end{tikzpicture}\n");
+        out
+    }
+
+    /// Return the maximum q3 value across all groups for the right (line) axis.
+    fn max_line_value(&self) -> f64 {
+        let col = self.line_col.as_deref().unwrap_or_default();
+        if col.is_empty() {
+            return 1.0;
+        }
+        let stats = group_stats(&self.grouped, col);
+        stats.iter().map(|s| s.q3).fold(0.0_f64, f64::max)
+    }
+
+    /// Generate LaTeX length-setup commands that measure the right-axis padding
+    /// at compile time, based on the longest expected tick label and the ylabel.
+    ///
+    /// The approach:
+    /// - `\settowidth` measures the rendered width of the estimated longest tick
+    ///   label using `\eplabelfont` — the same font macro used in the axis styles —
+    ///   so the measurement automatically tracks any font-size change.
+    /// - `\settoheight` measures one `\eplabelfont` line height, which equals the
+    ///   horizontal footprint of the rotated ylabel.
+    /// - Fixed overhead accounts for tick length (3 pt), tick-label inner sep
+    ///   (2 pt), and the gap between tick labels and the ylabel (~5 pt).
+    fn render_twin_setup(&self) -> String {
+        // Multiply max by TICK_ESTIMATE_BUFFER so the estimate covers the "nice"
+        // tick that pgfplots rounds up to above the data maximum.
+        let tick_estimate = fmt_f(self.max_line_value() * TICK_ESTIMATE_BUFFER);
+        let has_ylabel = !self.line_label.is_empty();
+
+        let mut out = String::new();
+
+        // Guard against duplicate \newlength when the file is \input more than once.
+        out.push_str("\\ifdefined\\epRpad\\else\\newlength{\\epRpad}\\fi\n");
+        // \eplabelfont is defined in the preamble and matches the font used in
+        // the axis styles, so this measurement stays correct if the font changes.
+        out.push_str(&format!(
+            "\\settowidth{{\\epRpad}}{{\\eplabelfont {tick_estimate}}}\n"
+        ));
+
+        if has_ylabel {
+            // The right ylabel is rotated 90°; its horizontal footprint equals one
+            // \eplabelfont line height.
+            out.push_str("\\ifdefined\\epRlabelH\\else\\newlength{\\epRlabelH}\\fi\n");
+            out.push_str("\\settoheight{\\epRlabelH}{\\eplabelfont Ag}\n");
+            out.push_str("\\addtolength{\\epRpad}{\\epRlabelH}\n");
+            // tick length (3pt) + inner sep (2pt) + gap to ylabel (~5pt)
+            out.push_str("\\addtolength{\\epRpad}{10pt}\n");
+        } else {
+            // tick length (3pt) + inner sep (2pt)
+            out.push_str("\\addtolength{\\epRpad}{5pt}\n");
+        }
+
+        out
     }
 
     fn x_range(&self) -> (f64, f64) {
@@ -149,6 +219,7 @@ impl BarLinePlot {
         // ── Axis options ──────────────────────────────────────────────────
         out.push_str("\\begin{axis}[\n");
         out.push_str("  common/twin-main, common/bar,\n");
+        out.push_str("  width={\\dimexpr \\linewidth - \\epRpad\\relax},\n");
         out.push_str(&format!("  height={}\\linewidth,\n", fmt_f(self.height_ratio)));
         if !self.xlabel.is_empty() {
             out.push_str(&format!("  xlabel={{{}}},\n", self.xlabel));
@@ -210,6 +281,7 @@ impl BarLinePlot {
         out.push_str("\\begin{axis}[\n");
         out.push_str("  common/twin, common/line,\n");
         out.push_str("  axis y line=right,\n");
+        out.push_str("  width={\\dimexpr \\linewidth - \\epRpad\\relax},\n");
         out.push_str(&format!("  height={}\\linewidth,\n", fmt_f(self.height_ratio)));
         if !self.line_label.is_empty() {
             out.push_str(&format!("  ylabel={{{}}},\n", self.line_label));
