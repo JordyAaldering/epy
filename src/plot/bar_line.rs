@@ -155,30 +155,33 @@ impl BarLinePlot {
     ///
     /// The approach:
     /// - `\settowidth` measures the rendered width of the estimated longest tick
-    ///   label at `\scriptsize` using actual font metrics.
-    /// - `\settoheight` measures one `\scriptsize` line height, which equals the
+    ///   label using `\eplabelfont` — the same font macro used in the axis styles —
+    ///   so the measurement automatically tracks any font-size change.
+    /// - `\settoheight` measures one `\eplabelfont` line height, which equals the
     ///   horizontal footprint of the rotated ylabel.
     /// - Fixed overhead accounts for tick length (3 pt), tick-label inner sep
     ///   (2 pt), and the gap between tick labels and the ylabel (~5 pt).
     fn render_twin_setup(&self) -> String {
-        // Multiply max by 1.1 so the estimate covers the "nice" tick that
-        // pgfplots rounds up to above the data maximum.
-        let tick_estimate = fmt_f(self.max_line_value() * 1.1);
+        // Multiply max by TICK_ESTIMATE_BUFFER so the estimate covers the "nice"
+        // tick that pgfplots rounds up to above the data maximum.
+        let tick_estimate = fmt_f(self.max_line_value() * TICK_ESTIMATE_BUFFER);
         let has_ylabel = !self.line_label.is_empty();
 
         let mut out = String::new();
 
         // Guard against duplicate \newlength when the file is \input more than once.
         out.push_str("\\ifdefined\\epRpad\\else\\newlength{\\epRpad}\\fi\n");
+        // \eplabelfont is defined in the preamble and matches the font used in
+        // the axis styles, so this measurement stays correct if the font changes.
         out.push_str(&format!(
-            "\\settowidth{{\\epRpad}}{{\\scriptsize {tick_estimate}}}\n"
+            "\\settowidth{{\\epRpad}}{{\\eplabelfont {tick_estimate}}}\n"
         ));
 
         if has_ylabel {
             // The right ylabel is rotated 90°; its horizontal footprint equals one
-            // \scriptsize line height.
+            // \eplabelfont line height.
             out.push_str("\\ifdefined\\epRlabelH\\else\\newlength{\\epRlabelH}\\fi\n");
-            out.push_str("\\settoheight{\\epRlabelH}{\\scriptsize Ag}\n");
+            out.push_str("\\settoheight{\\epRlabelH}{\\eplabelfont Ag}\n");
             out.push_str("\\addtolength{\\epRpad}{\\epRlabelH}\n");
             // tick length (3pt) + inner sep (2pt) + gap to ylabel (~5pt)
             out.push_str("\\addtolength{\\epRpad}{10pt}\n");

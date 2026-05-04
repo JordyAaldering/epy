@@ -206,7 +206,7 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
 
     // Extract the sample string passed to \settowidth in both outputs.
     fn extract_settowidth_arg(tikz: &str) -> &str {
-        let marker = r"\settowidth{\epRpad}{\scriptsize ";
+        let marker = r"\settowidth{\epRpad}{\eplabelfont ";
         let start = tikz.find(marker).expect("missing settowidth") + marker.len();
         let end = tikz[start..].find('}').expect("missing closing brace") + start;
         &tikz[start..end]
