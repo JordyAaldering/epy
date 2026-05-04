@@ -5,5 +5,13 @@ edition = "2024"
 description = "A Rust DSL for generating clean PGFPlots/TikZ code from CSV energy measurement data"
 license = "MIT"
 
+[lib]
+name = "energy_plots"
+path = "src/lib.rs"
+
+[[bin]]
+name = "energy_plots"
+path = "src/example.rs"
+
 [dependencies]
 csv = "1.4.0"

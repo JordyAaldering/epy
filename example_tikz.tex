@@ -1,0 +1,47 @@
+\begin{tikzpicture}
+\definecolor{epBar}{RGB}{58,166,64}
+\definecolor{epLine}{RGB}{166,58,58}
+
+\ifdefined\epRpad\else\newlength{\epRpad}\fi
+\settowidth{\epRpad}{\eplabelfont 0}
+\ifdefined\epRlabelH\else\newlength{\epRlabelH}\fi
+\settoheight{\epRlabelH}{\eplabelfont Ag}
+\addtolength{\epRpad}{\epRlabelH}
+\addtolength{\epRpad}{10pt}
+
+\begin{axis}[
+  common/twin-main, common/bar,
+  width={\dimexpr \linewidth - \epRpad\relax},
+  height=0.8\linewidth,
+  xlabel={Power limit (W)},
+  ylabel={GFLOP/J},
+  ymin=0,
+  xmin=-0.5, xmax=-0.5,
+  xtick={},
+  xticklabels={},
+]
+\addplot[ybar, bar width=0.7, fill=epBar, draw=none]
+  coordinates {
+  };
+\addlegendentry{GFLOP/J}
+\addlegendimage{epLine, mark=*, mark size=2pt, line width=1pt}
+\addlegendentry{GFLOP/s}
+\end{axis}
+
+\begin{axis}[
+  common/twin, common/line,
+  axis y line=right,
+  width={\dimexpr \linewidth - \epRpad\relax},
+  height=0.8\linewidth,
+  ylabel={GFLOP/s},
+  ymin=0,
+  xmin=-0.5, xmax=-0.5,
+]
+\addplot[epLine!40!white, opacity=0.3, draw=none, forget plot]
+  coordinates {
+  } \closedcycle;
+\addplot[epLine, mark=*, mark size=2pt, line width=1pt]
+  coordinates {
+  };
+\end{axis}
+\end{tikzpicture}
