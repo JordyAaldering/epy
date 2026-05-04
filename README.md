@@ -114,7 +114,7 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
 \usetikzlibrary{patterns,shapes.arrows}
 
 \newlength{\yaxispadding}
-\setlength{\yaxispadding}{1.0em}
+\setlength{\yaxispadding}{3.5em}
 
 \newif\ifcommonplotxgrid
 \commonplotxgridfalse
@@ -126,6 +126,7 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
 \pgfplotsset{
   compat=newest,
   common/twin-shared/.style={
+    scale only axis,
     width={\dimexpr \linewidth - \yaxispadding\relax},
     axis line style={commonplotgrid},
     x grid style={commonplotgrid},
