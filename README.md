@@ -113,9 +113,6 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
 \usepgfplotslibrary{groupplots,dateplot}
 \usetikzlibrary{patterns,shapes.arrows}
 
-\newlength{\yaxispadding}
-\setlength{\yaxispadding}{3.5em}
-
 \newif\ifcommonplotxgrid
 \commonplotxgridfalse
 
@@ -127,7 +124,7 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
   compat=newest,
   common/twin-shared/.style={
     scale only axis,
-    width={\dimexpr \linewidth - \yaxispadding\relax},
+    width={\dimexpr \linewidth - 3.5em\relax},
     axis line style={commonplotgrid},
     x grid style={commonplotgrid},
     y grid style={commonplotgrid},
