@@ -116,7 +116,27 @@ fn line_plot_renders_tikzpicture() {
     assert!(tikz.contains("\\addplot"), "missing addplot");
     assert!(tikz.contains("\\addlegendentry{IPC}"), "missing legend entry");
     assert!(tikz.contains("\\closedcycle"), "missing IQR band closedcycle");
+    assert!(tikz.contains("\\addplot[epColor0, opacity=0.3, draw=none, forget plot]"));
+    assert!(tikz.contains("opacity=0.3"), "missing transparent IQR band");
     assert!(tikz.contains(r"Power limit (\si{\watt})"), "missing xlabel");
+}
+
+#[test]
+fn line_plot_uses_transparent_band_instead_of_whiskers() {
+    let df = load_1thread();
+    let grouped = df.group_by("powercap");
+    let tikz = LinePlot::new(grouped)
+        .series("ipc", palette::BLUE, "IPC")
+        .render();
+
+    assert!(tikz.contains("\\closedcycle"), "expected a closed polygon for the Q1-Q3 band");
+    assert!(tikz.contains("opacity=0.3"), "expected transparent band fill");
+    assert!(tikz.contains("draw=none"), "expected band without outline");
+    assert!(tikz.contains("\\addplot[epColor0, opacity=0.3, draw=none, forget plot]"));
+    assert!(
+        !tikz.contains("\\draw[black!60"),
+        "line plots should not render bar-style whisker error bars"
+    );
 }
 
 #[test]
@@ -207,6 +227,8 @@ fn bar_line_plot_has_iqr_whiskers() {
     assert!(tikz.contains("\\draw[black!60"), "missing IQR whisker draw");
     // IQR band on the right axis uses \closedcycle.
     assert!(tikz.contains("\\closedcycle"), "missing IQR band on line axis");
+    assert!(tikz.contains("opacity=0.3"), "missing transparent band on line axis");
+    assert!(tikz.contains("\\addplot[epLine, opacity=0.3, draw=none, forget plot]"));
 }
 
 #[test]
@@ -251,7 +273,7 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
 
     // Extract the sample string passed to \settowidth in both outputs.
     fn extract_settowidth_arg(tikz: &str) -> &str {
-        let marker = r"\settowidth{\epRpad}{\eplabelfont ";
+        let marker = r"\settowidth{\epRpad}{\normalfont\eplabelfont ";
         let start = tikz.find(marker).expect("missing settowidth") + marker.len();
         let end = tikz[start..].find('}').expect("missing closing brace") + start;
         &tikz[start..end]
@@ -263,6 +285,10 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
     assert!(
         large_arg.len() > small_arg.len(),
         "large-value tick estimate '{large_arg}' should be longer than small-value '{small_arg}'"
+    );
+    assert!(
+        tikz_small.find(r"\settowidth{\epRpad}").unwrap() < tikz_small.find("\\begin{tikzpicture}").unwrap(),
+        "expected width measurement setup before tikzpicture"
     );
 }
 

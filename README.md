@@ -23,7 +23,8 @@ This library generates minimal, readable TikZ code that relies on a shared
 | [`ZPlot`] | Efficiency vs. throughput scatter, one series per configuration group |
 
 All plots compute **median** and **IQR** (Q1/Q3) across repeated measurements
-automatically.
+automatically. Bar series use simple Q1-Q3 whiskers, while line series use a
+transparent Q1-Q3 band.
 
 ---
 

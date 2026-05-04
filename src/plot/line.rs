@@ -1,11 +1,13 @@
-//! Simple line plot with optional IQR confidence band.
+//! Simple line plot with an IQR confidence band.
 //!
 //! Generates a single `\begin{axis}...\end{axis}` block styled with the
 //! project's `common/line` pgfplots style.
 
 use crate::color::Color;
 use crate::data::GroupedFrame;
-use crate::plot::{emit_color_defs, fmt_f, group_stats, wrap_tikzpicture};
+use crate::plot::fmt_f;
+use crate::plot::group_stats;
+use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, NamedColor, PlotDocument};
 
 // ── LineSeries ────────────────────────────────────────────────────────────
 
@@ -17,7 +19,7 @@ struct LineSeries {
 
 // ── LinePlot ──────────────────────────────────────────────────────────────
 
-/// A line plot with median values and an IQR shaded band.
+/// A line plot with median values and a transparent Q1-Q3 band.
 ///
 /// # Example
 /// ```no_run
@@ -101,37 +103,44 @@ impl LinePlot {
 
     /// Render to a TikZ `tikzpicture` string.
     pub fn render(&self) -> String {
+        self.build_document().render_tikz()
+    }
+
+    fn build_document(&self) -> PlotDocument {
         let color_names: Vec<String> = (0..self.series.len())
             .map(|i| format!("epColor{i}"))
             .collect();
-        let color_defs: Vec<(&Color, &str)> = self
+        let color_defs = self
             .series
             .iter()
             .enumerate()
-            .map(|(i, s)| (&s.color, color_names[i].as_str()))
+            .map(|(i, s)| NamedColor::new(color_names[i].clone(), s.color))
             .collect();
 
-        let defs = emit_color_defs(&color_defs);
-        let body = self.render_axis(&color_names);
-        wrap_tikzpicture(&defs, &body)
+        PlotDocument {
+            color_defs,
+            setup_lines: Vec::new(),
+            axes: vec![self.build_axis(&color_names)],
+        }
     }
 
-    fn render_axis(&self, color_names: &[String]) -> String {
-        let mut out = String::new();
+    fn build_axis(&self, color_names: &[String]) -> Axis {
+        let mut options = vec![AxisOption::flag("common/line")];
 
         // ── Axis options ──────────────────────────────────────────────────
-        out.push_str("\\begin{axis}[\n");
-        out.push_str("  common/line,\n");
-        out.push_str("  width=\\linewidth,\n");
-        out.push_str(&format!("  height={}\\linewidth,\n", fmt_f(self.height_ratio)));
+        options.push(AxisOption::key_value("width", "\\linewidth"));
+        options.push(AxisOption::key_value(
+            "height",
+            format!("{}\\linewidth", fmt_f(self.height_ratio)),
+        ));
         if !self.xlabel.is_empty() {
-            out.push_str(&format!("  xlabel={{{}}},\n", self.xlabel));
+            options.push(AxisOption::key_value("xlabel", format!("{{{}}}", self.xlabel)));
         }
         if !self.ylabel.is_empty() {
-            out.push_str(&format!("  ylabel={{{}}},\n", self.ylabel));
+            options.push(AxisOption::key_value("ylabel", format!("{{{}}}", self.ylabel)));
         }
         if let Some(v) = self.ymin {
-            out.push_str(&format!("  ymin={},\n", fmt_f(v)));
+            options.push(AxisOption::key_value("ymin", fmt_f(v)));
         }
 
         // x-tick configuration
@@ -139,55 +148,61 @@ impl LinePlot {
         let n = keys.len();
         if n > 0 {
             let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
-            out.push_str(&format!("  xtick={{{}}},\n", tick_str.join(",")));
+            options.push(AxisOption::key_value("xtick", format!("{{{}}}", tick_str.join(","))));
 
             let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
                 lbls.clone()
             } else {
                 keys.iter().map(|&k| fmt_f(k)).collect()
             };
-            out.push_str(&format!("  xticklabels={{{}}},\n", labels.join(",")));
+            options.push(AxisOption::key_value(
+                "xticklabels",
+                format!("{{{}}}", labels.join(",")),
+            ));
         }
 
         // Extend axis limits by half a bar width on each side.
         if n > 0 {
-            out.push_str(&format!("  xmin={},\n", fmt_f(-0.5)));
-            out.push_str(&format!("  xmax={},\n", fmt_f(n as f64 - 0.5)));
+            options.push(AxisOption::key_value("xmin", fmt_f(-0.5)));
+            options.push(AxisOption::key_value("xmax", fmt_f(n as f64 - 0.5)));
         }
 
-        out.push_str("]\n");
+        let mut elements = Vec::new();
 
         // ── Series ────────────────────────────────────────────────────────
         for (si, series) in self.series.iter().enumerate() {
             let stats = group_stats(&self.grouped, &series.col);
             let cn = &color_names[si];
 
-            // IQR band (closed polygon: upper half forward, lower half backward)
-            out.push_str(&format!(
-                "\\addplot[{cn}!40!white, opacity=0.3, draw=none, forget plot]\n  coordinates {{\n"
-            ));
+            // Transparent Q1-Q3 band (upper half forward, lower half backward).
+            let mut band_coordinates = Vec::new();
             for (i, s) in stats.iter().enumerate() {
-                out.push_str(&format!("    ({}, {})\n", i, fmt_f(s.q3)));
+                band_coordinates.push(Coordinate::Plain(i as f64, s.q3));
             }
             for (i, s) in stats.iter().enumerate().rev() {
-                out.push_str(&format!("    ({}, {})\n", i, fmt_f(s.q1)));
+                band_coordinates.push(Coordinate::Plain(i as f64, s.q1));
             }
-            out.push_str("  } \\closedcycle;\n");
+            elements.push(AxisElement::Plot(AddPlot {
+                options: vec![cn.clone(), "opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
+                coordinates: band_coordinates,
+                closed_cycle: true,
+            }));
 
             // Median line
-            out.push_str(&format!(
-                "\\addplot[{cn}, mark=*, mark size=2pt, line width=1pt]\n  coordinates {{\n"
-            ));
+            let mut line_coordinates = Vec::new();
             for (i, s) in stats.iter().enumerate() {
-                out.push_str(&format!("    ({}, {})\n", i, fmt_f(s.median)));
+                line_coordinates.push(Coordinate::Plain(i as f64, s.median));
             }
-            out.push_str("  };\n");
+            elements.push(AxisElement::Plot(AddPlot {
+                options: vec![cn.clone(), "mark=*".into(), "mark size=2pt".into(), "line width=1pt".into()],
+                coordinates: line_coordinates,
+                closed_cycle: false,
+            }));
 
             // Legend
-            out.push_str(&format!("\\addlegendentry{{{}}}\n", series.label));
+            elements.push(AxisElement::LegendEntry(series.label.clone()));
         }
 
-        out.push_str("\\end{axis}\n");
-        out
+        Axis { options, elements }
     }
 }

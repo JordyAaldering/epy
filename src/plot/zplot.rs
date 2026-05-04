@@ -5,7 +5,8 @@
 
 use crate::color::{Color, palette};
 use crate::data::GroupedFrame;
-use crate::plot::{emit_color_defs, fmt_f, wrap_tikzpicture};
+use crate::plot::fmt_f;
+use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, NamedColor, PlotDocument};
 
 // ── Marker shapes ─────────────────────────────────────────────────────────
 
@@ -111,6 +112,10 @@ impl ZPlot {
 
     /// Render to a TikZ `tikzpicture` string.
     pub fn render(&self) -> String {
+        self.build_document().render_tikz()
+    }
+
+    fn build_document(&self) -> PlotDocument {
         let n = self.grouped.num_groups();
         let default_palette = &palette::SERIES[..];
         let colors: &[Color] = self
@@ -118,34 +123,37 @@ impl ZPlot {
             .as_deref()
             .unwrap_or(default_palette);
 
-        // Build color definitions
         let color_names: Vec<String> = (0..n).map(|i| format!("epSeries{i}")).collect();
-        let color_pairs: Vec<(&Color, &str)> = (0..n)
-            .map(|i| (&colors[i % colors.len()], color_names[i].as_str()))
+        let color_defs = (0..n)
+            .map(|i| NamedColor::new(color_names[i].clone(), colors[i % colors.len()]))
             .collect();
-        let defs = emit_color_defs(&color_pairs);
 
-        let body = self.render_axis(&color_names);
-        wrap_tikzpicture(&defs, &body)
+        PlotDocument {
+            color_defs,
+            setup_lines: Vec::new(),
+            axes: vec![self.build_axis(&color_names)],
+        }
     }
 
-    fn render_axis(&self, color_names: &[String]) -> String {
-        let mut out = String::new();
+    fn build_axis(&self, color_names: &[String]) -> Axis {
         let n = self.grouped.num_groups();
+        let mut options = vec![AxisOption::flag("common/line")];
 
         // ── Axis options ──────────────────────────────────────────────────
-        out.push_str("\\begin{axis}[\n");
-        out.push_str("  common/line,\n");
-        out.push_str("  width=\\linewidth,\n");
-        out.push_str(&format!("  height={}\\linewidth,\n", fmt_f(self.height_ratio)));
+        options.push(AxisOption::key_value("width", "\\linewidth"));
+        options.push(AxisOption::key_value(
+            "height",
+            format!("{}\\linewidth", fmt_f(self.height_ratio)),
+        ));
         if !self.xlabel.is_empty() {
-            out.push_str(&format!("  xlabel={{{}}},\n", self.xlabel));
+            options.push(AxisOption::key_value("xlabel", format!("{{{}}}", self.xlabel)));
         }
         if !self.ylabel.is_empty() {
-            out.push_str(&format!("  ylabel={{{}}},\n", self.ylabel));
+            options.push(AxisOption::key_value("ylabel", format!("{{{}}}", self.ylabel)));
         }
-        out.push_str("  ymin=0,\n");
-        out.push_str("]\n");
+        options.push(AxisOption::key_value("ymin", "0"));
+
+        let mut elements = Vec::new();
 
         // ── Series (one per group) ─────────────────────────────────────────
         for gi in 0..n {
@@ -163,17 +171,18 @@ impl ZPlot {
             // If the group has multiple rows we plot each point individually
             // (the caller should call `group_by` on an already-aggregated frame,
             // or use a secondary grouping via `DataFrame::group_by` twice).
-            out.push_str(&format!(
-                "\\addplot[{cn}, mark={marker}, mark size=2pt, line width=1pt]\n  coordinates {{\n"
-            ));
+            let mut coordinates = Vec::new();
             for (&x, &y) in xs.iter().zip(ys.iter()) {
-                out.push_str(&format!("    ({}, {})\n", fmt_f(x), fmt_f(y)));
+                coordinates.push(Coordinate::Plain(x, y));
             }
-            out.push_str("  };\n");
-            out.push_str(&format!("\\addlegendentry{{{label}}}\n"));
+            elements.push(AxisElement::Plot(AddPlot {
+                options: vec![cn.clone(), format!("mark={marker}"), "mark size=2pt".into(), "line width=1pt".into()],
+                coordinates,
+                closed_cycle: false,
+            }));
+            elements.push(AxisElement::LegendEntry(label));
         }
 
-        out.push_str("\\end{axis}\n");
-        out
+        Axis { options, elements }
     }
 }

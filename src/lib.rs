@@ -15,7 +15,8 @@
 //! | Z-plot (scatter) | [`ZPlot`] | Efficiency vs. throughput for multiple configurations |
 //!
 //! All plots compute the **median** and **IQR** (Q1 / Q3) across repeated
-//! measurements automatically.
+//! measurements automatically. Bar series render simple Q1-Q3 whiskers,
+//! while line series render a transparent band spanning Q1 to Q3.
 //!
 //! ## Quick start
 //!

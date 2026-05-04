@@ -6,8 +6,15 @@ pub mod stats;
 use crate::{color::*, data::DataFrame, plot::BarLinePlot};
 
 fn main() {
-    let df = DataFrame::from_csv("tests/fixtures/test_data.csv").unwrap()
-        .filter(|r| r["threads"] == 8.0)
+    let csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/test_data.csv");
+    let df = DataFrame::from_csv(csv_path).unwrap();
+    let example_threads = *df
+        .col("threads")
+        .first()
+        .expect("example fixture must contain at least one row");
+
+    let df = df
+        .filter(|r| r["threads"] == example_threads)
         .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
         .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9);
 
