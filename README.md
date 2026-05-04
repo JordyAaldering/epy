@@ -147,12 +147,13 @@ Add the following to your LaTeX document preamble (e.g. in `preamble.tex`):
   common/twin-main/.style={
     common/twin-shared,
     name=mainaxis,
+    trim axis right,
   },
   common/twin/.style={
     common/twin-shared,
     at={(mainaxis.south west)},
     anchor=south west,
-    overlay,
+    trim axis left,
     axis x line=none,
     xmajorgrids=false,
     ymajorgrids=false,
