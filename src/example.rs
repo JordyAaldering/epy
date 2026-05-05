@@ -10,7 +10,7 @@ fn main() {
     let df = DataFrame::from_csv(csv_path).unwrap();
     let example_threads = *df
         .col("threads")
-        .first()
+        .last()
         .expect("example fixture must contain at least one row");
 
     let df = df

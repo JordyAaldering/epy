@@ -324,14 +324,6 @@ fn zplot_renders() {
 // ── Color tests ───────────────────────────────────────────────────────────
 
 #[test]
-fn color_hex_parses_green() {
-    let c = Color::hex("#3AA640");
-    assert_eq!(c.r, 58);
-    assert_eq!(c.g, 166);
-    assert_eq!(c.b, 64);
-}
-
-#[test]
 fn color_define_output() {
     let c = Color::rgb(58, 166, 64);
     let def = c.define("epGreen");

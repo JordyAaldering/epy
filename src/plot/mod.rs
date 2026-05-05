@@ -10,18 +10,17 @@ pub use line::LinePlot;
 pub use zplot::ZPlot;
 
 use crate::data::GroupedFrame;
-use crate::stats::{GroupStats, q1, q3, median};
+use crate::stats::*;
 
 /// Compute per-group statistics for `col` from a [`GroupedFrame`].
-pub(crate) fn group_stats(gf: &GroupedFrame, col: &str) -> Vec<GroupStats> {
+pub(crate) fn group_stats(gf: &GroupedFrame, col: &str) -> Vec<IQR> {
     (0..gf.num_groups())
         .map(|gi| {
-            let vals = gf.group_values(gi, col);
-            GroupStats {
-                x: gf.unique_keys[gi],
-                median: median(&vals),
-                q1: q1(&vals),
-                q3: q3(&vals),
+            let xs = gf.group_values(gi, col);
+            IQR {
+                median: median(&xs),
+                q1: q1(&xs),
+                q3: q3(&xs),
             }
         })
         .collect()

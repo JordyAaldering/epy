@@ -1,9 +1,4 @@
-//! CSV-backed `DataFrame` with filtering and grouping support.
-
-use std::collections::HashMap;
-use std::path::Path;
-
-// ── Row (borrowed view of a single record) ────────────────────────────────
+use std::{collections::HashMap, ops, path::Path};
 
 /// A borrowed view of one row in a [`DataFrame`].
 pub struct Row<'a> {
@@ -11,7 +6,7 @@ pub struct Row<'a> {
     idx: usize,
 }
 
-impl<'a> std::ops::Index<&str> for Row<'a> {
+impl<'a> ops::Index<&str> for Row<'a> {
     type Output = f64;
 
     fn index(&self, col: &str) -> &f64 {
@@ -22,8 +17,6 @@ impl<'a> std::ops::Index<&str> for Row<'a> {
         &self.df.data[ci][self.idx]
     }
 }
-
-// ── DataFrame ─────────────────────────────────────────────────────────────
 
 /// Column-major data frame loaded from a CSV file.
 ///
@@ -160,8 +153,6 @@ impl DataFrame {
         self.headers.iter().position(|h| h == name)
     }
 }
-
-// ── GroupedFrame ──────────────────────────────────────────────────────────
 
 /// A [`DataFrame`] grouped by a key column.
 ///

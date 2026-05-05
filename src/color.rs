@@ -1,5 +1,3 @@
-//! Color palette for energy-measurement plots.
-
 /// An RGB color for use in generated TikZ output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Color {
@@ -11,19 +9,6 @@ pub struct Color {
 impl Color {
     /// Construct a color from RGB components.
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Color { r, g, b }
-    }
-
-    /// Construct a color from a 6-digit hex string like `"#3AA640"`.
-    ///
-    /// # Panics
-    /// Panics if the string is not a valid hex color.
-    pub fn hex(s: &str) -> Self {
-        let s = s.trim_start_matches('#');
-        assert!(s.len() == 6, "expected 6-digit hex color, got `#{s}`");
-        let r = u8::from_str_radix(&s[0..2], 16).expect("invalid red component");
-        let g = u8::from_str_radix(&s[2..4], 16).expect("invalid green component");
-        let b = u8::from_str_radix(&s[4..6], 16).expect("invalid blue component");
         Color { r, g, b }
     }
 

@@ -1,23 +1,14 @@
-//! Simple line plot with an IQR confidence band.
-//!
-//! Generates a single `\begin{axis}...\end{axis}` block styled with the
-//! project's `common/line` pgfplots style.
-
 use crate::color::Color;
 use crate::data::GroupedFrame;
 use crate::plot::fmt_f;
 use crate::plot::group_stats;
 use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, NamedColor, PlotDocument};
 
-// ── LineSeries ────────────────────────────────────────────────────────────
-
 struct LineSeries {
     col: String,
     color: Color,
     label: String,
 }
-
-// ── LinePlot ──────────────────────────────────────────────────────────────
 
 /// A line plot with median values and a transparent Q1-Q3 band.
 ///
