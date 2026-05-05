@@ -1,16 +1,16 @@
 [package]
-name = "energy-plots"
+name = "epy"
 version = "0.1.0"
 edition = "2024"
-description = "A Rust DSL for generating clean PGFPlots/TikZ code from CSV energy measurement data"
+description = "Energy plotting library"
 license = "MIT"
 
 [lib]
-name = "energy_plots"
+name = "epy"
 path = "src/lib.rs"
 
 [[bin]]
-name = "energy_plots"
+name = "epy"
 path = "src/example.rs"
 
 [dependencies]

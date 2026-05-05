@@ -43,7 +43,7 @@ const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 ///
 /// std::fs::write("plot.tex", tikz).unwrap();
 /// ```
-pub struct BarLinePlot {
+pub struct TwinPlot {
     grouped: GroupedFrame,
     bar_col: Option<String>,
     bar_color: Color,
@@ -57,10 +57,10 @@ pub struct BarLinePlot {
     xtick_labels: Option<Vec<String>>,
 }
 
-impl BarLinePlot {
+impl TwinPlot {
     /// Create a new `BarLinePlot` over the given grouped data.
     pub fn new(grouped: GroupedFrame) -> Self {
-        BarLinePlot {
+        TwinPlot {
             grouped,
             bar_col: None,
             bar_color: crate::color::palette::GREEN,

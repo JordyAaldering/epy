@@ -3,7 +3,7 @@ pub mod data;
 pub mod plot;
 pub mod stats;
 
-use crate::{color::*, data::DataFrame, plot::BarLinePlot};
+use crate::{color::*, data::DataFrame, plot::TwinPlot};
 
 fn main() {
     let csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/test_data.csv");
@@ -21,7 +21,7 @@ fn main() {
     let grouped = df.group_by("powercap");
 
     // Twin-axis bar (efficiency) + line (throughput) plot
-    let tikz = BarLinePlot::new(grouped)
+    let tikz = TwinPlot::new(grouped)
         .bar("gflop_j", palette::GREEN, r"GFLOP/J")
         .line("gflop_s", palette::RED,  r"GFLOP/s")
         .xlabel(r"Power limit (W)")

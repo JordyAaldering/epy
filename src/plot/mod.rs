@@ -1,11 +1,11 @@
 //! Plot builders for energy-measurement data.
 
-pub mod bar_line;
+pub mod twin;
 mod ir;
 pub mod line;
 pub mod zplot;
 
-pub use bar_line::BarLinePlot;
+pub use twin::TwinPlot;
 pub use line::LinePlot;
 pub use zplot::ZPlot;
 

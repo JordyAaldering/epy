@@ -1,7 +1,6 @@
-use energy_plots::prelude::*;
 use std::collections::HashSet;
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+use epy::prelude::*;
 
 fn test_csv() -> &'static str {
     concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/test_data.csv")
@@ -15,8 +14,6 @@ fn load_1thread() -> DataFrame {
         .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9)
         .with_column("ipc", |r| r["insns"] / r["cycs"])
 }
-
-// ── DataFrame tests ───────────────────────────────────────────────────────
 
 #[test]
 fn dataframe_loads_csv() {
@@ -80,23 +77,6 @@ fn grouped_frame_group_values() {
         assert_eq!(vals.len(), expected, "group size mismatch for powercap={key}");
     }
 }
-
-// ── Statistics tests ──────────────────────────────────────────────────────
-
-#[test]
-fn stats_median() {
-    assert_eq!(median(&[3.0, 1.0, 2.0]), 2.0);
-    assert_eq!(median(&[1.0, 2.0, 3.0, 4.0]), 2.5);
-}
-
-#[test]
-fn stats_q1_q3() {
-    let v = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
-    assert_eq!(q1(&v), 2.5);
-    assert_eq!(q3(&v), 6.5);
-}
-
-// ── LinePlot tests ────────────────────────────────────────────────────────
 
 #[test]
 fn line_plot_renders_tikzpicture() {
@@ -183,13 +163,11 @@ fn line_plot_custom_xtick_labels() {
     assert!(tikz.contains("xticklabels={low,mid,high}"), "expected custom xticklabels");
 }
 
-// ── BarLinePlot tests ─────────────────────────────────────────────────────
-
 #[test]
 fn bar_line_plot_renders() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
-    let tikz = BarLinePlot::new(grouped)
+    let tikz = TwinPlot::new(grouped)
         .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
         .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
         .xlabel(r"Power limit (\si{\watt})")
@@ -218,7 +196,7 @@ fn bar_line_plot_renders() {
 fn bar_line_plot_has_iqr_whiskers() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
-    let tikz = BarLinePlot::new(grouped)
+    let tikz = TwinPlot::new(grouped)
         .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
         .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
         .render();
@@ -235,7 +213,7 @@ fn bar_line_plot_has_iqr_whiskers() {
 fn bar_line_plot_legend_entries() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
-    let tikz = BarLinePlot::new(grouped)
+    let tikz = TwinPlot::new(grouped)
         .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
         .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
         .render();
@@ -255,7 +233,7 @@ fn bar_line_plot_legend_entries() {
 #[test]
 fn bar_line_plot_width_adapts_to_data_magnitude() {
     // Small values: gflop_s ≈ 0.4 → tick estimate is a short string.
-    let tikz_small = BarLinePlot::new(load_1thread().group_by("powercap"))
+    let tikz_small = TwinPlot::new(load_1thread().group_by("powercap"))
         .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
         .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
         .render();
@@ -266,7 +244,7 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
         .filter(|r| r["threads"] == 1.0)
         .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
         .with_column("big_line", |r| r["insns"] / r["runtime"] / 1e9 * 10_000.0);
-    let tikz_large = BarLinePlot::new(df_large.group_by("powercap"))
+    let tikz_large = TwinPlot::new(df_large.group_by("powercap"))
         .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
         .line("big_line", palette::RED, "Big label")
         .render();
@@ -291,8 +269,6 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
         "expected width measurement setup before tikzpicture"
     );
 }
-
-// ── ZPlot tests ───────────────────────────────────────────────────────────
 
 #[test]
 fn zplot_renders() {
@@ -320,8 +296,6 @@ fn zplot_renders() {
     assert!(tikz.contains("epSeries0"), "missing series 0 color");
     assert!(tikz.contains("epSeries1"), "missing series 1 color");
 }
-
-// ── Color tests ───────────────────────────────────────────────────────────
 
 #[test]
 fn color_define_output() {

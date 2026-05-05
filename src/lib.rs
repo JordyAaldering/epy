@@ -54,12 +54,12 @@ pub mod stats;
 
 pub use color::Color;
 pub use data::{DataFrame, GroupedFrame};
-pub use plot::{BarLinePlot, LinePlot, ZPlot};
+pub use plot::{TwinPlot, LinePlot, ZPlot};
 
 /// Convenience re-exports for typical usage.
 pub mod prelude {
     pub use crate::color::{Color, palette};
     pub use crate::data::{DataFrame, GroupedFrame};
-    pub use crate::plot::{BarLinePlot, LinePlot, ZPlot};
+    pub use crate::plot::{TwinPlot, LinePlot, ZPlot};
     pub use crate::stats::{mean, median, q1, q3};
 }

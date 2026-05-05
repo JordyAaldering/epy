@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "energy-plots"
+name = "epy"
 version = "0.1.0"
 dependencies = [
  "csv",
