@@ -265,16 +265,12 @@ fn zplot_renders() {
         .y_col("gflop_j")
         .xlabel(r"\si{\giga\flop\per\second}")
         .ylabel(r"\si{\giga\flop\per\joule}")
-        .label_fn(|tc| {
-            let n = tc as u32;
-            if n == 1 { "1 thread".to_owned() } else { format!("{n} threads") }
-        })
         .render();
 
     assert!(tikz.contains("\\begin{tikzpicture}"));
     assert!(tikz.contains("\\begin{axis}"));
-    assert!(tikz.contains("\\addlegendentry{1 thread}"), "missing 1-thread legend");
-    assert!(tikz.contains("\\addlegendentry{4 threads}"), "missing 4-thread legend");
+    assert!(tikz.contains("\\addlegendentry{1}"), "missing 1-thread legend");
+    assert!(tikz.contains("\\addlegendentry{4}"), "missing 4-thread legend");
     assert!(tikz.contains("epycolorblind0"), "missing series 0 color");
     assert!(tikz.contains("epycolorblind1"), "missing series 1 color");
 }

@@ -6,64 +6,39 @@ use crate::{data::GroupedFrame, plot::{fmt_f, group_stats}, ir::*};
 /// maximum; 10 % is a conservative overshoot that covers most cases.
 const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 
-/// A combined bar (left y-axis) and line (right y-axis) twin-axis plot.
-///
-/// # Example
-/// ```no_run
-/// use epy::prelude::*;
-///
-/// let df = DataFrame::from_csv("data.csv").unwrap()
-///     .filter(|r| r["threads"] == 8.0)
-///     .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
-///     .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9);
-///
-/// let grouped = df.group_by("powercap");
-/// let tikz = TwinPlot::new(grouped)
-///     .bar("gflop_j", r"\si{\giga\flop\per\joule}")
-///     .line("gflop_s", r"\si{\giga\flop\per\second}")
-///     .xlabel(r"Power limit (\si{\watt})")
-///     .render();
-///
-/// std::fs::write("plot.tex", tikz).unwrap();
-/// ```
 pub struct TwinPlot {
-    grouped: GroupedFrame,
-    bar_col: Option<String>,
+    df: GroupedFrame,
+    bar_column: Option<String>,
     bar_label: String,
-    line_col: Option<String>,
+    line_column: Option<String>,
     line_label: String,
     xlabel: String,
-    height_ratio: f64,
-    bar_width: f64,
     xtick_labels: Option<Vec<String>>,
 }
 
 impl TwinPlot {
-    /// Create a new `TwinPlot` over the given grouped data.
-    pub fn new(grouped: GroupedFrame) -> Self {
+    pub fn new(df: GroupedFrame) -> Self {
         TwinPlot {
-            grouped,
-            bar_col: None,
+            df,
+            bar_column: None,
             bar_label: String::new(),
-            line_col: None,
+            line_column: None,
             line_label: String::new(),
             xlabel: String::new(),
-            height_ratio: 1.0,
-            bar_width: 0.7,
             xtick_labels: None,
         }
     }
 
     /// Configure the bar series (left y-axis). Uses `epyenergycolor`.
     pub fn bar(mut self, col: impl Into<String>, label: impl Into<String>) -> Self {
-        self.bar_col = Some(col.into());
+        self.bar_column = Some(col.into());
         self.bar_label = label.into();
         self
     }
 
     /// Configure the line series (right y-axis). Uses `epyruntimecolor`.
     pub fn line(mut self, col: impl Into<String>, label: impl Into<String>) -> Self {
-        self.line_col = Some(col.into());
+        self.line_column = Some(col.into());
         self.line_label = label.into();
         self
     }
@@ -71,18 +46,6 @@ impl TwinPlot {
     /// Set the x-axis label (shared by both axes).
     pub fn xlabel(mut self, label: impl Into<String>) -> Self {
         self.xlabel = label.into();
-        self
-    }
-
-    /// Override the plot height as a fraction of `\epyfigureheight` (default: `1.0`).
-    pub fn height_ratio(mut self, r: f64) -> Self {
-        self.height_ratio = r;
-        self
-    }
-
-    /// Override the bar width in axis units (default: `0.7`).
-    pub fn bar_width(mut self, w: f64) -> Self {
-        self.bar_width = w;
         self
     }
 
@@ -98,8 +61,8 @@ impl TwinPlot {
     }
 
     fn build_document(&self) -> PlotDocument {
-        let bar_col = self.bar_col.as_deref().unwrap_or_default();
-        let line_col = self.line_col.as_deref().unwrap_or_default();
+        let bar_col = self.bar_column.as_deref().unwrap_or_default();
+        let line_col = self.line_column.as_deref().unwrap_or_default();
 
         let mut axes = vec![self.build_left_axis(bar_col, line_col)];
         if !line_col.is_empty() {
@@ -114,11 +77,11 @@ impl TwinPlot {
 
     /// Return the maximum q3 value across all groups for the right (line) axis.
     fn max_line_value(&self) -> f64 {
-        let col = self.line_col.as_deref().unwrap_or_default();
+        let col = self.line_column.as_deref().unwrap_or_default();
         if col.is_empty() {
             return 1.0;
         }
-        let stats = group_stats(&self.grouped, col);
+        let stats = group_stats(&self.df, col);
         stats.iter().map(|s| s.q3).fold(0.0_f64, f64::max)
     }
 
@@ -163,17 +126,17 @@ impl TwinPlot {
     }
 
     fn x_range(&self) -> (f64, f64) {
-        let n = self.grouped.num_groups();
+        let n = self.df.num_groups();
         (-0.5, n as f64 - 0.5)
     }
 
     fn xtick_str(&self) -> String {
-        let n = self.grouped.num_groups();
+        let n = self.df.num_groups();
         (0..n).map(|i| i.to_string()).collect::<Vec<_>>().join(",")
     }
 
     fn xticklabels_str(&self) -> String {
-        let keys = self.grouped.keys();
+        let keys = self.df.keys();
         if let Some(ref lbls) = self.xtick_labels {
             lbls.join(",")
         } else {
@@ -189,10 +152,7 @@ impl TwinPlot {
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
-        options.push(AxisOption::key_value(
-            "height",
-            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
-        ));
+        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
         if !self.xlabel.is_empty() {
             options.push(AxisOption::key_value(
                 "xlabel",
@@ -218,7 +178,7 @@ impl TwinPlot {
 
         // ── Bar series ────────────────────────────────────────────────────
         if !bar_col.is_empty() {
-            let stats = group_stats(&self.grouped, bar_col);
+            let stats = group_stats(&self.df, bar_col);
 
             // Filled bars (median height)
             let mut bar_coordinates = Vec::new();
@@ -228,7 +188,7 @@ impl TwinPlot {
             elements.push(AxisElement::Plot(AddPlot {
                 options: vec![
                     "ybar".into(),
-                    format!("bar width={}", fmt_f(self.bar_width)),
+                    "bar width=0.7".into(),
                     "fill=epyenergycolor".into(),
                     "draw=none".into(),
                     "area legend".into(),
@@ -264,9 +224,9 @@ impl TwinPlot {
 
     fn build_right_axis(&self, line_col: &str) -> Axis {
         let (xmin, xmax) = self.x_range();
-        let stats = group_stats(&self.grouped, line_col);
+        let stats = group_stats(&self.df, line_col);
         let mut options = crate::plot::common_axis_options(false);
-        // Twin overlay: anchor on the left axis, no x-axis line or labels, no grids.
+
         options.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
         options.push(AxisOption::key_value("anchor", "south west"));
         options.push(AxisOption::flag("trim axis left"));
@@ -276,13 +236,9 @@ impl TwinPlot {
         options.push(AxisOption::key_value("xtick", "\\empty"));
         options.push(AxisOption::key_value("xticklabels", "\\empty"));
 
-        // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("axis y line", "right"));
         options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
-        options.push(AxisOption::key_value(
-            "height",
-            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
-        ));
+        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
         if !self.line_label.is_empty() {
             options.push(AxisOption::key_value(
                 "ylabel",
@@ -295,7 +251,6 @@ impl TwinPlot {
 
         let mut band_coordinates = Vec::new();
 
-        // ── Transparent Q1-Q3 band ────────────────────────────────────────
         for (i, s) in stats.iter().enumerate() {
             band_coordinates.push(Coordinate::Plain(i as f64, s.q3));
         }
@@ -303,7 +258,6 @@ impl TwinPlot {
             band_coordinates.push(Coordinate::Plain(i as f64, s.q1));
         }
 
-        // ── Median line ───────────────────────────────────────────────────
         let mut line_coordinates = Vec::new();
         for (i, s) in stats.iter().enumerate() {
             line_coordinates.push(Coordinate::Plain(i as f64, s.median));

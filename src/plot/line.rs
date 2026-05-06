@@ -1,48 +1,28 @@
 use crate::{color::Color, data::GroupedFrame, ir::*, plot::{fmt_f, group_stats}};
 
 struct LineSeries {
-    col: String,
-    color: Color,
+    column: String,
     label: String,
+    color: Color,
 }
 
-/// A line plot with median values and a transparent Q1-Q3 band.
-///
-/// # Example
-/// ```no_run
-/// use epy::prelude::*;
-///
-/// let df = DataFrame::from_csv("data.csv").unwrap()
-///     .filter(|r| r["threads"] == 8.0)
-///     .with_column("ipc", |r| r["insns"] / r["cycs"]);
-///
-/// let tikz = LinePlot::new(df.group_by("powercap"))
-///     .series("ipc", Color::Energy, "IPC")
-///     .xlabel(r"Power limit (\si{\watt})")
-///     .ylabel("IPC")
-///     .render();
-///
-/// std::fs::write("plot.tex", tikz).unwrap();
-/// ```
 pub struct LinePlot {
-    grouped: GroupedFrame,
+    df: GroupedFrame,
     series: Vec<LineSeries>,
     xlabel: String,
     ylabel: String,
-    height_ratio: f64,
     ymin: Option<f64>,
     xtick_labels: Option<Vec<String>>,
 }
 
 impl LinePlot {
     /// Create a new `LinePlot` over the given grouped data.
-    pub fn new(grouped: GroupedFrame) -> Self {
+    pub fn new(df: GroupedFrame) -> Self {
         LinePlot {
-            grouped,
+            df,
             series: Vec::new(),
             xlabel: String::new(),
             ylabel: String::new(),
-            height_ratio: 1.0,
             ymin: Some(0.0),
             xtick_labels: None,
         }
@@ -55,7 +35,7 @@ impl LinePlot {
         color: Color,
         label: impl Into<String>,
     ) -> Self {
-        self.series.push(LineSeries { col: col.into(), color, label: label.into() });
+        self.series.push(LineSeries { column: col.into(), color, label: label.into() });
         self
     }
 
@@ -68,12 +48,6 @@ impl LinePlot {
     /// Set the y-axis label.
     pub fn ylabel(mut self, label: impl Into<String>) -> Self {
         self.ylabel = label.into();
-        self
-    }
-
-    /// Override the height as a fraction of `\epyfigureheight` (default: `1.0`).
-    pub fn height_ratio(mut self, r: f64) -> Self {
-        self.height_ratio = r;
         self
     }
 
@@ -108,12 +82,8 @@ impl LinePlot {
     fn build_axis(&self, color_names: &[String]) -> Axis {
         let mut options = crate::plot::common_axis_options(false);
 
-        // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("width", "\\epyfigurewidth"));
-        options.push(AxisOption::key_value(
-            "height",
-            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
-        ));
+        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
         if !self.xlabel.is_empty() {
             options.push(AxisOption::key_value(
                 "xlabel",
@@ -131,7 +101,7 @@ impl LinePlot {
         }
 
         // x-tick configuration
-        let keys = self.grouped.keys();
+        let keys = self.df.keys();
         let n = keys.len();
         if n > 0 {
             let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
@@ -158,7 +128,7 @@ impl LinePlot {
 
         // ── Series ────────────────────────────────────────────────────────
         for (si, series) in self.series.iter().enumerate() {
-            let stats = group_stats(&self.grouped, &series.col);
+            let stats = group_stats(&self.df, &series.column);
             let cn = &color_names[si];
 
             // Transparent Q1-Q3 band (upper half forward, lower half backward).
