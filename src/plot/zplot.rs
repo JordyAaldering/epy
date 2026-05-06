@@ -60,7 +60,8 @@ impl ZPlot {
 
         PlotDocument {
             setup_lines: Vec::new(),
-            axes: vec![self.build_axis(&color_names)],
+            ax0: self.build_axis(&color_names),
+            ax1: None,
         }
     }
 

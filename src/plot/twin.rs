@@ -1,4 +1,4 @@
-use crate::{data::GroupedFrame, plot::{fmt_f, group_stats}, ir::*};
+use crate::{data::GroupedFrame, plot::group_stats, ir::*};
 
 /// Extra multiplier applied to the data maximum when estimating the longest
 /// right-axis tick label.  pgfplots rounds the axis maximum up to the next
@@ -64,14 +64,13 @@ impl TwinPlot {
         let bar_col = self.bar_column.as_deref().unwrap_or_default();
         let line_col = self.line_column.as_deref().unwrap_or_default();
 
-        let mut axes = vec![self.build_left_axis(bar_col, line_col)];
-        if !line_col.is_empty() {
-            axes.push(self.build_right_axis(line_col));
-        }
+        let ax1 = self.build_left_axis(bar_col);
+        let ax2 = self.build_right_axis(line_col);
 
         PlotDocument {
             setup_lines: self.twin_setup_lines(),
-            axes,
+            ax0: ax1,
+            ax1: Some(ax2),
         }
     }
 
@@ -99,7 +98,7 @@ impl TwinPlot {
     fn twin_setup_lines(&self) -> Vec<String> {
         // Multiply max by TICK_ESTIMATE_BUFFER so the estimate covers the "nice"
         // tick that pgfplots rounds up to above the data maximum.
-        let tick_estimate = fmt_f(self.max_line_value() * TICK_ESTIMATE_BUFFER);
+        let tick_estimate = (self.max_line_value() * TICK_ESTIMATE_BUFFER).to_string();
         let has_ylabel = !self.line_label.is_empty();
 
         let mut lines = Vec::new();
@@ -140,11 +139,11 @@ impl TwinPlot {
         if let Some(ref lbls) = self.xtick_labels {
             lbls.join(",")
         } else {
-            keys.iter().map(|&k| fmt_f(k)).collect::<Vec<_>>().join(",")
+            keys.iter().map(|&k| k.to_string()).collect::<Vec<_>>().join(",")
         }
     }
 
-    fn build_left_axis(&self, bar_col: &str, line_col: &str) -> Axis {
+    fn build_left_axis(&self, bar_col: &str) -> Axis {
         let (xmin, xmax) = self.x_range();
         let mut options = crate::plot::common_axis_options(false);
         options.push(AxisOption::key_value("name", "mainaxis"));
@@ -166,8 +165,8 @@ impl TwinPlot {
             ));
         }
         options.push(AxisOption::key_value("ymin", "0"));
-        options.push(AxisOption::key_value("xmin", fmt_f(xmin)));
-        options.push(AxisOption::key_value("xmax", fmt_f(xmax)));
+        options.push(AxisOption::key_value("xmin", xmin.to_string()));
+        options.push(AxisOption::key_value("xmax", xmax.to_string()));
         options.push(AxisOption::key_value("xtick", format!("{{{}}}", self.xtick_str())));
         options.push(AxisOption::key_value(
             "xticklabels",
@@ -208,16 +207,13 @@ impl TwinPlot {
             }
         }
 
-        // ── Legend placeholder for the right-axis line series ─────────────
-        if !line_col.is_empty() && !self.line_label.is_empty() {
-            elements.push(AxisElement::LegendImage(vec![
-                "epyruntimecolor".into(),
-                "mark=*".into(),
-                "mark size=2pt".into(),
-                "line width=1pt".into(),
-            ]));
-            elements.push(AxisElement::LegendEntry(self.line_label.clone()));
-        }
+        elements.push(AxisElement::LegendImage(vec![
+            "epyruntimecolor".into(),
+            "mark=*".into(),
+            "mark size=2pt".into(),
+            "line width=1pt".into(),
+        ]));
+        elements.push(AxisElement::LegendEntry(self.line_label.clone()));
 
         Axis { options, elements }
     }
@@ -246,8 +242,8 @@ impl TwinPlot {
             ));
         }
         options.push(AxisOption::key_value("ymin", "0"));
-        options.push(AxisOption::key_value("xmin", fmt_f(xmin)));
-        options.push(AxisOption::key_value("xmax", fmt_f(xmax)));
+        options.push(AxisOption::key_value("xmin", xmin.to_string()));
+        options.push(AxisOption::key_value("xmax", xmax.to_string()));
 
         let mut band_coordinates = Vec::new();
 

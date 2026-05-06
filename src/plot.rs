@@ -48,14 +48,3 @@ pub(crate) fn group_stats(gf: &GroupedFrame, col: &str) -> Vec<IQR> {
         })
         .collect()
 }
-
-pub(crate) fn fmt_f(v: f64) -> String {
-    if v == 0.0 {
-        return "0".to_owned();
-    }
-    // Use enough precision but strip trailing zeros.
-    let s = format!("{v:.6}");
-    let s = s.trim_end_matches('0');
-    let s = s.trim_end_matches('.');
-    s.to_owned()
-}

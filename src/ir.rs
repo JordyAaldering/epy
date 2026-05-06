@@ -1,9 +1,8 @@
-use crate::plot::fmt_f;
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct PlotDocument {
     pub(crate) setup_lines: Vec<String>,
-    pub(crate) axes: Vec<Axis>,
+    pub(crate) ax0: Axis,
+    pub(crate) ax1: Option<Axis>,
 }
 
 impl PlotDocument {
@@ -22,8 +21,9 @@ impl PlotDocument {
 
         out.push_str("\\begin{tikzpicture}\n");
 
-        for axis in &self.axes {
-            out.push_str(&axis.render_tikz());
+        out.push_str(&self.ax0.render_tikz());
+        if let Some(ax1) = &self.ax1 {
+            out.push_str(&ax1.render_tikz());
         }
 
         out.push_str("\\end{tikzpicture}\n");
@@ -31,7 +31,7 @@ impl PlotDocument {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct Axis {
     pub(crate) options: Vec<AxisOption>,
     pub(crate) elements: Vec<AxisElement>,
@@ -79,7 +79,7 @@ impl AxisOption {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) enum AxisElement {
     Plot(AddPlot),
     LegendEntry(String),
@@ -105,7 +105,7 @@ impl AxisElement {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct AddPlot {
     pub(crate) options: Vec<String>,
     pub(crate) coordinates: Vec<Coordinate>,
@@ -130,7 +130,7 @@ impl AddPlot {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) enum Coordinate {
     Plain(f64, f64),
     AxisCs(f64, f64),
@@ -139,8 +139,8 @@ pub(crate) enum Coordinate {
 impl Coordinate {
     fn render_tikz(&self) -> String {
         match self {
-            Self::Plain(x, y) => format!("({}, {})", fmt_f(*x), fmt_f(*y)),
-            Self::AxisCs(x, y) => format!("(axis cs:{},{})", fmt_f(*x), fmt_f(*y)),
+            Self::Plain(x, y) => format!("({}, {})", x, y),
+            Self::AxisCs(x, y) => format!("(axis cs:{},{})", x, y),
         }
     }
 }

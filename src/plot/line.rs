@@ -1,4 +1,4 @@
-use crate::{color::Color, data::GroupedFrame, ir::*, plot::{fmt_f, group_stats}};
+use crate::{color::Color, data::GroupedFrame, ir::*, plot::group_stats};
 
 struct LineSeries {
     column: String,
@@ -75,7 +75,8 @@ impl LinePlot {
 
         PlotDocument {
             setup_lines: Vec::new(),
-            axes: vec![self.build_axis(&color_names)],
+            ax0: self.build_axis(&color_names),
+            ax1: None,
         }
     }
 
@@ -97,7 +98,7 @@ impl LinePlot {
             ));
         }
         if let Some(v) = self.ymin {
-            options.push(AxisOption::key_value("ymin", fmt_f(v)));
+            options.push(AxisOption::key_value("ymin", v.to_string()));
         }
 
         // x-tick configuration
@@ -110,7 +111,7 @@ impl LinePlot {
             let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
                 lbls.clone()
             } else {
-                keys.iter().map(|&k| fmt_f(k)).collect()
+                keys.iter().map(|&k| k.to_string()).collect()
             };
             options.push(AxisOption::key_value(
                 "xticklabels",
@@ -120,8 +121,8 @@ impl LinePlot {
 
         // Extend axis limits by half a bar width on each side.
         if n > 0 {
-            options.push(AxisOption::key_value("xmin", fmt_f(-0.5)));
-            options.push(AxisOption::key_value("xmax", fmt_f(n as f64 - 0.5)));
+            options.push(AxisOption::key_value("xmin", "-0.5"));
+            options.push(AxisOption::key_value("xmax", (n as f64 - 0.5).to_string()));
         }
 
         let mut elements = Vec::new();
