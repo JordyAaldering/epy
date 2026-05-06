@@ -2,73 +2,22 @@
 \usepgfplotslibrary{groupplots,dateplot}
 \usetikzlibrary{patterns,shapes.arrows}
 
-\newif\ifcommonplotxgrid
-\commonplotxgridfalse
+% Grid and tick color used in all generated plots.  Override to restyle.
+\definecolor{epygridcolor}{RGB}{204,204,204}
 
-% Font used for all axis labels and tick labels.  Override before \input-ting
-% any generated plot file to change the font size across all plots at once.
-\newcommand{\eplabelfont}{\scriptsize}
+% Font size commands for plot text.  Override to rescale all plot text at once.
+\newcommand{\epylabelsize}{\scriptsize}
+\newcommand{\epyticksize}{\scriptsize}
+\newcommand{\epylegendsize}{\scriptsize}
 
-\definecolor{commonplottext}{RGB}{38,38,38}
-\definecolor{commonplotgrid}{RGB}{204,204,204}
-\definecolor{commonplottick}{RGB}{192,192,192}
+% Right-side padding for twin-axis plots (set at compile time by generated code).
+\newlength{\epRpad}
+\setlength{\epRpad}{0pt}
+\newlength{\epRlabelH}
+\setlength{\epRlabelH}{0pt}
 
 \pgfplotsset{
   compat=newest,
-  common/twin-shared/.style={
-    scale only axis,
-    axis line style={commonplotgrid},
-    x grid style={commonplotgrid},
-    y grid style={commonplotgrid},
-    label style={font=\eplabelfont,text=commonplottext,inner sep=0pt},
-    tick label style={font=\eplabelfont,text=commonplottext,inner sep=2pt},
-    legend style={font=\eplabelfont,draw=commonplotgrid,fill opacity=0.8,draw opacity=1,text opacity=1},
-    major tick length=3pt,
-    major tick style={draw=commonplotgrid},
-    xtick style={color=commonplottick},
-    ytick style={color=commonplottick},
-  },
-  common/line/.style={
-    mark size=2pt,
-  },
-  common/bar/.style={
-  },
-  common/twin-main/.style={
-    common/twin-shared,
-    name=mainaxis,
-    trim axis right,
-  },
-  common/twin/.style={
-    common/twin-shared,
-    at={(mainaxis.south west)},
-    anchor=south west,
-    trim axis left,
-    axis x line=none,
-    xmajorgrids=false,
-    ymajorgrids=false,
-    xtick=\empty,
-    xticklabels=\empty,
-    ylabel style={font=\eplabelfont},
-    yticklabel style={font=\eplabelfont},
-  },
-  every axis/.append style={
-    axis on top=false,
-    axis line style={commonplotgrid},
-    x grid style={commonplotgrid},
-    y grid style={commonplotgrid},
-    xmajorgrids=\ifcommonplotxgrid true\else false\fi,
-    ymajorgrids,
-    label style={font=\eplabelfont,text=commonplottext,inner sep=2pt},
-    tick label style={font=\eplabelfont,text=commonplottext,inner sep=2pt},
-    legend style={font=\eplabelfont,draw=commonplotgrid,fill opacity=0.8,draw opacity=1,text opacity=1},
-    xtick style={color=commonplottick},
-    ytick style={color=commonplottick},
-    major tick length=3pt,
-  },
-  every axis x label/.append style={font=\eplabelfont,text=commonplottext},
-  every axis y label/.append style={font=\eplabelfont,text=commonplottext},
-  every axis x tick label/.append style={font=\eplabelfont,text=commonplottext},
-  every axis y tick label/.append style={font=\eplabelfont,text=commonplottext},
   every axis/.append style={
     extra y ticks={\pgfkeysvalueof{/pgfplots/ymax}},
     extra y tick labels={\vphantom{Ag}},

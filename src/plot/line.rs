@@ -116,7 +116,7 @@ impl LinePlot {
     }
 
     fn build_axis(&self, color_names: &[String]) -> Axis {
-        let mut options = vec![AxisOption::flag("common/line")];
+        let mut options = crate::plot::common_axis_options(false);
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("width", "\\linewidth"));
@@ -125,10 +125,16 @@ impl LinePlot {
             format!("{}\\linewidth", fmt_f(self.height_ratio)),
         ));
         if !self.xlabel.is_empty() {
-            options.push(AxisOption::key_value("xlabel", format!("{{{}}}", self.xlabel)));
+            options.push(AxisOption::key_value(
+                "xlabel",
+                format!("{{\\epylabelsize {}}}", self.xlabel),
+            ));
         }
         if !self.ylabel.is_empty() {
-            options.push(AxisOption::key_value("ylabel", format!("{{{}}}", self.ylabel)));
+            options.push(AxisOption::key_value(
+                "ylabel",
+                format!("{{\\epylabelsize {}}}", self.ylabel),
+            ));
         }
         if let Some(v) = self.ymin {
             options.push(AxisOption::key_value("ymin", fmt_f(v)));

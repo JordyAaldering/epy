@@ -137,7 +137,7 @@ impl ZPlot {
 
     fn build_axis(&self, color_names: &[String]) -> Axis {
         let n = self.grouped.num_groups();
-        let mut options = vec![AxisOption::flag("common/line")];
+        let mut options = crate::plot::common_axis_options(true);
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("width", "\\linewidth"));
@@ -146,10 +146,16 @@ impl ZPlot {
             format!("{}\\linewidth", fmt_f(self.height_ratio)),
         ));
         if !self.xlabel.is_empty() {
-            options.push(AxisOption::key_value("xlabel", format!("{{{}}}", self.xlabel)));
+            options.push(AxisOption::key_value(
+                "xlabel",
+                format!("{{\\epylabelsize {}}}", self.xlabel),
+            ));
         }
         if !self.ylabel.is_empty() {
-            options.push(AxisOption::key_value("ylabel", format!("{{{}}}", self.ylabel)));
+            options.push(AxisOption::key_value(
+                "ylabel",
+                format!("{{\\epylabelsize {}}}", self.ylabel),
+            ));
         }
         options.push(AxisOption::key_value("ymin", "0"));
 

@@ -169,19 +169,16 @@ impl TwinPlot {
 
         let mut lines = Vec::new();
 
-        // Guard against duplicate \newlength when the file is \input more than once.
-        lines.push("\\ifdefined\\epRpad\\else\\newlength{\\epRpad}\\fi".to_owned());
-        // \eplabelfont is defined in the preamble and matches the font used in
-        // the axis styles, so this measurement stays correct if the font changes.
+        // \epyticksize is defined in the preamble and matches the font used for
+        // tick labels, so this measurement stays correct if the font changes.
         lines.push(format!(
-            "\\settowidth{{\\epRpad}}{{\\normalfont\\eplabelfont {tick_estimate}}}"
+            "\\settowidth{{\\epRpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
         ));
 
         if has_ylabel {
             // The right ylabel is rotated 90°; its horizontal footprint equals one
-            // \eplabelfont line height.
-            lines.push("\\ifdefined\\epRlabelH\\else\\newlength{\\epRlabelH}\\fi".to_owned());
-            lines.push("\\settoheight{\\epRlabelH}{\\normalfont\\eplabelfont Ag}".to_owned());
+            // \epyticksize line height.
+            lines.push("\\settoheight{\\epRlabelH}{\\normalfont\\epyticksize Ag}".to_owned());
             lines.push("\\addtolength{\\epRpad}{\\epRlabelH}".to_owned());
             // tick length (3pt) + inner sep (2pt) + gap to ylabel (~5pt)
             lines.push("\\addtolength{\\epRpad}{10pt}".to_owned());
@@ -214,7 +211,9 @@ impl TwinPlot {
 
     fn build_left_axis(&self, bar_col: &str, line_col: &str) -> Axis {
         let (xmin, xmax) = self.x_range();
-        let mut options = vec![AxisOption::flag("common/twin-main"), AxisOption::flag("common/bar")];
+        let mut options = crate::plot::common_axis_options(false);
+        options.push(AxisOption::key_value("name", "mainaxis"));
+        options.push(AxisOption::flag("trim axis right"));
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("width", "{\\dimexpr \\linewidth - \\epRpad\\relax}"));
@@ -223,10 +222,16 @@ impl TwinPlot {
             format!("{}\\linewidth", fmt_f(self.height_ratio)),
         ));
         if !self.xlabel.is_empty() {
-            options.push(AxisOption::key_value("xlabel", format!("{{{}}}", self.xlabel)));
+            options.push(AxisOption::key_value(
+                "xlabel",
+                format!("{{\\epylabelsize {}}}", self.xlabel),
+            ));
         }
         if !self.bar_label.is_empty() {
-            options.push(AxisOption::key_value("ylabel", format!("{{{}}}", self.bar_label)));
+            options.push(AxisOption::key_value(
+                "ylabel",
+                format!("{{\\epylabelsize {}}}", self.bar_label),
+            ));
         }
         options.push(AxisOption::key_value("ymin", "0"));
         options.push(AxisOption::key_value("xmin", fmt_f(xmin)));
@@ -287,7 +292,16 @@ impl TwinPlot {
     fn build_right_axis(&self, line_col: &str) -> Axis {
         let (xmin, xmax) = self.x_range();
         let stats = group_stats(&self.grouped, line_col);
-        let mut options = vec![AxisOption::flag("common/twin"), AxisOption::flag("common/line")];
+        let mut options = crate::plot::common_axis_options(false);
+        // Twin overlay: anchor on the left axis, no x-axis line or labels, no grids.
+        options.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
+        options.push(AxisOption::key_value("anchor", "south west"));
+        options.push(AxisOption::flag("trim axis left"));
+        options.push(AxisOption::key_value("axis x line", "none"));
+        options.push(AxisOption::key_value("xmajorgrids", "false"));
+        options.push(AxisOption::key_value("ymajorgrids", "false"));
+        options.push(AxisOption::key_value("xtick", "\\empty"));
+        options.push(AxisOption::key_value("xticklabels", "\\empty"));
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("axis y line", "right"));
@@ -297,7 +311,10 @@ impl TwinPlot {
             format!("{}\\linewidth", fmt_f(self.height_ratio)),
         ));
         if !self.line_label.is_empty() {
-            options.push(AxisOption::key_value("ylabel", format!("{{{}}}", self.line_label)));
+            options.push(AxisOption::key_value(
+                "ylabel",
+                format!("{{\\epylabelsize {}}}", self.line_label),
+            ));
         }
         options.push(AxisOption::key_value("ymin", "0"));
         options.push(AxisOption::key_value("xmin", fmt_f(xmin)));

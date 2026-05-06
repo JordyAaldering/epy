@@ -1,7 +1,5 @@
-\ifdefined\epRpad\else\newlength{\epRpad}\fi
-\settowidth{\epRpad}{\normalfont\eplabelfont 0.636131}
-\ifdefined\epRlabelH\else\newlength{\epRlabelH}\fi
-\settoheight{\epRlabelH}{\normalfont\eplabelfont Ag}
+\settowidth{\epRpad}{\normalfont\epyticksize 0.636131}
+\settoheight{\epRlabelH}{\normalfont\epyticksize Ag}
 \addtolength{\epRpad}{\epRlabelH}
 \addtolength{\epRpad}{10pt}
 
@@ -10,12 +8,21 @@
 \definecolor{epLine}{RGB}{166,58,58}
 
 \begin{axis}[
-  common/twin-main,
-  common/bar,
+  scale only axis,
+  axis line style={epygridcolor},
+  y grid style={epygridcolor},
+  ymajorgrids,
+  major tick length=3pt,
+  xtick style={color=epygridcolor},
+  ytick style={color=epygridcolor},
+  tick label style={font=\epyticksize, inner sep=2pt},
+  legend style={font=\epylegendsize, draw=epygridcolor, fill opacity=0.8, draw opacity=1, text opacity=1},
+  name=mainaxis,
+  trim axis right,
   width={\dimexpr \linewidth - \epRpad\relax},
   height=0.8\linewidth,
-  xlabel={Power limit (W)},
-  ylabel={GFLOP/J},
+  xlabel={\epylabelsize Power limit (W)},
+  ylabel={\epylabelsize GFLOP/J},
   ymin=0,
   xmin=-0.5,
   xmax=20.5,
@@ -72,12 +79,27 @@
 \addlegendentry{GFLOP/s}
 \end{axis}
 \begin{axis}[
-  common/twin,
-  common/line,
+  scale only axis,
+  axis line style={epygridcolor},
+  y grid style={epygridcolor},
+  ymajorgrids,
+  major tick length=3pt,
+  xtick style={color=epygridcolor},
+  ytick style={color=epygridcolor},
+  tick label style={font=\epyticksize, inner sep=2pt},
+  legend style={font=\epylegendsize, draw=epygridcolor, fill opacity=0.8, draw opacity=1, text opacity=1},
+  at={(mainaxis.south west)},
+  anchor=south west,
+  trim axis left,
+  axis x line=none,
+  xmajorgrids=false,
+  ymajorgrids=false,
+  xtick=\empty,
+  xticklabels=\empty,
   axis y line=right,
   width={\dimexpr \linewidth - \epRpad\relax},
   height=0.8\linewidth,
-  ylabel={GFLOP/s},
+  ylabel={\epylabelsize GFLOP/s},
   ymin=0,
   xmin=-0.5,
   xmax=20.5,

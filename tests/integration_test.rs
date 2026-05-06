@@ -92,13 +92,14 @@ fn line_plot_renders_tikzpicture() {
     assert!(tikz.contains("\\end{tikzpicture}"), "missing tikzpicture end");
     assert!(tikz.contains("\\begin{axis}"), "missing axis begin");
     assert!(tikz.contains("\\end{axis}"), "missing axis end");
-    assert!(tikz.contains("common/line"), "missing common/line style");
+    assert!(tikz.contains("scale only axis"), "missing scale only axis");
     assert!(tikz.contains("\\addplot"), "missing addplot");
     assert!(tikz.contains("\\addlegendentry{IPC}"), "missing legend entry");
     assert!(tikz.contains("\\closedcycle"), "missing IQR band closedcycle");
     assert!(tikz.contains("\\addplot[epColor0, opacity=0.3, draw=none, forget plot]"));
     assert!(tikz.contains("opacity=0.3"), "missing transparent IQR band");
-    assert!(tikz.contains(r"Power limit (\si{\watt})"), "missing xlabel");
+    assert!(tikz.contains(r"Power limit (\si{\watt})"), "missing xlabel text");
+    assert!(tikz.contains(r"\epylabelsize"), "missing \\epylabelsize in label");
 }
 
 #[test]
@@ -174,10 +175,10 @@ fn bar_line_plot_renders() {
         .render();
 
     assert!(tikz.contains("\\begin{tikzpicture}"));
-    assert!(tikz.contains("common/twin-main"), "missing twin-main style");
-    assert!(tikz.contains("common/twin,"), "missing twin style");
-    assert!(tikz.contains("common/bar"), "missing bar style");
-    assert!(tikz.contains("common/line"), "missing line style");
+    assert!(tikz.contains("name=mainaxis"), "missing name=mainaxis on left axis");
+    assert!(tikz.contains("trim axis right"), "missing trim axis right on left axis");
+    assert!(tikz.contains("trim axis left"), "missing trim axis left on right axis");
+    assert!(tikz.contains("scale only axis"), "missing scale only axis");
     assert!(tikz.contains("axis y line=right"), "missing right y-axis");
     assert!(tikz.contains("ybar"), "missing ybar option");
     assert!(tikz.contains("\\definecolor{epBar}"), "missing bar color definition");
@@ -251,7 +252,7 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
 
     // Extract the sample string passed to \settowidth in both outputs.
     fn extract_settowidth_arg(tikz: &str) -> &str {
-        let marker = r"\settowidth{\epRpad}{\normalfont\eplabelfont ";
+        let marker = r"\settowidth{\epRpad}{\normalfont\epyticksize ";
         let start = tikz.find(marker).expect("missing settowidth") + marker.len();
         let end = tikz[start..].find('}').expect("missing closing brace") + start;
         &tikz[start..end]
