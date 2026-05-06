@@ -158,6 +158,7 @@ impl TwinPlot {
         elements.push(AxisElement::LegendImage(vec![
             "epyruntimecolor".into(),
             "mark=*".into(),
+            "mark options={solid,draw=white}".into(),
             "mark size=2pt".into(),
             "line width=1pt".into(),
         ]));
@@ -218,6 +219,7 @@ impl TwinPlot {
                     options: vec![
                         "epyruntimecolor".into(),
                         "mark=*".into(),
+                        "mark options={solid,draw=white}".into(),
                         "mark size=2pt".into(),
                         "line width=1pt".into(),
                     ],
