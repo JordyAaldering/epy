@@ -1,7 +1,7 @@
-use crate::{color::Color, data::GroupedFrame, ir::*, plot::group_stats};
+use crate::{color::Color, data::GroupedFrame, ir::*, plot::{common_axis_options, group_stats}};
 
 struct LineSeries {
-    column: String,
+    col: String,
     label: String,
     color: Color,
 }
@@ -9,20 +9,23 @@ struct LineSeries {
 pub struct LinePlot {
     df: GroupedFrame,
     series: Vec<LineSeries>,
-    xlabel: String,
-    ylabel: String,
+    xaxis_label: String,
+    yaxis_label: String,
     ymin: Option<f64>,
     xtick_labels: Option<Vec<String>>,
 }
 
 impl LinePlot {
-    /// Create a new `LinePlot` over the given grouped data.
-    pub fn new(df: GroupedFrame) -> Self {
+    pub fn new(
+        df: GroupedFrame,
+        xaxis_label: &str,
+        yaxis_label: &str,
+    ) -> Self {
         LinePlot {
             df,
             series: Vec::new(),
-            xlabel: String::new(),
-            ylabel: String::new(),
+            xaxis_label: xaxis_label.into(),
+            yaxis_label: yaxis_label.into(),
             ymin: Some(0.0),
             xtick_labels: None,
         }
@@ -35,87 +38,64 @@ impl LinePlot {
         color: Color,
         label: impl Into<String>,
     ) -> Self {
-        self.series.push(LineSeries { column: col.into(), color, label: label.into() });
+        self.series.push(LineSeries { col: col.into(), color, label: label.into() });
         self
     }
 
-    /// Set the x-axis label.
-    pub fn xlabel(mut self, label: impl Into<String>) -> Self {
-        self.xlabel = label.into();
-        self
-    }
-
-    /// Set the y-axis label.
-    pub fn ylabel(mut self, label: impl Into<String>) -> Self {
-        self.ylabel = label.into();
-        self
-    }
-
-    /// Set the minimum y value (`ymin`).  Pass `None` to let pgfplots choose.
     pub fn ymin(mut self, v: Option<f64>) -> Self {
         self.ymin = v;
         self
     }
 
-    /// Override x-tick labels.  The length must match the number of groups.
     pub fn xtick_labels(mut self, labels: Vec<impl Into<String>>) -> Self {
+        assert_eq!(labels.len(), self.df.num_groups());
         self.xtick_labels = Some(labels.into_iter().map(|l| l.into()).collect());
         self
     }
 
-    /// Render to a TikZ `tikzpicture` string.
     pub fn render(&self) -> String {
         self.build_document().render_tikz()
     }
 
     fn build_document(&self) -> PlotDocument {
+        let ax = self.build_axis();
+        PlotDocument::new(Vec::new(), ax, None)
+    }
+
+    fn build_axis(&self) -> Axis {
         let color_names: Vec<String> = (0..self.series.len())
             .map(|i| self.series[i].color.tikz_name().to_owned())
             .collect();
 
-        PlotDocument {
-            setup_lines: Vec::new(),
-            ax0: self.build_axis(&color_names),
-            ax1: None,
-        }
-    }
-
-    fn build_axis(&self, color_names: &[String]) -> Axis {
-        let mut opts = crate::plot::common_axis_options();
-
+        let mut opts = common_axis_options();
         opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
         opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xlabel)));
-        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.ylabel)));
-
+        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
+        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.yaxis_label)));
         if let Some(v) = self.ymin {
             opts.push(AxisOption::key_value("ymin", v.to_string()));
         }
 
         let keys = self.df.keys();
         let n = keys.len();
-        if n > 0 {
-            let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
-            opts.push(AxisOption::key_value("xtick", format!("{{{}}}", tick_str.join(","))));
+        let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
+        opts.push(AxisOption::key_value("xtick", format!("{{{}}}", tick_str.join(","))));
 
-            let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
-                lbls.clone()
-            } else {
-                keys.iter().map(|&k| k.to_string()).collect()
-            };
-            opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", labels.join(","))));
-        }
+        let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
+            lbls.clone()
+        } else {
+            keys.iter().map(|&k| k.to_string()).collect()
+        };
+        opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", labels.join(","))));
 
         // Extend axis limits by half a bar width on each side.
-        if n > 0 {
-            opts.push(AxisOption::key_value("xmin", "-0.5"));
-            opts.push(AxisOption::key_value("xmax", (n as f64 - 0.5).to_string()));
-        }
+        opts.push(AxisOption::key_value("xmin", "-0.5"));
+        opts.push(AxisOption::key_value("xmax", (n as f64 - 0.5).to_string()));
 
         let mut elements = Vec::new();
 
         for (si, series) in self.series.iter().enumerate() {
-            let stats = group_stats(&self.df, &series.column);
+            let stats = group_stats(&self.df, &series.col);
             let cn = &color_names[si];
 
             // Transparent Q1-Q3 band (upper half forward, lower half backward).

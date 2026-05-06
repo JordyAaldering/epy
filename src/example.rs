@@ -29,11 +29,14 @@ fn main() {
 
     let grouped = df.group_by("powercapW");
 
-    let tikz = TwinPlot::new(grouped)
-        .bar("gflop_j", r"GFLOP/J")
-        .line("gflop_s", r"GFLOP/s")
-        .xlabel(r"Power limit (W)")
-        .render();
+    let tikz = TwinPlot::new(
+        grouped,
+        "gflop_j",
+        "GFLOP/J",
+        "gflop_s",
+        "GFLOP/s",
+        "Power limit (W)"
+    ).render();
 
     std::fs::write("example_tikz.tex", tikz).unwrap();
 }

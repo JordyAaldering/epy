@@ -2,7 +2,6 @@
 \settoheight{\epyrlabelh}{\normalfont\epyticksize Ag}
 \addtolength{\epyrpad}{\epyrlabelh}
 \addtolength{\epyrpad}{10pt}
-
 \begin{tikzpicture}
 \begin{axis}[
   scale only axis,
@@ -29,7 +28,7 @@
   xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20},
   xticklabels={0,0.5,1.125,1.75,2.375,3,3.5,4.125,4.75,5.375,6,6.5,7.125,7.75,8.375,9,9.5,10.125,10.75,11.375,12},
 ]
-\addplot[ybar, bar width=0.7, fill=epyenergycolor, draw=none, area legend]
+\addplot[ybar,bar width=0.7,fill=epyenergycolor,draw=none,area legend]
   coordinates {
     (0, 0.05023671995410098)
     (1, 0.051922943545935865)
@@ -54,28 +53,28 @@
     (20, 0.07566627633278136)
   };
 \addlegendentry{GFLOP/J}
-\draw[black!60, line width=0.9pt] (axis cs:0,0.0498936155231522) -- (axis cs:0,0.05187761687601675);
-\draw[black!60, line width=0.9pt] (axis cs:1,0.05172097549712271) -- (axis cs:1,0.05212779104906242);
-\draw[black!60, line width=0.9pt] (axis cs:2,0.05174102198505314) -- (axis cs:2,0.054185328958616594);
-\draw[black!60, line width=0.9pt] (axis cs:3,0.05464981633381756) -- (axis cs:3,0.056909074548006276);
-\draw[black!60, line width=0.9pt] (axis cs:4,0.05180430046337696) -- (axis cs:4,0.05222525678926566);
-\draw[black!60, line width=0.9pt] (axis cs:5,0.051876278073754174) -- (axis cs:5,0.055839888202536915);
-\draw[black!60, line width=0.9pt] (axis cs:6,0.06003437178629731) -- (axis cs:6,0.06576392958452426);
-\draw[black!60, line width=0.9pt] (axis cs:7,0.052446770480033676) -- (axis cs:7,0.05747668977237013);
-\draw[black!60, line width=0.9pt] (axis cs:8,0.047887488274001966) -- (axis cs:8,0.051085691940901304);
-\draw[black!60, line width=0.9pt] (axis cs:9,0.04777582270526378) -- (axis cs:9,0.054823035874628626);
-\draw[black!60, line width=0.9pt] (axis cs:10,0.05701489539839552) -- (axis cs:10,0.06283053148969699);
-\draw[black!60, line width=0.9pt] (axis cs:11,0.06675117920038581) -- (axis cs:11,0.07243437421881509);
-\draw[black!60, line width=0.9pt] (axis cs:12,0.07324954108877847) -- (axis cs:12,0.07477800214476958);
-\draw[black!60, line width=0.9pt] (axis cs:13,0.07564965786666987) -- (axis cs:13,0.07907532964818333);
-\draw[black!60, line width=0.9pt] (axis cs:14,0.07577097086587371) -- (axis cs:14,0.07694630919950345);
-\draw[black!60, line width=0.9pt] (axis cs:15,0.07595346058616917) -- (axis cs:15,0.0773807507699545);
-\draw[black!60, line width=0.9pt] (axis cs:16,0.07542160235371287) -- (axis cs:16,0.07959327419536633);
-\draw[black!60, line width=0.9pt] (axis cs:17,0.07549330144684921) -- (axis cs:17,0.07861994692561255);
-\draw[black!60, line width=0.9pt] (axis cs:18,0.07552287017187918) -- (axis cs:18,0.07913837564324928);
-\draw[black!60, line width=0.9pt] (axis cs:19,0.07541394794195805) -- (axis cs:19,0.08113382661175904);
-\draw[black!60, line width=0.9pt] (axis cs:20,0.07538425398701094) -- (axis cs:20,0.07606042124212421);
-\addlegendimage{epyruntimecolor, mark=*, mark size=2pt, line width=1pt}
+\draw[black!60,line width=0.9pt] (axis cs:0,0.0498936155231522) -- (axis cs:0,0.05187761687601675);
+\draw[black!60,line width=0.9pt] (axis cs:1,0.05172097549712271) -- (axis cs:1,0.05212779104906242);
+\draw[black!60,line width=0.9pt] (axis cs:2,0.05174102198505314) -- (axis cs:2,0.054185328958616594);
+\draw[black!60,line width=0.9pt] (axis cs:3,0.05464981633381756) -- (axis cs:3,0.056909074548006276);
+\draw[black!60,line width=0.9pt] (axis cs:4,0.05180430046337696) -- (axis cs:4,0.05222525678926566);
+\draw[black!60,line width=0.9pt] (axis cs:5,0.051876278073754174) -- (axis cs:5,0.055839888202536915);
+\draw[black!60,line width=0.9pt] (axis cs:6,0.06003437178629731) -- (axis cs:6,0.06576392958452426);
+\draw[black!60,line width=0.9pt] (axis cs:7,0.052446770480033676) -- (axis cs:7,0.05747668977237013);
+\draw[black!60,line width=0.9pt] (axis cs:8,0.047887488274001966) -- (axis cs:8,0.051085691940901304);
+\draw[black!60,line width=0.9pt] (axis cs:9,0.04777582270526378) -- (axis cs:9,0.054823035874628626);
+\draw[black!60,line width=0.9pt] (axis cs:10,0.05701489539839552) -- (axis cs:10,0.06283053148969699);
+\draw[black!60,line width=0.9pt] (axis cs:11,0.06675117920038581) -- (axis cs:11,0.07243437421881509);
+\draw[black!60,line width=0.9pt] (axis cs:12,0.07324954108877847) -- (axis cs:12,0.07477800214476958);
+\draw[black!60,line width=0.9pt] (axis cs:13,0.07564965786666987) -- (axis cs:13,0.07907532964818333);
+\draw[black!60,line width=0.9pt] (axis cs:14,0.07577097086587371) -- (axis cs:14,0.07694630919950345);
+\draw[black!60,line width=0.9pt] (axis cs:15,0.07595346058616917) -- (axis cs:15,0.0773807507699545);
+\draw[black!60,line width=0.9pt] (axis cs:16,0.07542160235371287) -- (axis cs:16,0.07959327419536633);
+\draw[black!60,line width=0.9pt] (axis cs:17,0.07549330144684921) -- (axis cs:17,0.07861994692561255);
+\draw[black!60,line width=0.9pt] (axis cs:18,0.07552287017187918) -- (axis cs:18,0.07913837564324928);
+\draw[black!60,line width=0.9pt] (axis cs:19,0.07541394794195805) -- (axis cs:19,0.08113382661175904);
+\draw[black!60,line width=0.9pt] (axis cs:20,0.07538425398701094) -- (axis cs:20,0.07606042124212421);
+\addlegendimage{epyruntimecolor,mark=*,mark size=2pt,line width=1pt}
 \addlegendentry{GFLOP/s}
 \end{axis}
 \begin{axis}[
@@ -107,7 +106,7 @@
   xmin=-0.5,
   xmax=20.5,
 ]
-\addplot[fill=epyruntimecompl, draw=none, forget plot]
+\addplot[fill=epyruntimecompl,draw=none,forget plot]
   coordinates {
     (0, 0.1461244708056648)
     (1, 0.1364288660233968)
@@ -152,7 +151,7 @@
     (1, 0.13616359575178222)
     (0, 0.13686117815820445)
   } \closedcycle;
-\addplot[epyruntimecolor, mark=*, mark size=2pt, line width=1pt]
+\addplot[epyruntimecolor,mark=*,mark size=2pt,line width=1pt]
   coordinates {
     (0, 0.1370310786377594)
     (1, 0.13627720474816285)

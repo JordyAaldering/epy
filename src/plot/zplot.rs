@@ -1,91 +1,52 @@
-use crate::{color::Color, data::GroupedFrame, ir::*};
+use crate::{color::Color, data::GroupedFrame, ir::*, plot::common_axis_options};
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
 
 pub struct ZPlot {
     df: GroupedFrame,
-    x_column: String,
-    y_column: String,
-    xlabel: String,
-    ylabel: String,
+    x_col: String,
+    y_col: String,
+    xaxis_label: String,
+    yaxis_label: String,
 }
 
 impl ZPlot {
-    /// Create a new `ZPlot` grouped by the given frame.
-    ///
-    /// The grouping column determines the series separation (e.g. thread count).
-    pub fn new(df: GroupedFrame) -> Self {
+    pub fn new(
+        df: GroupedFrame,
+        x_col: &str,
+        y_col: &str,
+        xaxis_label: &str,
+        yaxis_label: &str,
+    ) -> Self {
         ZPlot {
             df,
-            x_column: String::new(),
-            y_column: String::new(),
-            xlabel: String::new(),
-            ylabel: String::new(),
+            x_col: x_col.into(),
+            y_col: y_col.into(),
+            xaxis_label: xaxis_label.into(),
+            yaxis_label: yaxis_label.into(),
         }
     }
 
-    /// Column to use as the x-axis values (one value per row within each group).
-    pub fn x_col(mut self, col: impl Into<String>) -> Self {
-        self.x_column = col.into();
-        self
-    }
-
-    /// Column to use as the y-axis values.
-    pub fn y_col(mut self, col: impl Into<String>) -> Self {
-        self.y_column = col.into();
-        self
-    }
-
-    /// Set the x-axis label.
-    pub fn xlabel(mut self, label: impl Into<String>) -> Self {
-        self.xlabel = label.into();
-        self
-    }
-
-    /// Set the y-axis label.
-    pub fn ylabel(mut self, label: impl Into<String>) -> Self {
-        self.ylabel = label.into();
-        self
-    }
-
-    /// Render to a TikZ `tikzpicture` string.
     pub fn render(&self) -> String {
         self.build_document().render_tikz()
     }
 
     fn build_document(&self) -> PlotDocument {
-        let n = self.df.num_groups();
-        // Colors are assumed to be predefined in the preamble as epycolorblind0, epycolorblind1, …
-        let color_names: Vec<String> = (0..n).map(|i| Color::Colorblind(i).tikz_name()).collect();
-
-        PlotDocument {
-            setup_lines: Vec::new(),
-            ax0: self.build_axis(&color_names),
-            ax1: None,
-        }
+        let ax = self.build_axis();
+        PlotDocument::new(Vec::new(), ax, None)
     }
 
-    fn build_axis(&self, color_names: &[String]) -> Axis {
+    fn build_axis(&self) -> Axis {
         let n = self.df.num_groups();
-        let mut opts = crate::plot::common_axis_options();
+        let color_names: Vec<String> = (0..n).map(|i| Color::Colorblind(i).tikz_name()).collect();
+
+        let mut opts = common_axis_options();
         opts.push(AxisOption::key_value("x grid style", "{epygridcolor}"));
         opts.push(AxisOption::flag("xmajorgrids"));
-
-        // ── Axis options ──────────────────────────────────────────────────
         opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
         opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        if !self.xlabel.is_empty() {
-            opts.push(AxisOption::key_value(
-                "xlabel",
-                format!("{{\\epylabelsize {}}}", self.xlabel),
-            ));
-        }
-        if !self.ylabel.is_empty() {
-            opts.push(AxisOption::key_value(
-                "ylabel",
-                format!("{{\\epylabelsize {}}}", self.ylabel),
-            ));
-        }
+        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
+        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.yaxis_label)));
         opts.push(AxisOption::key_value("ymin", "0"));
 
         let mut elements = Vec::new();
@@ -99,8 +60,8 @@ impl ZPlot {
             // For each sub-group within this group, compute mean x and mean y.
             // Here the "sub-group" is just all rows in this group – the caller
             // is expected to have pre-filtered or pre-aggregated as needed.
-            let xs = self.df.group_values(gi, &self.x_column);
-            let ys = self.df.group_values(gi, &self.y_column);
+            let xs = self.df.group_values(gi, &self.x_col);
+            let ys = self.df.group_values(gi, &self.y_col);
 
             // If the group has multiple rows we plot each point individually
             // (the caller should call `group_by` on an already-aggregated frame,

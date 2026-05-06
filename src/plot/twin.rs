@@ -8,93 +8,57 @@ const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 
 pub struct TwinPlot {
     df: GroupedFrame,
-    bar_column: Option<String>,
+    bar_col: String,
     bar_label: String,
-    line_column: Option<String>,
+    line_col: String,
     line_label: String,
-    xlabel: String,
+    xaxis_label: String,
     xtick_labels: Option<Vec<String>>,
 }
 
 impl TwinPlot {
-    pub fn new(df: GroupedFrame) -> Self {
+    pub fn new(
+        df: GroupedFrame,
+        bar_col: &str,
+        bar_label: &str,
+        line_col: &str,
+        line_label: &str,
+        xaxis_label: &str,
+    ) -> Self {
         TwinPlot {
             df,
-            bar_column: None,
-            bar_label: String::new(),
-            line_column: None,
-            line_label: String::new(),
-            xlabel: String::new(),
+            bar_col: bar_col.into(),
+            bar_label: bar_label.into(),
+            line_col: line_col.into(),
+            line_label: line_label.into(),
+            xaxis_label: xaxis_label.into(),
             xtick_labels: None,
         }
     }
 
-    /// Configure the bar series (left y-axis). Uses `epyenergycolor`.
-    pub fn bar(mut self, col: impl Into<String>, label: impl Into<String>) -> Self {
-        self.bar_column = Some(col.into());
-        self.bar_label = label.into();
-        self
-    }
-
-    /// Configure the line series (right y-axis). Uses `epyruntimecolor`.
-    pub fn line(mut self, col: impl Into<String>, label: impl Into<String>) -> Self {
-        self.line_column = Some(col.into());
-        self.line_label = label.into();
-        self
-    }
-
-    /// Set the x-axis label (shared by both axes).
-    pub fn xlabel(mut self, label: impl Into<String>) -> Self {
-        self.xlabel = label.into();
-        self
-    }
-
-    /// Override the x-tick labels (must match the number of groups).
     pub fn xtick_labels(mut self, labels: Vec<impl Into<String>>) -> Self {
+        assert_eq!(labels.len(), self.df.num_groups());
         self.xtick_labels = Some(labels.into_iter().map(|l| l.into()).collect());
         self
     }
 
-    /// Render to a TikZ `tikzpicture` string.
     pub fn render(&self) -> String {
         self.build_document().render_tikz()
     }
 
     fn build_document(&self) -> PlotDocument {
-        let bar_col = self.bar_column.as_deref().unwrap_or_default();
-        let line_col = self.line_column.as_deref().unwrap_or_default();
-
-        let ax1 = self.build_left_axis(bar_col);
-        let ax2 = self.build_right_axis(line_col);
-
-        PlotDocument {
-            setup_lines: self.twin_setup_lines(),
-            ax0: ax1,
-            ax1: Some(ax2),
-        }
+        let setup_lines = self.twin_setup_lines();
+        let ax1 = self.build_left_axis();
+        let ax2 = self.build_right_axis();
+        PlotDocument::new(setup_lines, ax1, Some(ax2))
     }
 
     /// Return the maximum q3 value across all groups for the right (line) axis.
     fn max_line_value(&self) -> f64 {
-        let col = self.line_column.as_deref().unwrap_or_default();
-        if col.is_empty() {
-            return 1.0;
-        }
-        let stats = group_stats(&self.df, col);
+        let stats = group_stats(&self.df, &self.line_col);
         stats.iter().map(|s| s.q3).fold(0.0_f64, f64::max)
     }
 
-    /// Generate LaTeX length-setup commands that measure the right-axis padding
-    /// at compile time, based on the longest expected tick label and the ylabel.
-    ///
-    /// The approach:
-    /// - `\settowidth` measures the rendered width of the estimated longest tick
-    ///   label using `\eplabelfont` — the same font macro used in the axis styles —
-    ///   so the measurement automatically tracks any font-size change.
-    /// - `\settoheight` measures one `\eplabelfont` line height, which equals the
-    ///   horizontal footprint of the rotated ylabel.
-    /// - Fixed overhead accounts for tick length (3 pt), tick-label inner sep
-    ///   (2 pt), and the gap between tick labels and the ylabel (~5 pt).
     fn twin_setup_lines(&self) -> Vec<String> {
         // Multiply max by TICK_ESTIMATE_BUFFER so the estimate covers the "nice"
         // tick that pgfplots rounds up to above the data maximum.
@@ -143,68 +107,52 @@ impl TwinPlot {
         }
     }
 
-    fn build_left_axis(&self, bar_col: &str) -> Axis {
+    fn build_left_axis(&self) -> Axis {
         let (xmin, xmax) = self.x_range();
-        let mut options = crate::plot::common_axis_options();
-        options.push(AxisOption::key_value("name", "mainaxis"));
-        options.push(AxisOption::flag("trim axis right"));
+        let mut opts = crate::plot::common_axis_options();
+        opts.push(AxisOption::key_value("name", "mainaxis"));
+        opts.push(AxisOption::flag("trim axis right"));
 
         // ── Axis options ──────────────────────────────────────────────────
-        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
-        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        if !self.xlabel.is_empty() {
-            options.push(AxisOption::key_value(
-                "xlabel",
-                format!("{{\\epylabelsize {}}}", self.xlabel),
-            ));
-        }
-        if !self.bar_label.is_empty() {
-            options.push(AxisOption::key_value(
-                "ylabel",
-                format!("{{\\epylabelsize {}}}", self.bar_label),
-            ));
-        }
-        options.push(AxisOption::key_value("ymin", "0"));
-        options.push(AxisOption::key_value("xmin", xmin.to_string()));
-        options.push(AxisOption::key_value("xmax", xmax.to_string()));
-        options.push(AxisOption::key_value("xtick", format!("{{{}}}", self.xtick_str())));
-        options.push(AxisOption::key_value(
-            "xticklabels",
-            format!("{{{}}}", self.xticklabels_str()),
-        ));
+        opts.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
+        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
+        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
+        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.bar_label)));
+        opts.push(AxisOption::key_value("ymin", "0"));
+        opts.push(AxisOption::key_value("xmin", xmin.to_string()));
+        opts.push(AxisOption::key_value("xmax", xmax.to_string()));
+        opts.push(AxisOption::key_value("xtick", format!("{{{}}}", self.xtick_str())));
+        opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", self.xticklabels_str())));
 
         let mut elements = Vec::new();
 
-        // ── Bar series ────────────────────────────────────────────────────
-        if !bar_col.is_empty() {
-            let stats = group_stats(&self.df, bar_col);
+        let stats = group_stats(&self.df, &self.bar_col);
 
-            // Filled bars (median height)
-            let mut bar_coordinates = Vec::new();
-            for (i, s) in stats.iter().enumerate() {
-                bar_coordinates.push(Coordinate::Plain(i as f64, s.median));
-            }
-            elements.push(AxisElement::Plot(AddPlot {
-                options: vec![
-                    "ybar".into(),
-                    "bar width=0.7".into(),
-                    "fill=epyenergycolor".into(),
-                    "draw=none".into(),
-                    "area legend".into(),
-                ],
-                coordinates: bar_coordinates,
-                closed_cycle: false,
-            }));
-            elements.push(AxisElement::LegendEntry(self.bar_label.clone()));
+        // Filled bars (median height)
+        let mut bar_coordinates = Vec::new();
+        for (i, s) in stats.iter().enumerate() {
+            bar_coordinates.push(Coordinate::Plain(i as f64, s.median));
+        }
+        elements.push(AxisElement::Plot(AddPlot {
+            options: vec![
+                "ybar".into(),
+                "bar width=0.7".into(),
+                "fill=epyenergycolor".into(),
+                "draw=none".into(),
+                "area legend".into(),
+            ],
+            coordinates: bar_coordinates,
+            closed_cycle: false,
+        }));
+        elements.push(AxisElement::LegendEntry(self.bar_label.clone()));
 
-            // Simple error bars: vertical whiskers from Q1 to Q3.
-            for (i, s) in stats.iter().enumerate() {
-                elements.push(AxisElement::DrawLine {
-                    options: vec!["black!60".into(), "line width=0.9pt".into()],
-                    from: Coordinate::AxisCs(i as f64, s.q1),
-                    to: Coordinate::AxisCs(i as f64, s.q3),
-                });
-            }
+        // Simple error bars: vertical whiskers from Q1 to Q3.
+        for (i, s) in stats.iter().enumerate() {
+            elements.push(AxisElement::DrawLine {
+                options: vec!["black!60".into(), "line width=0.9pt".into()],
+                from: Coordinate::AxisCs(i as f64, s.q1),
+                to: Coordinate::AxisCs(i as f64, s.q3),
+            });
         }
 
         elements.push(AxisElement::LegendImage(vec![
@@ -215,12 +163,12 @@ impl TwinPlot {
         ]));
         elements.push(AxisElement::LegendEntry(self.line_label.clone()));
 
-        Axis { opts: options, elements }
+        Axis { opts, elements }
     }
 
-    fn build_right_axis(&self, line_col: &str) -> Axis {
+    fn build_right_axis(&self) -> Axis {
         let (xmin, xmax) = self.x_range();
-        let stats = group_stats(&self.df, line_col);
+        let stats = group_stats(&self.df, &self.line_col);
         let mut opts = crate::plot::common_axis_options();
 
         opts.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));

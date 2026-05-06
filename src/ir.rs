@@ -1,31 +1,26 @@
 #[derive(Clone, Debug)]
 pub(crate) struct PlotDocument {
-    pub(crate) setup_lines: Vec<String>,
-    pub(crate) ax0: Axis,
-    pub(crate) ax1: Option<Axis>,
+    setup_lines: Vec<String>,
+    ax0: Axis,
+    ax1: Option<Axis>,
 }
 
 impl PlotDocument {
+    pub(crate) fn new(setup_lines: Vec<String>, ax0: Axis, ax1: Option<Axis>) -> Self {
+        PlotDocument { setup_lines, ax0, ax1 }
+    }
+
     pub(crate) fn render_tikz(&self) -> String {
         let mut out = String::new();
-
-        if !self.setup_lines.is_empty() {
-            for (idx, line) in self.setup_lines.iter().enumerate() {
-                if idx > 0 {
-                    out.push('\n');
-                }
-                out.push_str(line);
-            }
-            out.push_str("\n\n");
+        for line in &self.setup_lines {
+            out.push_str(line);
+            out.push('\n');
         }
-
         out.push_str("\\begin{tikzpicture}\n");
-
         out.push_str(&self.ax0.render_tikz());
         if let Some(ax1) = &self.ax1 {
             out.push_str(&ax1.render_tikz());
         }
-
         out.push_str("\\end{tikzpicture}\n");
         out
     }
@@ -93,11 +88,11 @@ impl AxisElement {
             Self::Plot(plot) => plot.render_tikz(),
             Self::LegendEntry(label) => format!("\\addlegendentry{{{label}}}\n"),
             Self::LegendImage(options) => {
-                format!("\\addlegendimage{{{}}}\n", options.join(", "))
+                format!("\\addlegendimage{{{}}}\n", options.join(","))
             }
             Self::DrawLine { options, from, to } => format!(
                 "\\draw[{}] {} -- {};\n",
-                options.join(", "),
+                options.join(","),
                 from.render_tikz(),
                 to.render_tikz()
             ),
@@ -114,7 +109,7 @@ pub(crate) struct AddPlot {
 
 impl AddPlot {
     fn render_tikz(&self) -> String {
-        let mut out = format!("\\addplot[{}]\n  coordinates {{\n", self.options.join(", "));
+        let mut out = format!("\\addplot[{}]\n  coordinates {{\n", self.options.join(","));
         for coordinate in &self.coordinates {
             out.push_str("    ");
             out.push_str(&coordinate.render_tikz());
