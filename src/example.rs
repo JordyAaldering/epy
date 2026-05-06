@@ -15,8 +15,7 @@ pub mod prelude {
 use crate::{data::DataFrame, plot::TwinPlot};
 
 fn main() {
-    let csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/test_data.csv");
-    let df = DataFrame::from_csv(csv_path).unwrap();
+    let df = DataFrame::from_csv("test_data.csv").unwrap();
     let example_threads = *df
         .col("threads")
         .last()
@@ -30,7 +29,6 @@ fn main() {
 
     let grouped = df.group_by("powercapW");
 
-    // Twin-axis bar (efficiency) + line (throughput) plot
     let tikz = TwinPlot::new(grouped)
         .bar("gflop_j", r"GFLOP/J")
         .line("gflop_s", r"GFLOP/s")
