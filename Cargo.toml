@@ -3,7 +3,6 @@ name = "epy"
 version = "0.1.0"
 edition = "2024"
 description = "Energy plotting library"
-license = "MIT"
 
 [lib]
 name = "epy"

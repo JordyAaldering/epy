@@ -264,7 +264,7 @@ impl TwinPlot {
             elements: vec![
                 AxisElement::Plot(AddPlot {
                     options: vec![
-                        "fill=epyruntimecomplementary".into(),
+                        "fill=epyruntimecompl".into(),
                         "draw=none".into(),
                         "forget plot".into(),
                     ],
