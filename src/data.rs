@@ -106,10 +106,11 @@ impl DataFrame {
     /// Add a new column derived from existing columns.
     ///
     /// `f` receives a [`Row`] and should return the derived value.
-    pub fn with_column<F>(&self, name: &str, f: F) -> Self
+    pub fn with_column<F>(self, name: &str, f: F) -> Self
     where
         F: Fn(Row<'_>) -> f64,
     {
+        assert!(!self.headers.contains(&name.to_owned()), "column `{name}` already exists");
         let mut new_data = self.data.clone();
         let derived: Vec<f64> = (0..self.len).map(|i| f(self.row(i))).collect();
         new_data.push(derived);

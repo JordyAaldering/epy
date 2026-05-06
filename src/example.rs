@@ -24,10 +24,11 @@ fn main() {
 
     let df = df
         .filter(|r| r["threads"] == example_threads)
+        .with_column("powercapW", |r| r["powercap"] / 1e6)
         .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
         .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9);
 
-    let grouped = df.group_by("powercap");
+    let grouped = df.group_by("powercapW");
 
     // Twin-axis bar (efficiency) + line (throughput) plot
     let tikz = TwinPlot::new(grouped)
