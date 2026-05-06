@@ -5,17 +5,15 @@
 //! transparent Q1-Q3 band.
 //! Both axes share the same x-axis (typically power cap in watts).
 //!
-//! Uses the project's `common/twin-main` and `common/twin` pgfplots styles to
-//! ensure consistent sizing and alignment without the margin calculation issues
-//! that arise when using matplot2tikz with `twinx` axes.
+//! Uses explicit axis options and preamble-defined named colors.
 
-use crate::color::Color;
+use crate::color::palette;
 use crate::data::GroupedFrame;
 use crate::plot::fmt_f;
 use crate::plot::group_stats;
-use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, NamedColor, PlotDocument};
+use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
 
-// ── BarLinePlot ───────────────────────────────────────────────────────────
+// ── TwinPlot ──────────────────────────────────────────────────────────────
 
 /// Extra multiplier applied to the data maximum when estimating the longest
 /// right-axis tick label.  pgfplots rounds the axis maximum up to the next
@@ -27,7 +25,7 @@ const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 ///
 /// # Example
 /// ```no_run
-/// use energy_plots::prelude::*;
+/// use epy::prelude::*;
 ///
 /// let df = DataFrame::from_csv("data.csv").unwrap()
 ///     .filter(|r| r["threads"] == 8.0)
@@ -35,7 +33,7 @@ const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 ///     .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9);
 ///
 /// let grouped = df.group_by("powercap");
-/// let tikz = BarLinePlot::new(grouped)
+/// let tikz = TwinPlot::new(grouped)
 ///     .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
 ///     .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
 ///     .xlabel(r"Power limit (\si{\watt})")
@@ -46,11 +44,11 @@ const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 pub struct TwinPlot {
     grouped: GroupedFrame,
     bar_col: Option<String>,
-    bar_color: Color,
     bar_label: String,
+    bar_color: palette::ColorName,
     line_col: Option<String>,
-    line_color: Color,
     line_label: String,
+    line_color: palette::ColorName,
     xlabel: String,
     height_ratio: f64,
     bar_width: f64,
@@ -58,36 +56,46 @@ pub struct TwinPlot {
 }
 
 impl TwinPlot {
-    /// Create a new `BarLinePlot` over the given grouped data.
+    /// Create a new `TwinPlot` over the given grouped data.
     pub fn new(grouped: GroupedFrame) -> Self {
         TwinPlot {
             grouped,
             bar_col: None,
-            bar_color: crate::color::palette::GREEN,
             bar_label: String::new(),
+            bar_color: palette::GREEN,
             line_col: None,
-            line_color: crate::color::palette::RED,
             line_label: String::new(),
+            line_color: palette::RED,
             xlabel: String::new(),
-            height_ratio: 0.8,
+            height_ratio: 1.0,
             bar_width: 0.7,
             xtick_labels: None,
         }
     }
 
-    /// Configure the bar series (left y-axis).
-    pub fn bar(mut self, col: impl Into<String>, color: Color, label: impl Into<String>) -> Self {
+    /// Configure the bar series (left y-axis) with an explicit preamble color selector.
+    pub fn bar(
+        mut self,
+        col: impl Into<String>,
+        color: palette::ColorName,
+        label: impl Into<String>,
+    ) -> Self {
         self.bar_col = Some(col.into());
-        self.bar_color = color;
         self.bar_label = label.into();
+        self.bar_color = color;
         self
     }
 
-    /// Configure the line series (right y-axis).
-    pub fn line(mut self, col: impl Into<String>, color: Color, label: impl Into<String>) -> Self {
+    /// Configure the line series (right y-axis) with an explicit preamble color selector.
+    pub fn line(
+        mut self,
+        col: impl Into<String>,
+        color: palette::ColorName,
+        label: impl Into<String>,
+    ) -> Self {
         self.line_col = Some(col.into());
-        self.line_color = color;
         self.line_label = label.into();
+        self.line_color = color;
         self
     }
 
@@ -97,7 +105,7 @@ impl TwinPlot {
         self
     }
 
-    /// Override the plot height as a fraction of `\linewidth` (default: `0.8`).
+    /// Override the plot height as a fraction of `\epyfigureheight` (default: `1.0`).
     pub fn height_ratio(mut self, r: f64) -> Self {
         self.height_ratio = r;
         self
@@ -124,17 +132,13 @@ impl TwinPlot {
         let bar_col = self.bar_col.as_deref().unwrap_or_default();
         let line_col = self.line_col.as_deref().unwrap_or_default();
 
-        let mut color_defs = Vec::new();
-        color_defs.push(NamedColor::new("epBar", self.bar_color));
-        color_defs.push(NamedColor::new("epLine", self.line_color));
-
         let mut axes = vec![self.build_left_axis(bar_col, line_col)];
         if !line_col.is_empty() {
             axes.push(self.build_right_axis(line_col));
         }
 
         PlotDocument {
-            color_defs,
+            color_defs: Vec::new(),
             setup_lines: self.twin_setup_lines(),
             axes,
         }
@@ -216,10 +220,10 @@ impl TwinPlot {
         options.push(AxisOption::flag("trim axis right"));
 
         // ── Axis options ──────────────────────────────────────────────────
-        options.push(AxisOption::key_value("width", "{\\dimexpr \\linewidth - \\epRpad\\relax}"));
+        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epRpad\\relax}"));
         options.push(AxisOption::key_value(
             "height",
-            format!("{}\\linewidth", fmt_f(self.height_ratio)),
+            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
         ));
         if !self.xlabel.is_empty() {
             options.push(AxisOption::key_value(
@@ -257,7 +261,7 @@ impl TwinPlot {
                 options: vec![
                     "ybar".into(),
                     format!("bar width={}", fmt_f(self.bar_width)),
-                    "fill=epBar".into(),
+                    format!("fill={}", self.bar_color.tikz_name()),
                     "draw=none".into(),
                 ],
                 coordinates: bar_coordinates,
@@ -278,7 +282,7 @@ impl TwinPlot {
         // ── Legend placeholder for the right-axis line series ─────────────
         if !line_col.is_empty() && !self.line_label.is_empty() {
             elements.push(AxisElement::LegendImage(vec![
-                "epLine".into(),
+                self.line_color.tikz_name().into(),
                 "mark=*".into(),
                 "mark size=2pt".into(),
                 "line width=1pt".into(),
@@ -305,10 +309,10 @@ impl TwinPlot {
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("axis y line", "right"));
-        options.push(AxisOption::key_value("width", "{\\dimexpr \\linewidth - \\epRpad\\relax}"));
+        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epRpad\\relax}"));
         options.push(AxisOption::key_value(
             "height",
-            format!("{}\\linewidth", fmt_f(self.height_ratio)),
+            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
         ));
         if !self.line_label.is_empty() {
             options.push(AxisOption::key_value(
@@ -340,12 +344,21 @@ impl TwinPlot {
             options,
             elements: vec![
                 AxisElement::Plot(AddPlot {
-                    options: vec!["epLine".into(), "opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
+                    options: vec![
+                        format!("fill={}", self.line_color.complementary().tikz_name()),
+                        "draw=none".into(),
+                        "forget plot".into(),
+                    ],
                     coordinates: band_coordinates,
                     closed_cycle: true,
                 }),
                 AxisElement::Plot(AddPlot {
-                    options: vec!["epLine".into(), "mark=*".into(), "mark size=2pt".into(), "line width=1pt".into()],
+                    options: vec![
+                        self.line_color.tikz_name().into(),
+                        "mark=*".into(),
+                        "mark size=2pt".into(),
+                        "line width=1pt".into(),
+                    ],
                     coordinates: line_coordinates,
                     closed_cycle: false,
                 }),

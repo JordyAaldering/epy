@@ -10,7 +10,7 @@ TikZ code from CSV energy-measurement data.
 The Python `matplot2tikz` library produces verbose, fragile TikZ code—especially
 for twin-axis (`twinx`) plots where the right y-axis margin is mis-calculated.
 This library generates minimal, readable TikZ code that relies on a shared
-`pgfplotsset` prelude to enforce consistent styling across an entire project.
+LaTeX preamble to enforce consistent styling across an entire project.
 
 ---
 
@@ -18,7 +18,7 @@ This library generates minimal, readable TikZ code that relies on a shared
 
 | Builder | Use case |
 |---------|----------|
-| [`BarLinePlot`] | Bar chart (energy efficiency, left y-axis) + line chart (throughput, right y-axis) |
+| [`TwinPlot`] | Bar chart (energy efficiency, left y-axis) + line chart (throughput, right y-axis) |
 | [`LinePlot`] | Single or multi-series line plots with IQR confidence bands |
 | [`ZPlot`] | Efficiency vs. throughput scatter, one series per configuration group |
 
@@ -31,7 +31,7 @@ transparent Q1-Q3 band.
 ## Quick start
 
 ```rust
-use energy_plots::prelude::*;
+use epy::prelude::*;
 
 fn main() {
     let df = DataFrame::from_csv("results/gemm.csv").unwrap()
@@ -42,9 +42,9 @@ fn main() {
     let grouped = df.group_by("powercap");
 
     // Twin-axis bar (efficiency) + line (throughput) plot
-    let tikz = BarLinePlot::new(grouped)
+    let tikz = TwinPlot::new(grouped)
         .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("gflop_s", palette::RED,  r"\si{\giga\flop\per\second}")
+        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
         .xlabel(r"Power limit (\si{\watt})")
         .render();
 

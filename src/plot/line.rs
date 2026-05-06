@@ -1,12 +1,12 @@
-use crate::color::Color;
 use crate::data::GroupedFrame;
+use crate::color::palette;
 use crate::plot::fmt_f;
 use crate::plot::group_stats;
-use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, NamedColor, PlotDocument};
+use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
 
 struct LineSeries {
     col: String,
-    color: Color,
+    color: palette::ColorName,
     label: String,
 }
 
@@ -14,7 +14,7 @@ struct LineSeries {
 ///
 /// # Example
 /// ```no_run
-/// use energy_plots::prelude::*;
+/// use epy::prelude::*;
 ///
 /// let df = DataFrame::from_csv("data.csv").unwrap()
 ///     .filter(|r| r["threads"] == 8.0)
@@ -46,18 +46,19 @@ impl LinePlot {
             series: Vec::new(),
             xlabel: String::new(),
             ylabel: String::new(),
-            height_ratio: 0.8,
+            height_ratio: 1.0,
             ymin: Some(0.0),
             xtick_labels: None,
         }
     }
 
-    /// Add a data series.
-    ///
-    /// * `col`   – column name in the underlying data frame
-    /// * `color` – line and fill color
-    /// * `label` – legend label (may contain LaTeX)
-    pub fn series(mut self, col: impl Into<String>, color: Color, label: impl Into<String>) -> Self {
+    /// Add a data series with an explicit preamble color selector.
+    pub fn series(
+        mut self,
+        col: impl Into<String>,
+        color: palette::ColorName,
+        label: impl Into<String>,
+    ) -> Self {
         self.series.push(LineSeries { col: col.into(), color, label: label.into() });
         self
     }
@@ -74,7 +75,7 @@ impl LinePlot {
         self
     }
 
-    /// Override the height as a fraction of `\linewidth` (default: `0.8`).
+    /// Override the height as a fraction of `\epyfigureheight` (default: `1.0`).
     pub fn height_ratio(mut self, r: f64) -> Self {
         self.height_ratio = r;
         self
@@ -99,17 +100,11 @@ impl LinePlot {
 
     fn build_document(&self) -> PlotDocument {
         let color_names: Vec<String> = (0..self.series.len())
-            .map(|i| format!("epColor{i}"))
-            .collect();
-        let color_defs = self
-            .series
-            .iter()
-            .enumerate()
-            .map(|(i, s)| NamedColor::new(color_names[i].clone(), s.color))
+            .map(|i| self.series[i].color.tikz_name().to_owned())
             .collect();
 
         PlotDocument {
-            color_defs,
+            color_defs: Vec::new(),
             setup_lines: Vec::new(),
             axes: vec![self.build_axis(&color_names)],
         }
@@ -119,10 +114,10 @@ impl LinePlot {
         let mut options = crate::plot::common_axis_options(false);
 
         // ── Axis options ──────────────────────────────────────────────────
-        options.push(AxisOption::key_value("width", "\\linewidth"));
+        options.push(AxisOption::key_value("width", "\\epyfigurewidth"));
         options.push(AxisOption::key_value(
             "height",
-            format!("{}\\linewidth", fmt_f(self.height_ratio)),
+            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
         ));
         if !self.xlabel.is_empty() {
             options.push(AxisOption::key_value(

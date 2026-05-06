@@ -96,7 +96,7 @@ fn line_plot_renders_tikzpicture() {
     assert!(tikz.contains("\\addplot"), "missing addplot");
     assert!(tikz.contains("\\addlegendentry{IPC}"), "missing legend entry");
     assert!(tikz.contains("\\closedcycle"), "missing IQR band closedcycle");
-    assert!(tikz.contains("\\addplot[epColor0, opacity=0.3, draw=none, forget plot]"));
+    assert!(tikz.contains("\\addplot[epycolorblind0, opacity=0.3, draw=none, forget plot]"));
     assert!(tikz.contains("opacity=0.3"), "missing transparent IQR band");
     assert!(tikz.contains(r"Power limit (\si{\watt})"), "missing xlabel text");
     assert!(tikz.contains(r"\epylabelsize"), "missing \\epylabelsize in label");
@@ -113,7 +113,7 @@ fn line_plot_uses_transparent_band_instead_of_whiskers() {
     assert!(tikz.contains("\\closedcycle"), "expected a closed polygon for the Q1-Q3 band");
     assert!(tikz.contains("opacity=0.3"), "expected transparent band fill");
     assert!(tikz.contains("draw=none"), "expected band without outline");
-    assert!(tikz.contains("\\addplot[epColor0, opacity=0.3, draw=none, forget plot]"));
+    assert!(tikz.contains("\\addplot[epycolorblind0, opacity=0.3, draw=none, forget plot]"));
     assert!(
         !tikz.contains("\\draw[black!60"),
         "line plots should not render bar-style whisker error bars"
@@ -181,11 +181,10 @@ fn bar_line_plot_renders() {
     assert!(tikz.contains("scale only axis"), "missing scale only axis");
     assert!(tikz.contains("axis y line=right"), "missing right y-axis");
     assert!(tikz.contains("ybar"), "missing ybar option");
-    assert!(tikz.contains("\\definecolor{epBar}"), "missing bar color definition");
-    assert!(tikz.contains("\\definecolor{epLine}"), "missing line color definition");
+    assert!(!tikz.contains("\\definecolor{"), "unexpected inline color definitions");
     // Both axes must use the dynamically computed right-side padding.
     assert!(
-        tikz.contains("width={\\dimexpr \\linewidth - \\epRpad\\relax}"),
+        tikz.contains("width={\\dimexpr \\epyfigurewidth - \\epRpad\\relax}"),
         "missing dynamic width expression"
     );
     // The padding setup must include a compile-time font measurement.
@@ -206,8 +205,8 @@ fn bar_line_plot_has_iqr_whiskers() {
     assert!(tikz.contains("\\draw[black!60"), "missing IQR whisker draw");
     // IQR band on the right axis uses \closedcycle.
     assert!(tikz.contains("\\closedcycle"), "missing IQR band on line axis");
-    assert!(tikz.contains("opacity=0.3"), "missing transparent band on line axis");
-    assert!(tikz.contains("\\addplot[epLine, opacity=0.3, draw=none, forget plot]"));
+    assert!(tikz.contains("fill=epyruntimecomplementary"), "missing runtime complementary fill for line band");
+    assert!(tikz.contains("\\addplot[fill=epyruntimecomplementary, draw=none, forget plot]"));
 }
 
 #[test]
@@ -294,8 +293,8 @@ fn zplot_renders() {
     assert!(tikz.contains("\\begin{axis}"));
     assert!(tikz.contains("\\addlegendentry{1 thread}"), "missing 1-thread legend");
     assert!(tikz.contains("\\addlegendentry{4 threads}"), "missing 4-thread legend");
-    assert!(tikz.contains("epSeries0"), "missing series 0 color");
-    assert!(tikz.contains("epSeries1"), "missing series 1 color");
+    assert!(tikz.contains("epycolorblind0"), "missing series 0 color");
+    assert!(tikz.contains("epycolorblind1"), "missing series 1 color");
 }
 
 #[test]

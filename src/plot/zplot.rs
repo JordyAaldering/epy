@@ -3,10 +3,10 @@
 //!
 //! Each group becomes a separate series with a distinct color and marker.
 
-use crate::color::{Color, palette};
 use crate::data::GroupedFrame;
+use crate::color::palette;
 use crate::plot::fmt_f;
-use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, NamedColor, PlotDocument};
+use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
 
 // ── Marker shapes ─────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*",
 ///
 /// # Example
 /// ```no_run
-/// use energy_plots::prelude::*;
+/// use epy::prelude::*;
 ///
 /// let df = DataFrame::from_csv("data.csv").unwrap()
 ///     .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
@@ -46,7 +46,6 @@ pub struct ZPlot {
     ylabel: String,
     height_ratio: f64,
     label_fn: Box<dyn Fn(f64) -> String>,
-    colors: Option<Vec<Color>>,
 }
 
 impl ZPlot {
@@ -60,9 +59,8 @@ impl ZPlot {
             y_col: String::new(),
             xlabel: String::new(),
             ylabel: String::new(),
-            height_ratio: 0.8,
+            height_ratio: 1.0,
             label_fn: Box::new(|k| format!("{k}")),
-            colors: None,
         }
     }
 
@@ -90,7 +88,7 @@ impl ZPlot {
         self
     }
 
-    /// Override the plot height as a fraction of `\linewidth` (default: `0.8`).
+    /// Override the plot height as a fraction of `\epyfigureheight` (default: `1.0`).
     pub fn height_ratio(mut self, r: f64) -> Self {
         self.height_ratio = r;
         self
@@ -104,12 +102,6 @@ impl ZPlot {
         self
     }
 
-    /// Override the series colors (length must be ≥ number of groups).
-    pub fn colors(mut self, colors: Vec<Color>) -> Self {
-        self.colors = Some(colors);
-        self
-    }
-
     /// Render to a TikZ `tikzpicture` string.
     pub fn render(&self) -> String {
         self.build_document().render_tikz()
@@ -117,19 +109,11 @@ impl ZPlot {
 
     fn build_document(&self) -> PlotDocument {
         let n = self.grouped.num_groups();
-        let default_palette = &palette::SERIES[..];
-        let colors: &[Color] = self
-            .colors
-            .as_deref()
-            .unwrap_or(default_palette);
-
-        let color_names: Vec<String> = (0..n).map(|i| format!("epSeries{i}")).collect();
-        let color_defs = (0..n)
-            .map(|i| NamedColor::new(color_names[i].clone(), colors[i % colors.len()]))
-            .collect();
+        // Colors are assumed to be predefined in the preamble as epycolorblind0, epycolorblind1, …
+        let color_names: Vec<String> = (0..n).map(|i| palette::colorblind(i).to_owned()).collect();
 
         PlotDocument {
-            color_defs,
+            color_defs: Vec::new(),
             setup_lines: Vec::new(),
             axes: vec![self.build_axis(&color_names)],
         }
@@ -140,10 +124,10 @@ impl ZPlot {
         let mut options = crate::plot::common_axis_options(true);
 
         // ── Axis options ──────────────────────────────────────────────────
-        options.push(AxisOption::key_value("width", "\\linewidth"));
+        options.push(AxisOption::key_value("width", "\\epyfigurewidth"));
         options.push(AxisOption::key_value(
             "height",
-            format!("{}\\linewidth", fmt_f(self.height_ratio)),
+            format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
         ));
         if !self.xlabel.is_empty() {
             options.push(AxisOption::key_value(

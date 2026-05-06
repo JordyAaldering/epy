@@ -4,9 +4,6 @@
 \addtolength{\epRpad}{10pt}
 
 \begin{tikzpicture}
-\definecolor{epBar}{RGB}{58,166,64}
-\definecolor{epLine}{RGB}{166,58,58}
-
 \begin{axis}[
   scale only axis,
   axis line style={epygridcolor},
@@ -29,7 +26,7 @@
   xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20},
   xticklabels={0,500000,1125000,1750000,2375000,3000000,3500000,4125000,4750000,5375000,6000000,6500000,7125000,7750000,8375000,9000000,9500000,10125000,10750000,11375000,12000000},
 ]
-\addplot[ybar, bar width=0.7, fill=epBar, draw=none]
+\addplot[ybar, bar width=0.7, fill=epyenergycolor, draw=none]
   coordinates {
     (0, 0.050237)
     (1, 0.051923)
@@ -75,7 +72,7 @@
 \draw[black!60, line width=0.9pt] (axis cs:18,0.075523) -- (axis cs:18,0.079138);
 \draw[black!60, line width=0.9pt] (axis cs:19,0.075414) -- (axis cs:19,0.081134);
 \draw[black!60, line width=0.9pt] (axis cs:20,0.075384) -- (axis cs:20,0.07606);
-\addlegendimage{epLine, mark=*, mark size=2pt, line width=1pt}
+\addlegendimage{epyruntimecolor, mark=*, mark size=2pt, line width=1pt}
 \addlegendentry{GFLOP/s}
 \end{axis}
 \begin{axis}[
@@ -104,7 +101,7 @@
   xmin=-0.5,
   xmax=20.5,
 ]
-\addplot[epLine, opacity=0.3, draw=none, forget plot]
+\addplot[fill=epyruntimecomplementary, draw=none, forget plot]
   coordinates {
     (0, 0.146124)
     (1, 0.136429)
@@ -149,7 +146,7 @@
     (1, 0.136164)
     (0, 0.136861)
   } \closedcycle;
-\addplot[epLine, mark=*, mark size=2pt, line width=1pt]
+\addplot[epyruntimecolor, mark=*, mark size=2pt, line width=1pt]
   coordinates {
     (0, 0.137031)
     (1, 0.136277)

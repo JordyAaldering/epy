@@ -10,7 +10,7 @@
 //!
 //! | Type | Struct | Use case |
 //! |------|--------|----------|
-//! | Bar + line (twin axes) | [`BarLinePlot`] | Energy efficiency (bar, left) vs. throughput (line, right) |
+//! | Bar + line (twin axes) | [`TwinPlot`] | Energy efficiency (bar, left) vs. throughput (line, right) |
 //! | Line with IQR band | [`LinePlot`] | IPC or other derived metrics across power caps |
 //! | Z-plot (scatter) | [`ZPlot`] | Efficiency vs. throughput for multiple configurations |
 //!
@@ -21,7 +21,7 @@
 //! ## Quick start
 //!
 //! ```no_run
-//! use energy_plots::prelude::*;
+//! use epy::prelude::*;
 //!
 //! // Load and prepare data
 //! let df = DataFrame::from_csv("results/prog.csv").unwrap()
@@ -32,7 +32,7 @@
 //! let grouped = df.group_by("powercap");
 //!
 //! // Generate bar+line twin-axis plot
-//! let tikz = BarLinePlot::new(grouped)
+//! let tikz = TwinPlot::new(grouped)
 //!     .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
 //!     .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
 //!     .xlabel(r"Power limit (\si{\watt})")
@@ -43,8 +43,8 @@
 //!
 //! ## LaTeX prelude
 //!
-//! The generated code relies on the `common/*` pgfplots styles defined in the
-//! project LaTeX prelude (see `README.md`).  Include the prelude in your
+//! The generated code relies on color and typography macros defined in the
+//! project LaTeX preamble (see `README.md`).  Include the preamble in your
 //! document before `\input`-ting any generated `.tex` file.
 
 pub mod color;

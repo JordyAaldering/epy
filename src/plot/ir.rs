@@ -49,12 +49,6 @@ pub(crate) struct NamedColor {
     pub(crate) color: Color,
 }
 
-impl NamedColor {
-    pub(crate) fn new(name: impl Into<String>, color: Color) -> Self {
-        Self { name: name.into(), color }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Axis {
     pub(crate) options: Vec<AxisOption>,

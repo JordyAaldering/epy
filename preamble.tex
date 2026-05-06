@@ -5,10 +5,35 @@
 % Grid and tick color used in all generated plots.  Override to restyle.
 \definecolor{epygridcolor}{RGB}{204,204,204}
 
+% Semantic plot colors — override before \input-ting any generated plot file.
+% Defaults follow the seaborn colorblind palette.
+\definecolor{epyenergycolor}{RGB}{2,158,115}
+\definecolor{epyenergycomplementary}{RGB}{128,206,185}
+\definecolor{epyruntimecolor}{RGB}{1,115,178}
+\definecolor{epyruntimecomplementary}{RGB}{128,185,216}
+
+% Seaborn colorblind palette (10 colors) used for multi-series plots.
+\definecolor{epycolorblind0}{RGB}{1,115,178}
+\definecolor{epycolorblind1}{RGB}{222,143,5}
+\definecolor{epycolorblind2}{RGB}{2,158,115}
+\definecolor{epycolorblind3}{RGB}{213,94,0}
+\definecolor{epycolorblind4}{RGB}{204,120,188}
+\definecolor{epycolorblind5}{RGB}{202,145,97}
+\definecolor{epycolorblind6}{RGB}{251,175,228}
+\definecolor{epycolorblind7}{RGB}{148,148,148}
+\definecolor{epycolorblind8}{RGB}{236,225,51}
+\definecolor{epycolorblind9}{RGB}{86,180,233}
+
 % Font size commands for plot text.  Override to rescale all plot text at once.
 \newcommand{\epylabelsize}{\scriptsize}
 \newcommand{\epyticksize}{\scriptsize}
 \newcommand{\epylegendsize}{\scriptsize}
+
+% Figure dimensions used by generated plot code.  Override per figure/document.
+\newlength{\epyfigurewidth}
+\setlength{\epyfigurewidth}{\linewidth}
+\newlength{\epyfigureheight}
+\setlength{\epyfigureheight}{0.85\epyfigurewidth}
 
 % Right-side padding for twin-axis plots (set at compile time by generated code).
 \newlength{\epRpad}
