@@ -9,8 +9,8 @@ pub use zplot::ZPlot;
 
 use crate::{data::GroupedFrame, ir::*, stats::*};
 
-pub(crate) fn common_axis_options(xgrid: bool) -> Vec<AxisOption> {
-    let mut opts = vec![
+pub(crate) fn common_axis_options() -> Vec<AxisOption> {
+    vec![
         AxisOption::flag("scale only axis"),
         AxisOption::key_value("axis line style", "{epygridcolor}"),
         AxisOption::key_value("y grid style", "{epygridcolor}"),
@@ -23,16 +23,8 @@ pub(crate) fn common_axis_options(xgrid: bool) -> Vec<AxisOption> {
         // Phantom tick at ymax ensures consistent axis height across plots
         AxisOption::key_value("extra y ticks", r"{\pgfkeysvalueof{/pgfplots/ymax}}"),
         AxisOption::key_value("extra y tick labels", r"{\vphantom{Ag}}"),
-        AxisOption::key_value(
-            "extra y tick style",
-            "{yticklabel style={opacity=0,text opacity=0},major tick length=0pt}",
-        ),
-    ];
-    if xgrid {
-        opts.push(AxisOption::key_value("x grid style", "{epygridcolor}"));
-        opts.push(AxisOption::flag("xmajorgrids"));
-    }
-    opts
+        AxisOption::key_value("extra y tick style", "{yticklabel style={opacity=0,text opacity=0},major tick length=0pt}"),
+    ]
 }
 
 /// Compute per-group statistics for `col` from a [`GroupedFrame`].

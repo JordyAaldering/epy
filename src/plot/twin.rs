@@ -145,7 +145,7 @@ impl TwinPlot {
 
     fn build_left_axis(&self, bar_col: &str) -> Axis {
         let (xmin, xmax) = self.x_range();
-        let mut options = crate::plot::common_axis_options(false);
+        let mut options = crate::plot::common_axis_options();
         options.push(AxisOption::key_value("name", "mainaxis"));
         options.push(AxisOption::flag("trim axis right"));
 
@@ -215,35 +215,30 @@ impl TwinPlot {
         ]));
         elements.push(AxisElement::LegendEntry(self.line_label.clone()));
 
-        Axis { options, elements }
+        Axis { opts: options, elements }
     }
 
     fn build_right_axis(&self, line_col: &str) -> Axis {
         let (xmin, xmax) = self.x_range();
         let stats = group_stats(&self.df, line_col);
-        let mut options = crate::plot::common_axis_options(false);
+        let mut opts = crate::plot::common_axis_options();
 
-        options.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
-        options.push(AxisOption::key_value("anchor", "south west"));
-        options.push(AxisOption::flag("trim axis left"));
-        options.push(AxisOption::key_value("axis x line", "none"));
-        options.push(AxisOption::key_value("xmajorgrids", "false"));
-        options.push(AxisOption::key_value("ymajorgrids", "false"));
-        options.push(AxisOption::key_value("xtick", "\\empty"));
-        options.push(AxisOption::key_value("xticklabels", "\\empty"));
+        opts.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
+        opts.push(AxisOption::key_value("anchor", "south west"));
+        opts.push(AxisOption::flag("trim axis left"));
+        opts.push(AxisOption::key_value("axis x line", "none"));
+        opts.push(AxisOption::key_value("xmajorgrids", "false"));
+        opts.push(AxisOption::key_value("ymajorgrids", "false"));
+        opts.push(AxisOption::key_value("xtick", "\\empty"));
+        opts.push(AxisOption::key_value("xticklabels", "\\empty"));
 
-        options.push(AxisOption::key_value("axis y line", "right"));
-        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
-        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        if !self.line_label.is_empty() {
-            options.push(AxisOption::key_value(
-                "ylabel",
-                format!("{{\\epylabelsize {}}}", self.line_label),
-            ));
-        }
-        options.push(AxisOption::key_value("ymin", "0"));
-        options.push(AxisOption::key_value("xmin", xmin.to_string()));
-        options.push(AxisOption::key_value("xmax", xmax.to_string()));
+        opts.push(AxisOption::key_value("axis y line", "right"));
+        opts.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
+        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
+        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.line_label)));
+        opts.push(AxisOption::key_value("ymin", "0"));
+        opts.push(AxisOption::key_value("xmin", xmin.to_string()));
+        opts.push(AxisOption::key_value("xmax", xmax.to_string()));
 
         let mut band_coordinates = Vec::new();
 
@@ -260,7 +255,7 @@ impl TwinPlot {
         }
 
         Axis {
-            options,
+            opts,
             elements: vec![
                 AxisElement::Plot(AddPlot {
                     options: vec![

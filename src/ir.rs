@@ -33,14 +33,14 @@ impl PlotDocument {
 
 #[derive(Clone, Debug)]
 pub(crate) struct Axis {
-    pub(crate) options: Vec<AxisOption>,
+    pub(crate) opts: Vec<AxisOption>,
     pub(crate) elements: Vec<AxisElement>,
 }
 
 impl Axis {
     fn render_tikz(&self) -> String {
         let mut out = String::from("\\begin{axis}[\n");
-        for option in &self.options {
+        for option in &self.opts {
             out.push_str("  ");
             out.push_str(&option.render_tikz());
             out.push_str(",\n");

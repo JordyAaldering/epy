@@ -67,24 +67,26 @@ impl ZPlot {
 
     fn build_axis(&self, color_names: &[String]) -> Axis {
         let n = self.df.num_groups();
-        let mut options = crate::plot::common_axis_options(true);
+        let mut opts = crate::plot::common_axis_options();
+        opts.push(AxisOption::key_value("x grid style", "{epygridcolor}"));
+        opts.push(AxisOption::flag("xmajorgrids"));
 
         // ── Axis options ──────────────────────────────────────────────────
-        options.push(AxisOption::key_value("width", "\\epyfigurewidth"));
-        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
+        opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
+        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
         if !self.xlabel.is_empty() {
-            options.push(AxisOption::key_value(
+            opts.push(AxisOption::key_value(
                 "xlabel",
                 format!("{{\\epylabelsize {}}}", self.xlabel),
             ));
         }
         if !self.ylabel.is_empty() {
-            options.push(AxisOption::key_value(
+            opts.push(AxisOption::key_value(
                 "ylabel",
                 format!("{{\\epylabelsize {}}}", self.ylabel),
             ));
         }
-        options.push(AxisOption::key_value("ymin", "0"));
+        opts.push(AxisOption::key_value("ymin", "0"));
 
         let mut elements = Vec::new();
 
@@ -115,6 +117,6 @@ impl ZPlot {
             elements.push(AxisElement::LegendEntry(label));
         }
 
-        Axis { options, elements }
+        Axis { opts, elements }
     }
 }

@@ -1,15 +1,15 @@
-#[derive(Debug, Clone)]
-pub struct IQR {
-   pub median: f64,
-   pub q1: f64,
-   pub q3: f64,
-}
-
 pub fn mean(xs: &[f64]) -> f64 {
     if xs.is_empty() {
         return 0.0;
     }
     xs.iter().sum::<f64>() / xs.len() as f64
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct IQR {
+   pub median: f64,
+   pub q1: f64,
+   pub q3: f64,
 }
 
 pub fn median(xs: &[f64]) -> f64 {

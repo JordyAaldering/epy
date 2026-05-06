@@ -81,53 +81,39 @@ impl LinePlot {
     }
 
     fn build_axis(&self, color_names: &[String]) -> Axis {
-        let mut options = crate::plot::common_axis_options(false);
+        let mut opts = crate::plot::common_axis_options();
 
-        options.push(AxisOption::key_value("width", "\\epyfigurewidth"));
-        options.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        if !self.xlabel.is_empty() {
-            options.push(AxisOption::key_value(
-                "xlabel",
-                format!("{{\\epylabelsize {}}}", self.xlabel),
-            ));
-        }
-        if !self.ylabel.is_empty() {
-            options.push(AxisOption::key_value(
-                "ylabel",
-                format!("{{\\epylabelsize {}}}", self.ylabel),
-            ));
-        }
+        opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
+        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
+        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xlabel)));
+        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.ylabel)));
+
         if let Some(v) = self.ymin {
-            options.push(AxisOption::key_value("ymin", v.to_string()));
+            opts.push(AxisOption::key_value("ymin", v.to_string()));
         }
 
-        // x-tick configuration
         let keys = self.df.keys();
         let n = keys.len();
         if n > 0 {
             let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
-            options.push(AxisOption::key_value("xtick", format!("{{{}}}", tick_str.join(","))));
+            opts.push(AxisOption::key_value("xtick", format!("{{{}}}", tick_str.join(","))));
 
             let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
                 lbls.clone()
             } else {
                 keys.iter().map(|&k| k.to_string()).collect()
             };
-            options.push(AxisOption::key_value(
-                "xticklabels",
-                format!("{{{}}}", labels.join(",")),
-            ));
+            opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", labels.join(","))));
         }
 
         // Extend axis limits by half a bar width on each side.
         if n > 0 {
-            options.push(AxisOption::key_value("xmin", "-0.5"));
-            options.push(AxisOption::key_value("xmax", (n as f64 - 0.5).to_string()));
+            opts.push(AxisOption::key_value("xmin", "-0.5"));
+            opts.push(AxisOption::key_value("xmax", (n as f64 - 0.5).to_string()));
         }
 
         let mut elements = Vec::new();
 
-        // ── Series ────────────────────────────────────────────────────────
         for (si, series) in self.series.iter().enumerate() {
             let stats = group_stats(&self.df, &series.column);
             let cn = &color_names[si];
@@ -161,6 +147,6 @@ impl LinePlot {
             elements.push(AxisElement::LegendEntry(series.label.clone()));
         }
 
-        Axis { options, elements }
+        Axis { opts, elements }
     }
 }
