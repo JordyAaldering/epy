@@ -12,9 +12,9 @@ pub mod prelude {
     pub use crate::stats::{mean, median, q1, q3};
 }
 
-use crate::{data::DataFrame, plot::TwinPlot};
+use prelude::*;
 
-fn main() {
+fn twin() {
     let df = DataFrame::from_csv("test_data.csv").unwrap();
     let example_threads = *df
         .col("threads")
@@ -30,13 +30,44 @@ fn main() {
     let grouped = df.group_by("powercapW");
 
     let tikz = TwinPlot::new(
-        grouped,
-        "gflop_j",
-        "GFLOP/J",
-        "gflop_s",
-        "GFLOP/s",
-        "Power limit (W)"
-    ).render();
+            grouped,
+            "gflop_j",
+            "GFLOP/J",
+            "gflop_s",
+            "GFLOP/s",
+            "Power limit (W)",
+        )
+        .render();
 
-    std::fs::write("example_tikz.tex", tikz).unwrap();
+    std::fs::write(".build/example_twin.tex", tikz).unwrap();
+}
+
+fn ipc() {
+    let df = DataFrame::from_csv("test_data.csv").unwrap();
+    let example_threads = *df
+        .col("threads")
+        .last()
+        .expect("example fixture must contain at least one row");
+
+    let df = df
+        .filter(|r| r["threads"] == example_threads)
+        .with_column("powercapW", |r| r["powercap"] / 1e6)
+        .with_column("ipc", |r| r["insns"] / r["cycs"]);
+
+    let grouped = df.group_by("powercapW");
+
+    let tikz = LinePlot::new(
+            grouped,
+            "Power limit (W)",
+            "IPC",
+        )
+        .series("ipc", "IPC", Color::Runtime)
+        .render();
+
+    std::fs::write(".build/example_ipc.tex", tikz).unwrap();
+}
+
+fn main() {
+    twin();
+    ipc();
 }

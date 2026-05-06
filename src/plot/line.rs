@@ -31,14 +31,13 @@ impl LinePlot {
         }
     }
 
-    /// Add a data series with an explicit preamble color selector.
     pub fn series(
         mut self,
-        col: impl Into<String>,
+        col: &str,
+        label: &str,
         color: Color,
-        label: impl Into<String>,
     ) -> Self {
-        self.series.push(LineSeries { col: col.into(), color, label: label.into() });
+        self.series.push(LineSeries { col: col.into(), label: label.into(), color });
         self
     }
 
