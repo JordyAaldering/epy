@@ -1,9 +1,7 @@
-use crate::color::Color;
 use crate::plot::fmt_f;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct PlotDocument {
-    pub(crate) color_defs: Vec<NamedColor>,
     pub(crate) setup_lines: Vec<String>,
     pub(crate) axes: Vec<Axis>,
 }
@@ -24,16 +22,6 @@ impl PlotDocument {
 
         out.push_str("\\begin{tikzpicture}\n");
 
-        if !self.color_defs.is_empty() {
-            for (idx, color_def) in self.color_defs.iter().enumerate() {
-                if idx > 0 {
-                    out.push('\n');
-                }
-                out.push_str(&color_def.color.define(&color_def.name));
-            }
-            out.push_str("\n\n");
-        }
-
         for axis in &self.axes {
             out.push_str(&axis.render_tikz());
         }
@@ -41,12 +29,6 @@ impl PlotDocument {
         out.push_str("\\end{tikzpicture}\n");
         out
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct NamedColor {
-    pub(crate) name: String,
-    pub(crate) color: Color,
 }
 
 #[derive(Debug, Clone, PartialEq)]

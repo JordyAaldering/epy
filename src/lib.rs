@@ -33,8 +33,8 @@
 //!
 //! // Generate bar+line twin-axis plot
 //! let tikz = TwinPlot::new(grouped)
-//!     .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-//!     .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+//!     .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+//!     .line("gflop_s", r"\si{\giga\flop\per\second}")
 //!     .xlabel(r"Power limit (\si{\watt})")
 //!     .render();
 //!
@@ -47,18 +47,14 @@
 //! project LaTeX preamble (see `README.md`).  Include the preamble in your
 //! document before `\input`-ting any generated `.tex` file.
 
-pub mod color;
-pub mod data;
-pub mod plot;
-pub mod stats;
-
-pub use color::Color;
-pub use data::{DataFrame, GroupedFrame};
-pub use plot::{TwinPlot, LinePlot, ZPlot};
+mod color;
+mod data;
+mod plot;
+mod stats;
 
 /// Convenience re-exports for typical usage.
 pub mod prelude {
-    pub use crate::color::{Color, palette};
+    pub use crate::color::Color;
     pub use crate::data::{DataFrame, GroupedFrame};
     pub use crate::plot::{TwinPlot, LinePlot, ZPlot};
     pub use crate::stats::{mean, median, q1, q3};

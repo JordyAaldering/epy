@@ -7,7 +7,6 @@
 //!
 //! Uses explicit axis options and preamble-defined named colors.
 
-use crate::color::palette;
 use crate::data::GroupedFrame;
 use crate::plot::fmt_f;
 use crate::plot::group_stats;
@@ -34,8 +33,8 @@ const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 ///
 /// let grouped = df.group_by("powercap");
 /// let tikz = TwinPlot::new(grouped)
-///     .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-///     .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+///     .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+///     .line("gflop_s", r"\si{\giga\flop\per\second}")
 ///     .xlabel(r"Power limit (\si{\watt})")
 ///     .render();
 ///
@@ -45,10 +44,8 @@ pub struct TwinPlot {
     grouped: GroupedFrame,
     bar_col: Option<String>,
     bar_label: String,
-    bar_color: palette::ColorName,
     line_col: Option<String>,
     line_label: String,
-    line_color: palette::ColorName,
     xlabel: String,
     height_ratio: f64,
     bar_width: f64,
@@ -62,10 +59,8 @@ impl TwinPlot {
             grouped,
             bar_col: None,
             bar_label: String::new(),
-            bar_color: palette::GREEN,
             line_col: None,
             line_label: String::new(),
-            line_color: palette::RED,
             xlabel: String::new(),
             height_ratio: 1.0,
             bar_width: 0.7,
@@ -73,29 +68,17 @@ impl TwinPlot {
         }
     }
 
-    /// Configure the bar series (left y-axis) with an explicit preamble color selector.
-    pub fn bar(
-        mut self,
-        col: impl Into<String>,
-        color: palette::ColorName,
-        label: impl Into<String>,
-    ) -> Self {
+    /// Configure the bar series (left y-axis). Uses `epyenergycolor`.
+    pub fn bar(mut self, col: impl Into<String>, label: impl Into<String>) -> Self {
         self.bar_col = Some(col.into());
         self.bar_label = label.into();
-        self.bar_color = color;
         self
     }
 
-    /// Configure the line series (right y-axis) with an explicit preamble color selector.
-    pub fn line(
-        mut self,
-        col: impl Into<String>,
-        color: palette::ColorName,
-        label: impl Into<String>,
-    ) -> Self {
+    /// Configure the line series (right y-axis). Uses `epyruntimecolor`.
+    pub fn line(mut self, col: impl Into<String>, label: impl Into<String>) -> Self {
         self.line_col = Some(col.into());
         self.line_label = label.into();
-        self.line_color = color;
         self
     }
 
@@ -138,7 +121,6 @@ impl TwinPlot {
         }
 
         PlotDocument {
-            color_defs: Vec::new(),
             setup_lines: self.twin_setup_lines(),
             axes,
         }
@@ -261,7 +243,7 @@ impl TwinPlot {
                 options: vec![
                     "ybar".into(),
                     format!("bar width={}", fmt_f(self.bar_width)),
-                    format!("fill={}", self.bar_color.tikz_name()),
+                    "fill=epyenergycolor".into(),
                     "draw=none".into(),
                 ],
                 coordinates: bar_coordinates,
@@ -282,7 +264,7 @@ impl TwinPlot {
         // ── Legend placeholder for the right-axis line series ─────────────
         if !line_col.is_empty() && !self.line_label.is_empty() {
             elements.push(AxisElement::LegendImage(vec![
-                self.line_color.tikz_name().into(),
+                "epyruntimecolor".into(),
                 "mark=*".into(),
                 "mark size=2pt".into(),
                 "line width=1pt".into(),
@@ -345,7 +327,7 @@ impl TwinPlot {
             elements: vec![
                 AxisElement::Plot(AddPlot {
                     options: vec![
-                        format!("fill={}", self.line_color.complementary().tikz_name()),
+                        "fill=epyruntimecomplementary".into(),
                         "draw=none".into(),
                         "forget plot".into(),
                     ],
@@ -354,7 +336,7 @@ impl TwinPlot {
                 }),
                 AxisElement::Plot(AddPlot {
                     options: vec![
-                        self.line_color.tikz_name().into(),
+                        "epyruntimecolor".into(),
                         "mark=*".into(),
                         "mark size=2pt".into(),
                         "line width=1pt".into(),

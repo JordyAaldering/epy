@@ -3,8 +3,8 @@
 //!
 //! Each group becomes a separate series with a distinct color and marker.
 
+use crate::color::Color;
 use crate::data::GroupedFrame;
-use crate::color::palette;
 use crate::plot::fmt_f;
 use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
 
@@ -110,10 +110,9 @@ impl ZPlot {
     fn build_document(&self) -> PlotDocument {
         let n = self.grouped.num_groups();
         // Colors are assumed to be predefined in the preamble as epycolorblind0, epycolorblind1, …
-        let color_names: Vec<String> = (0..n).map(|i| palette::colorblind(i).to_owned()).collect();
+        let color_names: Vec<String> = (0..n).map(|i| Color::Colorblind(i).tikz_name()).collect();
 
         PlotDocument {
-            color_defs: Vec::new(),
             setup_lines: Vec::new(),
             axes: vec![self.build_axis(&color_names)],
         }

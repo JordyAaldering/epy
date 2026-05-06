@@ -43,8 +43,8 @@ fn main() {
 
     // Twin-axis bar (efficiency) + line (throughput) plot
     let tikz = TwinPlot::new(grouped)
-        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+        .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+        .line("gflop_s", r"\si{\giga\flop\per\second}")
         .xlabel(r"Power limit (\si{\watt})")
         .render();
 

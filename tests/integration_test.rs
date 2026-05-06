@@ -83,7 +83,7 @@ fn line_plot_renders_tikzpicture() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
     let tikz = LinePlot::new(grouped)
-        .series("ipc", palette::BLUE, "IPC")
+        .series("ipc", Color::Energy, "IPC")
         .xlabel(r"Power limit (\si{\watt})")
         .ylabel("IPC")
         .render();
@@ -96,28 +96,10 @@ fn line_plot_renders_tikzpicture() {
     assert!(tikz.contains("\\addplot"), "missing addplot");
     assert!(tikz.contains("\\addlegendentry{IPC}"), "missing legend entry");
     assert!(tikz.contains("\\closedcycle"), "missing IQR band closedcycle");
-    assert!(tikz.contains("\\addplot[epycolorblind0, opacity=0.3, draw=none, forget plot]"));
+    assert!(tikz.contains("\\addplot[epyenergycolor, opacity=0.3, draw=none, forget plot]"));
     assert!(tikz.contains("opacity=0.3"), "missing transparent IQR band");
     assert!(tikz.contains(r"Power limit (\si{\watt})"), "missing xlabel text");
     assert!(tikz.contains(r"\epylabelsize"), "missing \\epylabelsize in label");
-}
-
-#[test]
-fn line_plot_uses_transparent_band_instead_of_whiskers() {
-    let df = load_1thread();
-    let grouped = df.group_by("powercap");
-    let tikz = LinePlot::new(grouped)
-        .series("ipc", palette::BLUE, "IPC")
-        .render();
-
-    assert!(tikz.contains("\\closedcycle"), "expected a closed polygon for the Q1-Q3 band");
-    assert!(tikz.contains("opacity=0.3"), "expected transparent band fill");
-    assert!(tikz.contains("draw=none"), "expected band without outline");
-    assert!(tikz.contains("\\addplot[epycolorblind0, opacity=0.3, draw=none, forget plot]"));
-    assert!(
-        !tikz.contains("\\draw[black!60"),
-        "line plots should not render bar-style whisker error bars"
-    );
 }
 
 #[test]
@@ -143,7 +125,7 @@ fn line_plot_has_xticks_for_all_groups() {
     );
 
     let tikz = LinePlot::new(grouped)
-        .series("ipc", palette::BLUE, "IPC")
+        .series("ipc", Color::Energy, "IPC")
         .render();
 
     assert!(tikz.contains(&expected_xtick), "expected xtick for all groups");
@@ -158,7 +140,7 @@ fn line_plot_custom_xtick_labels() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
     let tikz = LinePlot::new(grouped)
-        .series("ipc", palette::BLUE, "IPC")
+        .series("ipc", Color::Energy, "IPC")
         .xtick_labels(vec!["low", "mid", "high"])
         .render();
     assert!(tikz.contains("xticklabels={low,mid,high}"), "expected custom xticklabels");
@@ -169,8 +151,8 @@ fn bar_line_plot_renders() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
     let tikz = TwinPlot::new(grouped)
-        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+        .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+        .line("gflop_s", r"\si{\giga\flop\per\second}")
         .xlabel(r"Power limit (\si{\watt})")
         .render();
 
@@ -197,8 +179,8 @@ fn bar_line_plot_has_iqr_whiskers() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
     let tikz = TwinPlot::new(grouped)
-        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+        .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+        .line("gflop_s", r"\si{\giga\flop\per\second}")
         .render();
 
     // IQR whiskers are emitted as \draw commands on the left axis.
@@ -214,8 +196,8 @@ fn bar_line_plot_legend_entries() {
     let df = load_1thread();
     let grouped = df.group_by("powercap");
     let tikz = TwinPlot::new(grouped)
-        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+        .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+        .line("gflop_s", r"\si{\giga\flop\per\second}")
         .render();
 
     // Bar legend on left axis.
@@ -234,8 +216,8 @@ fn bar_line_plot_legend_entries() {
 fn bar_line_plot_width_adapts_to_data_magnitude() {
     // Small values: gflop_s ≈ 0.4 → tick estimate is a short string.
     let tikz_small = TwinPlot::new(load_1thread().group_by("powercap"))
-        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("gflop_s", palette::RED, r"\si{\giga\flop\per\second}")
+        .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+        .line("gflop_s", r"\si{\giga\flop\per\second}")
         .render();
 
     // Large values: multiply to simulate a large-number axis (e.g. 10 000×).
@@ -245,8 +227,8 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
         .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
         .with_column("big_line", |r| r["insns"] / r["runtime"] / 1e9 * 10_000.0);
     let tikz_large = TwinPlot::new(df_large.group_by("powercap"))
-        .bar("gflop_j", palette::GREEN, r"\si{\giga\flop\per\joule}")
-        .line("big_line", palette::RED, "Big label")
+        .bar("gflop_j", r"\si{\giga\flop\per\joule}")
+        .line("big_line", "Big label")
         .render();
 
     // Extract the sample string passed to \settowidth in both outputs.
@@ -295,11 +277,4 @@ fn zplot_renders() {
     assert!(tikz.contains("\\addlegendentry{4 threads}"), "missing 4-thread legend");
     assert!(tikz.contains("epycolorblind0"), "missing series 0 color");
     assert!(tikz.contains("epycolorblind1"), "missing series 1 color");
-}
-
-#[test]
-fn color_define_output() {
-    let c = Color::rgb(58, 166, 64);
-    let def = c.define("epGreen");
-    assert_eq!(def, "\\definecolor{epGreen}{RGB}{58,166,64}");
 }

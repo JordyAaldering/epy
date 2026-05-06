@@ -1,12 +1,12 @@
+use crate::color::Color;
 use crate::data::GroupedFrame;
-use crate::color::palette;
 use crate::plot::fmt_f;
 use crate::plot::group_stats;
 use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
 
 struct LineSeries {
     col: String,
-    color: palette::ColorName,
+    color: Color,
     label: String,
 }
 
@@ -21,7 +21,7 @@ struct LineSeries {
 ///     .with_column("ipc", |r| r["insns"] / r["cycs"]);
 ///
 /// let tikz = LinePlot::new(df.group_by("powercap"))
-///     .series("ipc", palette::BLUE, "IPC")
+///     .series("ipc", Color::Energy, "IPC")
 ///     .xlabel(r"Power limit (\si{\watt})")
 ///     .ylabel("IPC")
 ///     .render();
@@ -56,7 +56,7 @@ impl LinePlot {
     pub fn series(
         mut self,
         col: impl Into<String>,
-        color: palette::ColorName,
+        color: Color,
         label: impl Into<String>,
     ) -> Self {
         self.series.push(LineSeries { col: col.into(), color, label: label.into() });
@@ -104,7 +104,6 @@ impl LinePlot {
             .collect();
 
         PlotDocument {
-            color_defs: Vec::new(),
             setup_lines: Vec::new(),
             axes: vec![self.build_axis(&color_names)],
         }

@@ -4,7 +4,6 @@ pub mod plot;
 pub mod stats;
 
 use crate::{data::DataFrame, plot::TwinPlot};
-use crate::color::palette;
 
 fn main() {
     let csv_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/test_data.csv");
@@ -23,8 +22,8 @@ fn main() {
 
     // Twin-axis bar (efficiency) + line (throughput) plot
     let tikz = TwinPlot::new(grouped)
-        .bar("gflop_j", palette::GREEN, r"GFLOP/J")
-        .line("gflop_s", palette::RED, r"GFLOP/s")
+        .bar("gflop_j", r"GFLOP/J")
+        .line("gflop_s", r"GFLOP/s")
         .xlabel(r"Power limit (W)")
         .render();
 
