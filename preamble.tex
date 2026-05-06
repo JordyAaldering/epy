@@ -2,17 +2,10 @@
 \usepgfplotslibrary{groupplots,dateplot}
 \usetikzlibrary{patterns,shapes.arrows}
 
-% Grid and tick color used in all generated plots.  Override to restyle.
-\definecolor{epygridcolor}{RGB}{204,204,204}
-
-% Semantic plot colors — override before \input-ting any generated plot file.
-% Defaults follow the seaborn colorblind palette.
 \definecolor{epyenergycolor}{RGB}{2,158,115}
 \definecolor{epyenergycomplementary}{RGB}{128,206,185}
 \definecolor{epyruntimecolor}{RGB}{1,115,178}
 \definecolor{epyruntimecomplementary}{RGB}{128,185,216}
-
-% Seaborn colorblind palette (10 colors) used for multi-series plots.
 \definecolor{epycolorblind0}{RGB}{1,115,178}
 \definecolor{epycolorblind1}{RGB}{222,143,5}
 \definecolor{epycolorblind2}{RGB}{2,158,115}
@@ -24,22 +17,25 @@
 \definecolor{epycolorblind8}{RGB}{236,225,51}
 \definecolor{epycolorblind9}{RGB}{86,180,233}
 
-% Font size commands for plot text.  Override to rescale all plot text at once.
+% Grid and tick color used in all generated plots
+\definecolor{epygridcolor}{RGB}{204,204,204}
+
+% Font size commands for plot text
 \newcommand{\epylabelsize}{\scriptsize}
 \newcommand{\epyticksize}{\scriptsize}
 \newcommand{\epylegendsize}{\scriptsize}
 
-% Figure dimensions used by generated plot code.  Override per figure/document.
+% Figure dimensions used by generated plot code
 \newlength{\epyfigurewidth}
 \setlength{\epyfigurewidth}{\linewidth}
 \newlength{\epyfigureheight}
 \setlength{\epyfigureheight}{0.85\epyfigurewidth}
 
-% Right-side padding for twin-axis plots (set at compile time by generated code).
-\newlength{\epRpad}
-\setlength{\epRpad}{0pt}
-\newlength{\epRlabelH}
-\setlength{\epRlabelH}{0pt}
+% Right-side padding for twin-axis plots (set at compile time in generated code)
+\newlength{\epyrpad}
+\setlength{\epyrpad}{0pt}
+\newlength{\epyrlabelh}
+\setlength{\epyrlabelh}{0pt}
 
 \pgfplotsset{
   compat=newest,

@@ -1,7 +1,7 @@
-\settowidth{\epRpad}{\normalfont\epyticksize 0.636131}
-\settoheight{\epRlabelH}{\normalfont\epyticksize Ag}
-\addtolength{\epRpad}{\epRlabelH}
-\addtolength{\epRpad}{10pt}
+\settowidth{\epyrpad}{\normalfont\epyticksize 0.636131}
+\settoheight{\epyrlabelh}{\normalfont\epyticksize Ag}
+\addtolength{\epyrpad}{\epyrlabelh}
+\addtolength{\epyrpad}{10pt}
 
 \begin{tikzpicture}
 \begin{axis}[
@@ -16,7 +16,7 @@
   legend style={font=\epylegendsize, draw=epygridcolor, fill opacity=0.8, draw opacity=1, text opacity=1},
   name=mainaxis,
   trim axis right,
-  width={\dimexpr \epyfigurewidth - \epRpad\relax},
+  width={\dimexpr \epyfigurewidth - \epyrpad\relax},
   height=1\epyfigureheight,
   xlabel={\epylabelsize Power limit (W)},
   ylabel={\epylabelsize GFLOP/J},
@@ -94,7 +94,7 @@
   xtick=\empty,
   xticklabels=\empty,
   axis y line=right,
-  width={\dimexpr \epyfigurewidth - \epRpad\relax},
+  width={\dimexpr \epyfigurewidth - \epyrpad\relax},
   height=1\epyfigureheight,
   ylabel={\epylabelsize GFLOP/s},
   ymin=0,

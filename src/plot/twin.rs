@@ -144,19 +144,19 @@ impl TwinPlot {
         // \epyticksize is defined in the preamble and matches the font used for
         // tick labels, so this measurement stays correct if the font changes.
         lines.push(format!(
-            "\\settowidth{{\\epRpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
+            "\\settowidth{{\\epyrpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
         ));
 
         if has_ylabel {
             // The right ylabel is rotated 90°; its horizontal footprint equals one
             // \epyticksize line height.
-            lines.push("\\settoheight{\\epRlabelH}{\\normalfont\\epyticksize Ag}".to_owned());
-            lines.push("\\addtolength{\\epRpad}{\\epRlabelH}".to_owned());
+            lines.push("\\settoheight{\\epyrlabelh}{\\normalfont\\epyticksize Ag}".to_owned());
+            lines.push("\\addtolength{\\epyrpad}{\\epyrlabelh}".to_owned());
             // tick length (3pt) + inner sep (2pt) + gap to ylabel (~5pt)
-            lines.push("\\addtolength{\\epRpad}{10pt}".to_owned());
+            lines.push("\\addtolength{\\epyrpad}{10pt}".to_owned());
         } else {
             // tick length (3pt) + inner sep (2pt)
-            lines.push("\\addtolength{\\epRpad}{5pt}".to_owned());
+            lines.push("\\addtolength{\\epyrpad}{5pt}".to_owned());
         }
 
         lines
@@ -188,7 +188,7 @@ impl TwinPlot {
         options.push(AxisOption::flag("trim axis right"));
 
         // ── Axis options ──────────────────────────────────────────────────
-        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epRpad\\relax}"));
+        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
         options.push(AxisOption::key_value(
             "height",
             format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),
@@ -277,7 +277,7 @@ impl TwinPlot {
 
         // ── Axis options ──────────────────────────────────────────────────
         options.push(AxisOption::key_value("axis y line", "right"));
-        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epRpad\\relax}"));
+        options.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
         options.push(AxisOption::key_value(
             "height",
             format!("{}\\epyfigureheight", fmt_f(self.height_ratio)),

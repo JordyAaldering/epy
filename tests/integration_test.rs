@@ -166,12 +166,12 @@ fn bar_line_plot_renders() {
     assert!(!tikz.contains("\\definecolor{"), "unexpected inline color definitions");
     // Both axes must use the dynamically computed right-side padding.
     assert!(
-        tikz.contains("width={\\dimexpr \\epyfigurewidth - \\epRpad\\relax}"),
+        tikz.contains("width={\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"),
         "missing dynamic width expression"
     );
     // The padding setup must include a compile-time font measurement.
-    assert!(tikz.contains("\\settowidth{\\epRpad}"), "missing \\settowidth for tick label");
-    assert!(tikz.contains("\\settoheight{\\epRlabelH}"), "missing \\settoheight for ylabel");
+    assert!(tikz.contains("\\settowidth{\\epyrpad}"), "missing \\settowidth for tick label");
+    assert!(tikz.contains("\\settoheight{\\epyrlabelh}"), "missing \\settoheight for ylabel");
 }
 
 #[test]
@@ -233,7 +233,7 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
 
     // Extract the sample string passed to \settowidth in both outputs.
     fn extract_settowidth_arg(tikz: &str) -> &str {
-        let marker = r"\settowidth{\epRpad}{\normalfont\epyticksize ";
+        let marker = r"\settowidth{\epyrpad}{\normalfont\epyticksize ";
         let start = tikz.find(marker).expect("missing settowidth") + marker.len();
         let end = tikz[start..].find('}').expect("missing closing brace") + start;
         &tikz[start..end]
@@ -247,7 +247,7 @@ fn bar_line_plot_width_adapts_to_data_magnitude() {
         "large-value tick estimate '{large_arg}' should be longer than small-value '{small_arg}'"
     );
     assert!(
-        tikz_small.find(r"\settowidth{\epRpad}").unwrap() < tikz_small.find("\\begin{tikzpicture}").unwrap(),
+        tikz_small.find(r"\settowidth{\epyrpad}").unwrap() < tikz_small.find("\\begin{tikzpicture}").unwrap(),
         "expected width measurement setup before tikzpicture"
     );
 }
