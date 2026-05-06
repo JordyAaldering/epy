@@ -1,18 +1,4 @@
-//! Twin-axis bar+line plot.
-//!
-//! The left y-axis shows a bar chart (typically energy efficiency, GFLOP/J).
-//! The right y-axis shows a line plot (typically throughput, GFLOP/s) with a
-//! transparent Q1-Q3 band.
-//! Both axes share the same x-axis (typically power cap in watts).
-//!
-//! Uses explicit axis options and preamble-defined named colors.
-
-use crate::data::GroupedFrame;
-use crate::plot::fmt_f;
-use crate::plot::group_stats;
-use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
-
-// ── TwinPlot ──────────────────────────────────────────────────────────────
+use crate::{data::GroupedFrame, plot::{fmt_f, group_stats}, ir::*};
 
 /// Extra multiplier applied to the data maximum when estimating the longest
 /// right-axis tick label.  pgfplots rounds the axis maximum up to the next

@@ -1,7 +1,16 @@
-pub mod color;
-pub mod data;
-pub mod plot;
-pub mod stats;
+mod color;
+mod data;
+mod plot;
+mod ir;
+mod stats;
+
+// Need this here to avoid unused warnings
+pub mod prelude {
+    pub use crate::color::Color;
+    pub use crate::data::{DataFrame, GroupedFrame};
+    pub use crate::plot::{TwinPlot, LinePlot, ZPlot};
+    pub use crate::stats::{mean, median, q1, q3};
+}
 
 use crate::{data::DataFrame, plot::TwinPlot};
 

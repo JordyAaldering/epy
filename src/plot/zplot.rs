@@ -1,18 +1,6 @@
-//! Z-plot: efficiency (GFLOP/J) vs. throughput (GFLOP/s) for multiple
-//! program configurations, grouped by a categorical column such as thread count.
-//!
-//! Each group becomes a separate series with a distinct color and marker.
-
-use crate::color::Color;
-use crate::data::GroupedFrame;
-use crate::plot::fmt_f;
-use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
-
-// ── Marker shapes ─────────────────────────────────────────────────────────
+use crate::{color::Color, data::GroupedFrame, ir::*, plot::fmt_f};
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
-
-// ── ZPlot ─────────────────────────────────────────────────────────────────
 
 /// A scatter / Z-plot of efficiency vs. throughput, with one series per group.
 ///

@@ -1,8 +1,4 @@
-use crate::color::Color;
-use crate::data::GroupedFrame;
-use crate::plot::fmt_f;
-use crate::plot::group_stats;
-use crate::plot::ir::{AddPlot, Axis, AxisElement, AxisOption, Coordinate, PlotDocument};
+use crate::{color::Color, data::GroupedFrame, ir::*, plot::{fmt_f, group_stats}};
 
 struct LineSeries {
     col: String,

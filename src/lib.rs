@@ -1,58 +1,9 @@
-//! # energy-plots
-//!
-//! A Rust DSL for generating clean PGFPlots/TikZ code from CSV energy
-//! measurement data.
-//!
-//! ## Overview
-//!
-//! The library is built around three plot types that cover the main
-//! energy-measurement use cases:
-//!
-//! | Type | Struct | Use case |
-//! |------|--------|----------|
-//! | Bar + line (twin axes) | [`TwinPlot`] | Energy efficiency (bar, left) vs. throughput (line, right) |
-//! | Line with IQR band | [`LinePlot`] | IPC or other derived metrics across power caps |
-//! | Z-plot (scatter) | [`ZPlot`] | Efficiency vs. throughput for multiple configurations |
-//!
-//! All plots compute the **median** and **IQR** (Q1 / Q3) across repeated
-//! measurements automatically. Bar series render simple Q1-Q3 whiskers,
-//! while line series render a transparent band spanning Q1 to Q3.
-//!
-//! ## Quick start
-//!
-//! ```no_run
-//! use epy::prelude::*;
-//!
-//! // Load and prepare data
-//! let df = DataFrame::from_csv("results/prog.csv").unwrap()
-//!     .filter(|r| r["threads"] == 8.0)
-//!     .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
-//!     .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9);
-//!
-//! let grouped = df.group_by("powercap");
-//!
-//! // Generate bar+line twin-axis plot
-//! let tikz = TwinPlot::new(grouped)
-//!     .bar("gflop_j", r"\si{\giga\flop\per\joule}")
-//!     .line("gflop_s", r"\si{\giga\flop\per\second}")
-//!     .xlabel(r"Power limit (\si{\watt})")
-//!     .render();
-//!
-//! std::fs::write("plot.tex", tikz).unwrap();
-//! ```
-//!
-//! ## LaTeX prelude
-//!
-//! The generated code relies on color and typography macros defined in the
-//! project LaTeX preamble (see `README.md`).  Include the preamble in your
-//! document before `\input`-ting any generated `.tex` file.
-
 mod color;
 mod data;
+mod ir;
 mod plot;
 mod stats;
 
-/// Convenience re-exports for typical usage.
 pub mod prelude {
     pub use crate::color::Color;
     pub use crate::data::{DataFrame, GroupedFrame};

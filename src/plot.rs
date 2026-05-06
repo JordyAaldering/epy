@@ -1,17 +1,13 @@
 //! Plot builders for energy-measurement data.
+mod line;
+mod twin;
+mod zplot;
 
-pub mod twin;
-mod ir;
-pub mod line;
-pub mod zplot;
-
-pub use twin::TwinPlot;
 pub use line::LinePlot;
+pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
-use crate::data::GroupedFrame;
-use crate::plot::ir::AxisOption;
-use crate::stats::*;
+use crate::{data::GroupedFrame, ir::*, stats::*};
 
 /// Return the axis options that every plot type sets directly in the generated
 /// TikZ, replacing what was formerly in `\pgfplotsset`.
