@@ -9,10 +9,6 @@ pub use zplot::ZPlot;
 
 use crate::{data::GroupedFrame, ir::*, stats::*};
 
-/// Return the axis options that every plot type sets directly in the generated
-/// TikZ, replacing what was formerly in `\pgfplotsset`.
-///
-/// * `xgrid` — also enable x major grid lines (used for z-plots).
 pub(crate) fn common_axis_options(xgrid: bool) -> Vec<AxisOption> {
     let mut opts = vec![
         AxisOption::flag("scale only axis"),
@@ -23,9 +19,13 @@ pub(crate) fn common_axis_options(xgrid: bool) -> Vec<AxisOption> {
         AxisOption::key_value("xtick style", "{color=epygridcolor}"),
         AxisOption::key_value("ytick style", "{color=epygridcolor}"),
         AxisOption::key_value("tick label style", r"{font=\epyticksize, inner sep=2pt}"),
+        AxisOption::key_value("legend style", r"{font=\epylegendsize,draw=epygridcolor,fill opacity=0.8,draw opacity=1,text opacity=1}"),
+        // Phantom tick at ymax ensures consistent axis height across plots
+        AxisOption::key_value("extra y ticks", r"{\pgfkeysvalueof{/pgfplots/ymax}}"),
+        AxisOption::key_value("extra y tick labels", r"{\vphantom{Ag}}"),
         AxisOption::key_value(
-            "legend style",
-            r"{font=\epylegendsize, draw=epygridcolor, fill opacity=0.8, draw opacity=1, text opacity=1}",
+            "extra y tick style",
+            "{yticklabel style={opacity=0,text opacity=0},major tick length=0pt}",
         ),
     ];
     if xgrid {
@@ -49,7 +49,6 @@ pub(crate) fn group_stats(gf: &GroupedFrame, col: &str) -> Vec<IQR> {
         .collect()
 }
 
-/// Format a float for TikZ coordinates: trim unnecessary trailing zeros.
 pub(crate) fn fmt_f(v: f64) -> String {
     if v == 0.0 {
         return "0".to_owned();

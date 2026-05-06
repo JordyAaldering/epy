@@ -231,6 +231,7 @@ impl TwinPlot {
                     format!("bar width={}", fmt_f(self.bar_width)),
                     "fill=epyenergycolor".into(),
                     "draw=none".into(),
+                    "area legend".into(),
                 ],
                 coordinates: bar_coordinates,
                 closed_cycle: false,

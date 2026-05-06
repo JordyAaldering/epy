@@ -13,7 +13,10 @@
   xtick style={color=epygridcolor},
   ytick style={color=epygridcolor},
   tick label style={font=\epyticksize, inner sep=2pt},
-  legend style={font=\epylegendsize, draw=epygridcolor, fill opacity=0.8, draw opacity=1, text opacity=1},
+  legend style={font=\epylegendsize,draw=epygridcolor,fill opacity=0.8,draw opacity=1,text opacity=1},
+  extra y ticks={\pgfkeysvalueof{/pgfplots/ymax}},
+  extra y tick labels={\vphantom{Ag}},
+  extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt},
   name=mainaxis,
   trim axis right,
   width={\dimexpr \epyfigurewidth - \epyrpad\relax},
@@ -26,7 +29,7 @@
   xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20},
   xticklabels={0,500000,1125000,1750000,2375000,3000000,3500000,4125000,4750000,5375000,6000000,6500000,7125000,7750000,8375000,9000000,9500000,10125000,10750000,11375000,12000000},
 ]
-\addplot[ybar, bar width=0.7, fill=epyenergycolor, draw=none]
+\addplot[ybar, bar width=0.7, fill=epyenergycolor, draw=none, area legend]
   coordinates {
     (0, 0.050237)
     (1, 0.051923)
@@ -84,7 +87,10 @@
   xtick style={color=epygridcolor},
   ytick style={color=epygridcolor},
   tick label style={font=\epyticksize, inner sep=2pt},
-  legend style={font=\epylegendsize, draw=epygridcolor, fill opacity=0.8, draw opacity=1, text opacity=1},
+  legend style={font=\epylegendsize,draw=epygridcolor,fill opacity=0.8,draw opacity=1,text opacity=1},
+  extra y ticks={\pgfkeysvalueof{/pgfplots/ymax}},
+  extra y tick labels={\vphantom{Ag}},
+  extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt},
   at={(mainaxis.south west)},
   anchor=south west,
   trim axis left,
