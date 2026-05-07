@@ -1,5 +1,6 @@
 use polars::prelude::*;
-use crate::{color::Color, ir::*, plot::{common_axis_options, format_key, series_to_f64}};
+
+use crate::{color::Color, ir::*, plot::{common_axis_options, series_to_f64}};
 
 struct LineSeries {
     col: String,
@@ -55,13 +56,13 @@ impl LinePlot {
         let all_stats: Vec<(Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>)> = self.series.iter()
             .map(|s| {
                 let result = self.df.clone().lazy()
-                    .group_by([polars::prelude::col(&self.x_col)])
+                    .group_by([col(&self.x_col)])
                     .agg([
-                        polars::prelude::col(&s.col).median().alias("_med"),
-                        polars::prelude::col(&s.col).quantile(polars::prelude::lit(0.25_f64), polars::prelude::QuantileMethod::Linear).alias("_q1"),
-                        polars::prelude::col(&s.col).quantile(polars::prelude::lit(0.75_f64), polars::prelude::QuantileMethod::Linear).alias("_q3"),
+                        col(&s.col).median().alias("_med"),
+                        col(&s.col).quantile(lit(0.25_f64), QuantileMethod::Linear).alias("_q1"),
+                        col(&s.col).quantile(lit(0.75_f64), QuantileMethod::Linear).alias("_q3"),
                     ])
-                    .sort_by_exprs([polars::prelude::col(&self.x_col)], polars::prelude::SortMultipleOptions::default())
+                    .sort_by_exprs([col(&self.x_col)], SortMultipleOptions::default())
                     .collect()
                     .expect("LinePlot aggregation failed");
 
@@ -78,25 +79,25 @@ impl LinePlot {
         let n = keys.len();
 
         let mut opts = common_axis_options();
-        opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
-        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
-        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.yaxis_label)));
+        opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
+        opts.replace(AxisOption::Height("\\epyfigureheight".into()));
+        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
+        opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
         if let Some(v) = self.ymin {
-            opts.push(AxisOption::key_value("ymin", v.to_string()));
+            opts.replace(AxisOption::YMin(Numeric::new(v)));
         }
 
         let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
-        opts.push(AxisOption::key_value("xtick", format!("{{{}}}", tick_str.join(","))));
+        opts.replace(AxisOption::XTicks(tick_str));
 
         let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
             lbls.clone()
         } else {
-            keys.iter().map(|&k| format_key(k)).collect()
+            keys.iter().map(ToString::to_string).collect()
         };
-        opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", labels.join(","))));
-        opts.push(AxisOption::key_value("xmin", "-0.5"));
-        opts.push(AxisOption::key_value("xmax", (n as f64 - 0.5).to_string()));
+        opts.replace(AxisOption::XTickLabels(labels));
+        opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
+        opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
 
         let mut elements = Vec::new();
 

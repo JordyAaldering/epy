@@ -1,5 +1,5 @@
 use polars::prelude::*;
-use crate::{color::Color, ir::*, plot::{common_axis_options, format_key, series_to_f64}};
+use crate::{color::Color, ir::*, plot::{common_axis_options, series_to_f64}};
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
 
@@ -74,13 +74,13 @@ impl ZPlot {
         }
 
         let mut opts = common_axis_options();
-        opts.push(AxisOption::key_value("x grid style", format!("{{{}}}", Color::Grid.tikz_name())));
-        opts.push(AxisOption::flag("xmajorgrids"));
-        opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
-        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
-        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.yaxis_label)));
-        opts.push(AxisOption::key_value("ymin", "0"));
+        opts.replace(AxisOption::XGridColor(Color::Grid));
+        opts.replace(AxisOption::XMajorGrids(true));
+        opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
+        opts.replace(AxisOption::Height("\\epyfigureheight".into()));
+        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
+        opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
+        opts.replace(AxisOption::YMin(Numeric::new(0.0)));
 
         let mut elements = Vec::new();
         for (gi, (key, coords)) in series_groups.into_iter().enumerate() {
@@ -97,7 +97,7 @@ impl ZPlot {
                 coords,
                 closed_cycle: false,
             }));
-            elements.push(AxisElement::LegendEntry(format_key(key)));
+            elements.push(AxisElement::LegendEntry(key.to_string()));
         }
 
         Axis { opts, elements }

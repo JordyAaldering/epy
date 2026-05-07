@@ -3,11 +3,11 @@ mod ir;
 mod plot;
 
 pub mod prelude {
+    pub use polars::prelude::*;
     pub use crate::color::Color;
     pub use crate::plot::{TwinPlot, LinePlot, ZPlot};
 }
 
-use polars::prelude::*;
 use prelude::*;
 
 /// Load the CSV and compute all derived columns in one lazy pass.

@@ -1,5 +1,5 @@
 use polars::prelude::*;
-use crate::{ir::*, plot::{common_axis_options, format_key, series_to_f64}};
+use crate::{ir::*, plot::{common_axis_options, series_to_f64}};
 
 /// Extra multiplier applied to the data maximum when estimating the longest
 /// right-axis tick label.  pgfplots rounds the axis maximum up to the next
@@ -98,35 +98,29 @@ impl TwinPlot {
         (-0.5, n as f64 - 0.5)
     }
 
-    fn xtick_str(&self, n: usize) -> String {
-        (0..n).map(|i| i.to_string()).collect::<Vec<_>>().join(",")
-    }
-
-    fn xticklabels_str(&self, keys: &[f64]) -> String {
-        if let Some(ref lbls) = self.xtick_labels {
-            lbls.join(",")
-        } else {
-            keys.iter().map(|&k| format_key(k)).collect::<Vec<_>>().join(",")
-        }
-    }
-
     fn build_left_axis(&self) -> Axis {
         let (keys, meds, q1s, q3s) = self.stats_columns(&self.bar_col);
         let n = keys.len();
         let (xmin, xmax) = self.x_range(n);
 
         let mut opts = common_axis_options();
-        opts.push(AxisOption::key_value("name", "mainaxis"));
-        opts.push(AxisOption::flag("trim axis right"));
-        opts.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
-        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
-        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.bar_label)));
-        opts.push(AxisOption::key_value("ymin", "0"));
-        opts.push(AxisOption::key_value("xmin", xmin.to_string()));
-        opts.push(AxisOption::key_value("xmax", xmax.to_string()));
-        opts.push(AxisOption::key_value("xtick", format!("{{{}}}", self.xtick_str(n))));
-        opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", self.xticklabels_str(&keys))));
+        opts.replace(AxisOption::Name("mainaxis".into()));
+        opts.replace(AxisOption::TrimAxisRight);
+        opts.replace(AxisOption::Width("{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}".into()));
+        opts.replace(AxisOption::Height("\\epyfigureheight".into()));
+        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
+        opts.replace(AxisOption::YLabel(self.bar_label.clone()));
+        opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        opts.replace(AxisOption::XMin(Numeric::new(xmin)));
+        opts.replace(AxisOption::XMax(Numeric::new(xmax)));
+        opts.replace(AxisOption::XTicks((0..n).map(|i| i.to_string()).collect()));
+        opts.replace(AxisOption::XTickLabels(
+            if let Some(ref lbls) = self.xtick_labels {
+                lbls.clone()
+            } else {
+                keys.iter().map(ToString::to_string).collect()
+            }
+        ));
 
         let mut elements = Vec::new();
 
@@ -175,21 +169,21 @@ impl TwinPlot {
         let (xmin, xmax) = self.x_range(n);
 
         let mut opts = common_axis_options();
-        opts.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
-        opts.push(AxisOption::key_value("anchor", "south west"));
-        opts.push(AxisOption::flag("trim axis left"));
-        opts.push(AxisOption::key_value("axis x line", "none"));
-        opts.push(AxisOption::key_value("xmajorgrids", "false"));
-        opts.push(AxisOption::key_value("ymajorgrids", "false"));
-        opts.push(AxisOption::key_value("xtick", "\\empty"));
-        opts.push(AxisOption::key_value("xticklabels", "\\empty"));
-        opts.push(AxisOption::key_value("axis y line", "right"));
-        opts.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
-        opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
-        opts.push(AxisOption::key_value("ylabel", format!("{{\\epylabelsize {}}}", self.line_label)));
-        opts.push(AxisOption::key_value("ymin", "0"));
-        opts.push(AxisOption::key_value("xmin", xmin.to_string()));
-        opts.push(AxisOption::key_value("xmax", xmax.to_string()));
+        opts.replace(AxisOption::AtMainAxisSouthWest);
+        opts.replace(AxisOption::AnchorSouthWest);
+        opts.replace(AxisOption::TrimAxisLeft);
+        opts.replace(AxisOption::AxisXLineNone);
+        opts.replace(AxisOption::XMajorGrids(false));
+        opts.replace(AxisOption::YMajorGrids(false));
+        opts.replace(AxisOption::EmptyXTicks);
+        opts.replace(AxisOption::EmptyXTickLabels);
+        opts.replace(AxisOption::AxisYLineRight);
+        opts.replace(AxisOption::Width("{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}".into()));
+        opts.replace(AxisOption::Height("\\epyfigureheight".into()));
+        opts.replace(AxisOption::YLabel(self.line_label.clone()));
+        opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        opts.replace(AxisOption::XMin(Numeric::new(xmin)));
+        opts.replace(AxisOption::XMax(Numeric::new(xmax)));
 
         let mut band = Vec::new();
         for (i, q3) in q3s.iter().enumerate() {

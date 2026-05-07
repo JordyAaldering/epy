@@ -1,4 +1,5 @@
 use crate::color::Color;
+use std::{collections::HashSet, hash::{Hash, Hasher}};
 
 #[derive(Clone, Debug)]
 pub struct PlotDocument {
@@ -9,14 +10,200 @@ pub struct PlotDocument {
 
 #[derive(Clone, Debug)]
 pub struct Axis {
-    pub(crate) opts: Vec<AxisOption>,
+    pub(crate) opts: HashSet<AxisOption>,
     pub(crate) elements: Vec<AxisElement>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Numeric(pub f64);
+
+impl Numeric {
+    pub fn new(value: f64) -> Self {
+        Self(value)
+    }
+
+    fn render_tikz(self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl PartialEq for Numeric {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_bits() == other.0.to_bits()
+    }
+}
+
+impl Eq for Numeric {}
+
+impl Hash for Numeric {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Style {
+    pub color: Option<Color>,
+    pub draw: Option<Color>,
+    pub font: Option<String>,
+    pub inner_sep_pt: Option<Numeric>,
+    pub fill_opacity: Option<Numeric>,
+    pub draw_opacity: Option<Numeric>,
+    pub text_opacity: Option<Numeric>,
+}
+
+impl Style {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_color(mut self, color: Color) -> Self {
+        self.color = Some(color);
+        self
+    }
+
+    pub fn with_draw(mut self, color: Color) -> Self {
+        self.draw = Some(color);
+        self
+    }
+
+    pub fn with_font(mut self, font: impl Into<String>) -> Self {
+        self.font = Some(font.into());
+        self
+    }
+
+    pub fn with_inner_sep_pt(mut self, value: f64) -> Self {
+        self.inner_sep_pt = Some(Numeric::new(value));
+        self
+    }
+
+    pub fn with_fill_opacity(mut self, value: f64) -> Self {
+        self.fill_opacity = Some(Numeric::new(value));
+        self
+    }
+
+    pub fn with_draw_opacity(mut self, value: f64) -> Self {
+        self.draw_opacity = Some(Numeric::new(value));
+        self
+    }
+
+    pub fn with_text_opacity(mut self, value: f64) -> Self {
+        self.text_opacity = Some(Numeric::new(value));
+        self
+    }
+
+    fn render_tikz(&self) -> String {
+        let mut parts = Vec::new();
+        if let Some(color) = self.color {
+            parts.push(format!("color={}", color.tikz_name()));
+        }
+        if let Some(draw) = self.draw {
+            parts.push(format!("draw={}", draw.tikz_name()));
+        }
+        if let Some(font) = &self.font {
+            parts.push(format!("font={font}"));
+        }
+        if let Some(inner_sep_pt) = self.inner_sep_pt {
+            parts.push(format!("inner sep={}pt", inner_sep_pt.render_tikz()));
+        }
+        if let Some(fill_opacity) = self.fill_opacity {
+            parts.push(format!("fill opacity={}", fill_opacity.render_tikz()));
+        }
+        if let Some(draw_opacity) = self.draw_opacity {
+            parts.push(format!("draw opacity={}", draw_opacity.render_tikz()));
+        }
+        if let Some(text_opacity) = self.text_opacity {
+            parts.push(format!("text opacity={}", text_opacity.render_tikz()));
+        }
+        parts.join(",")
+    }
 }
 
 #[derive(Clone, Debug)]
 pub enum AxisOption {
-    Flag(String),
-    KeyValue { key: String, value: String },
+    ScaleOnlyAxis,
+    AxisLineColor(Color),
+    XGridColor(Color),
+    YGridColor(Color),
+    XMajorGrids(bool),
+    YMajorGrids(bool),
+    MajorTickLength(Numeric),
+    XTickStyle(Style),
+    YTickStyle(Style),
+    TickLabelStyle(Style),
+    LegendStyle(Style),
+    EnsureAxisHeightExtraYTick,
+    EnsureAxisHeightExtraYTickLabels,
+    EnsureAxisHeightExtraYTickStyle,
+    Name(String),
+    TrimAxisRight,
+    TrimAxisLeft,
+    Width(String),
+    Height(String),
+    XLabel(String),
+    YLabel(String),
+    YMin(Numeric),
+    XMin(Numeric),
+    XMax(Numeric),
+    XTicks(Vec<String>),
+    EmptyXTicks,
+    XTickLabels(Vec<String>),
+    EmptyXTickLabels,
+    AtMainAxisSouthWest,
+    AnchorSouthWest,
+    AxisXLineNone,
+    AxisYLineRight,
+}
+
+impl AxisOption {
+    fn slot(&self) -> u8 {
+        match self {
+            AxisOption::ScaleOnlyAxis => 0,
+            AxisOption::AxisLineColor(_) => 1,
+            AxisOption::XGridColor(_) => 2,
+            AxisOption::YGridColor(_) => 3,
+            AxisOption::XMajorGrids(_) => 4,
+            AxisOption::YMajorGrids(_) => 5,
+            AxisOption::MajorTickLength(_) => 6,
+            AxisOption::XTickStyle(_) => 7,
+            AxisOption::YTickStyle(_) => 8,
+            AxisOption::TickLabelStyle(_) => 9,
+            AxisOption::LegendStyle(_) => 10,
+            AxisOption::EnsureAxisHeightExtraYTick => 11,
+            AxisOption::EnsureAxisHeightExtraYTickLabels => 12,
+            AxisOption::EnsureAxisHeightExtraYTickStyle => 13,
+            AxisOption::Name(_) => 14,
+            AxisOption::TrimAxisRight => 15,
+            AxisOption::TrimAxisLeft => 16,
+            AxisOption::Width(_) => 17,
+            AxisOption::Height(_) => 18,
+            AxisOption::XLabel(_) => 19,
+            AxisOption::YLabel(_) => 20,
+            AxisOption::YMin(_) => 21,
+            AxisOption::XMin(_) => 22,
+            AxisOption::XMax(_) => 23,
+            AxisOption::XTicks(_) | AxisOption::EmptyXTicks => 24,
+            AxisOption::XTickLabels(_) | AxisOption::EmptyXTickLabels => 25,
+            AxisOption::AtMainAxisSouthWest => 26,
+            AxisOption::AnchorSouthWest => 27,
+            AxisOption::AxisXLineNone => 28,
+            AxisOption::AxisYLineRight => 29,
+        }
+    }
+}
+
+impl PartialEq for AxisOption {
+    fn eq(&self, other: &Self) -> bool {
+        self.slot() == other.slot()
+    }
+}
+
+impl Eq for AxisOption {}
+
+impl Hash for AxisOption {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.slot().hash(state);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -87,7 +274,9 @@ impl PlotDocument {
 impl Axis {
     fn render_tikz(&self) -> String {
         let mut out = String::from("\\begin{axis}[\n");
-        for option in &self.opts {
+        let mut options: Vec<&AxisOption> = self.opts.iter().collect();
+        options.sort_by_key(|option| option.slot());
+        for option in options {
             out.push_str("  ");
             out.push_str(&option.render_tikz());
             out.push_str(",\n");
@@ -104,19 +293,42 @@ impl Axis {
 }
 
 impl AxisOption {
-    pub fn flag(value: impl Into<String>) -> Self {
-        Self::Flag(value.into())
-    }
-
-    pub fn key_value(key: impl Into<String>, value: impl Into<String>) -> Self {
-        Self::KeyValue { key: key.into(), value: value.into() }
-    }
-
     fn render_tikz(&self) -> String {
-        use AxisOption::*;
         match self {
-            Flag(value) => value.clone(),
-            KeyValue { key, value } => format!("{key}={value}"),
+            AxisOption::ScaleOnlyAxis => "scale only axis".into(),
+            AxisOption::AxisLineColor(color) => format!("axis line style={{{}}}", color.tikz_name()),
+            AxisOption::XGridColor(color) => format!("x grid style={{{}}}", color.tikz_name()),
+            AxisOption::YGridColor(color) => format!("y grid style={{{}}}", color.tikz_name()),
+            AxisOption::XMajorGrids(true) => "xmajorgrids".into(),
+            AxisOption::XMajorGrids(false) => "xmajorgrids=false".into(),
+            AxisOption::YMajorGrids(true) => "ymajorgrids".into(),
+            AxisOption::YMajorGrids(false) => "ymajorgrids=false".into(),
+            AxisOption::MajorTickLength(value) => format!("major tick length={}pt", value.render_tikz()),
+            AxisOption::XTickStyle(style) => format!("xtick style={{{}}}", style.render_tikz()),
+            AxisOption::YTickStyle(style) => format!("ytick style={{{}}}", style.render_tikz()),
+            AxisOption::TickLabelStyle(style) => format!("tick label style={{{}}}", style.render_tikz()),
+            AxisOption::LegendStyle(style) => format!("legend style={{{}}}", style.render_tikz()),
+            AxisOption::EnsureAxisHeightExtraYTick => "extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}".into(),
+            AxisOption::EnsureAxisHeightExtraYTickLabels => "extra y tick labels={\\vphantom{Ag}}".into(),
+            AxisOption::EnsureAxisHeightExtraYTickStyle => "extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt}".into(),
+            AxisOption::Name(name) => format!("name={name}"),
+            AxisOption::TrimAxisRight => "trim axis right".into(),
+            AxisOption::TrimAxisLeft => "trim axis left".into(),
+            AxisOption::Width(width) => format!("width={width}"),
+            AxisOption::Height(height) => format!("height={height}"),
+            AxisOption::XLabel(label) => format!("xlabel={{\\epylabelsize {label}}}"),
+            AxisOption::YLabel(label) => format!("ylabel={{\\epylabelsize {label}}}"),
+            AxisOption::YMin(value) => format!("ymin={}", value.render_tikz()),
+            AxisOption::XMin(value) => format!("xmin={}", value.render_tikz()),
+            AxisOption::XMax(value) => format!("xmax={}", value.render_tikz()),
+            AxisOption::XTicks(values) => format!("xtick={{{}}}", values.join(",")),
+            AxisOption::EmptyXTicks => "xtick=\\empty".into(),
+            AxisOption::XTickLabels(values) => format!("xticklabels={{{}}}", values.join(",")),
+            AxisOption::EmptyXTickLabels => "xticklabels=\\empty".into(),
+            AxisOption::AtMainAxisSouthWest => "at={(mainaxis.south west)}".into(),
+            AxisOption::AnchorSouthWest => "anchor=south west".into(),
+            AxisOption::AxisXLineNone => "axis x line=none".into(),
+            AxisOption::AxisYLineRight => "axis y line=right".into(),
         }
     }
 }
