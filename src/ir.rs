@@ -31,8 +31,8 @@ pub enum AxisElement {
 
 #[derive(Clone, Debug)]
 pub struct AddPlot {
-    pub options: Vec<String>,
-    pub coordinates: Vec<Coordinate>,
+    pub opts: Vec<String>,
+    pub coords: Vec<Coordinate>,
     pub closed_cycle: bool,
 }
 
@@ -152,8 +152,8 @@ impl AxisElement {
 
 impl AddPlot {
     pub fn render_tikz(&self) -> String {
-        let mut out = format!("\\addplot[{}]\n  coordinates {{\n", self.options.join(","));
-        for coordinate in &self.coordinates {
+        let mut out = format!("\\addplot[{}]\n  coordinates {{\n", self.opts.join(","));
+        for coordinate in &self.coords {
             out.push_str("    ");
             out.push_str(&coordinate.render_tikz());
             out.push('\n');

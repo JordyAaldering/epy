@@ -130,14 +130,14 @@ impl TwinPlot {
             bar_coordinates.push(Coordinate::Plain(i as f64, s.median));
         }
         elements.push(AxisElement::Plot(AddPlot {
-            options: vec![
+            opts: vec![
                 "ybar".into(),
                 "bar width=0.7".into(),
                 "fill=epyenergycolor".into(),
                 "draw=none".into(),
                 "area legend".into(),
             ],
-            coordinates: bar_coordinates,
+            coords: bar_coordinates,
             closed_cycle: false,
         }));
         elements.push(AxisElement::LegendEntry(self.bar_label.clone()));
@@ -203,23 +203,22 @@ impl TwinPlot {
             opts,
             elements: vec![
                 AxisElement::Plot(AddPlot {
-                    options: vec![
+                    opts: vec![
                         "fill=epyruntimecompl".into(),
                         "draw=none".into(),
-                        "forget plot".into(),
                     ],
-                    coordinates: band_coordinates,
+                    coords: band_coordinates,
                     closed_cycle: true,
                 }),
                 AxisElement::Plot(AddPlot {
-                    options: vec![
+                    opts: vec![
                         "epyruntimecolor".into(),
                         "mark=*".into(),
                         "mark options={solid,draw=white}".into(),
                         "mark size=2pt".into(),
                         "line width=1pt".into(),
                     ],
-                    coordinates: line_coordinates,
+                    coords: line_coordinates,
                     closed_cycle: false,
                 }),
             ],

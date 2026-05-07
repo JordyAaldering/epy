@@ -102,8 +102,12 @@ impl LinePlot {
                 band_coordinates.push(Coordinate::Plain(i as f64, s.q1));
             }
             elements.push(AxisElement::Plot(AddPlot {
-                options: vec![cn.clone(), "opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
-                coordinates: band_coordinates,
+                opts: vec![
+                    cn.clone(),
+                    "opacity=0.3".into(),
+                    "draw=none".into(),
+                ],
+                coords: band_coordinates,
                 closed_cycle: true,
             }));
 
@@ -113,8 +117,8 @@ impl LinePlot {
                 line_coordinates.push(Coordinate::Plain(i as f64, s.median));
             }
             elements.push(AxisElement::Plot(AddPlot {
-                options: vec![cn.clone(), "mark=*".into(), "mark size=2pt".into(), "line width=1pt".into()],
-                coordinates: line_coordinates,
+                opts: vec![cn.clone(), "mark=*".into(), "mark size=2pt".into(), "line width=1pt".into()],
+                coords: line_coordinates,
                 closed_cycle: false,
             }));
 

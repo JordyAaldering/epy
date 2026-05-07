@@ -67,14 +67,14 @@ impl ZPlot {
                 coordinates.push(Coordinate::Plain(x, y));
             }
             elements.push(AxisElement::Plot(AddPlot {
-                options: vec![
+                opts: vec![
                     cn.clone(),
                     format!("mark={marker}"),
                     "mark size=2pt".into(),
                     "mark options={solid,draw=white}".into(),
                     "line width=1pt".into(),
                 ],
-                coordinates,
+                coords: coordinates,
                 closed_cycle: false,
             }));
             elements.push(AxisElement::LegendEntry(label));

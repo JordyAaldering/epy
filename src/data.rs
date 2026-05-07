@@ -1,31 +1,31 @@
 use std::{collections::HashMap, ops, path::Path};
 
-/// A borrowed view of one row in a [`DataFrame`].
-pub struct Row<'a> {
-    df: &'a DataFrame,
-    idx: usize,
-}
-
-impl<'a> ops::Index<&str> for Row<'a> {
-    type Output = f64;
-
-    fn index(&self, col: &str) -> &f64 {
-        let ci = self
-            .df
-            .col_index(col)
-            .unwrap_or_else(|| panic!("column `{col}` not found"));
-        &self.df.data[ci][self.idx]
-    }
-}
-
 /// Column-major data frame loaded from a CSV file.
 ///
 /// All values are stored as `f64`. Columns with non-numeric values are skipped.
 #[derive(Clone)]
 pub struct DataFrame {
-    headers: Vec<String>,
+    header: Vec<String>,
     data: Vec<Vec<f64>>,
     len: usize,
+}
+
+/// A [`DataFrame`] grouped by a key column.
+///
+/// Groups are sorted by key value (ascending).
+pub struct GroupedFrame {
+    pub(crate) df: DataFrame,
+    pub(crate) key_col: String,
+    /// Sorted unique key values.
+    pub(crate) unique_keys: Vec<f64>,
+    /// `groups[i]` = row indices belonging to group `i`.
+    pub(crate) groups: Vec<Vec<usize>>,
+}
+
+/// A borrowed view of one row in a [`DataFrame`].
+pub struct Row<'a> {
+    df: &'a DataFrame,
+    idx: usize,
 }
 
 impl DataFrame {
@@ -53,7 +53,7 @@ impl DataFrame {
         }
 
         let len = data.first().map_or(0, |c| c.len());
-        Ok(DataFrame { headers, data, len })
+        Ok(DataFrame { header: headers, data, len })
     }
 
     /// Number of rows.
@@ -68,7 +68,7 @@ impl DataFrame {
 
     /// Names of all columns in order.
     pub fn columns(&self) -> &[String] {
-        &self.headers
+        &self.header
     }
 
     /// Return a slice of values for a named column.
@@ -100,7 +100,7 @@ impl DataFrame {
                 }
             }
         }
-        DataFrame { headers: self.headers.clone(), data: new_data, len: new_len }
+        DataFrame { header: self.header.clone(), data: new_data, len: new_len }
     }
 
     /// Add a new column derived from existing columns.
@@ -110,13 +110,13 @@ impl DataFrame {
     where
         F: Fn(Row<'_>) -> f64,
     {
-        assert!(!self.headers.contains(&name.to_owned()), "column `{name}` already exists");
+        assert!(!self.header.contains(&name.to_owned()), "column `{name}` already exists");
         let mut new_data = self.data.clone();
         let derived: Vec<f64> = (0..self.len).map(|i| f(self.row(i))).collect();
         new_data.push(derived);
-        let mut new_headers = self.headers.clone();
+        let mut new_headers = self.header.clone();
         new_headers.push(name.to_owned());
-        DataFrame { headers: new_headers, data: new_data, len: self.len }
+        DataFrame { header: new_headers, data: new_data, len: self.len }
     }
 
     /// Group rows by the unique sorted values in `key_col`.
@@ -151,20 +151,8 @@ impl DataFrame {
     }
 
     fn col_index(&self, name: &str) -> Option<usize> {
-        self.headers.iter().position(|h| h == name)
+        self.header.iter().position(|h| h == name)
     }
-}
-
-/// A [`DataFrame`] grouped by a key column.
-///
-/// Groups are sorted by key value (ascending).
-pub struct GroupedFrame {
-    pub(crate) df: DataFrame,
-    pub(crate) key_col: String,
-    /// Sorted unique key values.
-    pub(crate) unique_keys: Vec<f64>,
-    /// `groups[i]` = row indices belonging to group `i`.
-    pub(crate) groups: Vec<Vec<usize>>,
 }
 
 impl GroupedFrame {
@@ -189,5 +177,17 @@ impl GroupedFrame {
             .iter()
             .map(|&ri| self.df.col(col)[ri])
             .collect()
+    }
+}
+
+impl<'a> ops::Index<&str> for Row<'a> {
+    type Output = f64;
+
+    fn index(&self, col: &str) -> &f64 {
+        let ci = self
+            .df
+            .col_index(col)
+            .unwrap_or_else(|| panic!("column `{col}` not found"));
+        &self.df.data[ci][self.idx]
     }
 }

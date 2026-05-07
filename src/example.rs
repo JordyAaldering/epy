@@ -4,7 +4,6 @@ mod plot;
 mod ir;
 mod stats;
 
-// Need this here to avoid unused warnings
 pub mod prelude {
     pub use crate::color::Color;
     pub use crate::data::{DataFrame, GroupedFrame};
