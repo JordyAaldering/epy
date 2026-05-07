@@ -70,7 +70,29 @@ fn ipc() {
     std::fs::write(".build/example_ipc.tex", tikz).unwrap();
 }
 
+fn zplot() {
+    let df = DataFrame::from_csv("test_data.csv").unwrap()
+        .with_column("powercapW", |r| r["powercap"] / 1e6)
+        .with_column("gflop_j", |r| r["insns"] / r["rapl"] / 1e9)
+        .with_column("gflop_s", |r| r["insns"] / r["runtime"] / 1e9);
+
+    let grouped = df.group_by("threads");
+
+    let tikz = ZPlot::new(
+            grouped,
+            "gflop_s",
+            "gflop_j",
+            "GFLOP/s",
+            "GFLOP/J",
+        )
+        .build_document()
+        .render_tikz();
+
+    std::fs::write(".build/example_zplot.tex", tikz).unwrap();
+}
+
 fn main() {
     twin();
     ipc();
+    zplot();
 }

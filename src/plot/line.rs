@@ -46,9 +46,9 @@ impl LinePlot {
         self
     }
 
-    pub fn xtick_labels(mut self, labels: Vec<impl Into<String>>) -> Self {
+    pub fn xtick_labels(mut self, labels: Vec<String>) -> Self {
         assert_eq!(labels.len(), self.df.num_groups());
-        self.xtick_labels = Some(labels.into_iter().map(|l| l.into()).collect());
+        self.xtick_labels = Some(labels);
         self
     }
 
