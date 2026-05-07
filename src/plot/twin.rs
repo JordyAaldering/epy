@@ -42,11 +42,7 @@ impl TwinPlot {
         self
     }
 
-    pub fn render(&self) -> String {
-        self.build_document().render_tikz()
-    }
-
-    fn build_document(&self) -> PlotDocument {
+    pub fn build_document(&self) -> PlotDocument {
         let setup_lines = self.twin_setup_lines();
         let ax1 = self.build_left_axis();
         let ax2 = self.build_right_axis();

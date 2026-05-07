@@ -52,11 +52,7 @@ impl LinePlot {
         self
     }
 
-    pub fn render(&self) -> String {
-        self.build_document().render_tikz()
-    }
-
-    fn build_document(&self) -> PlotDocument {
+    pub fn build_document(&self) -> PlotDocument {
         let ax = self.build_axis();
         PlotDocument::new(Vec::new(), ax, None)
     }

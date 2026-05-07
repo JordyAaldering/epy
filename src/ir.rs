@@ -1,16 +1,16 @@
 #[derive(Clone, Debug)]
-pub(crate) struct PlotDocument {
+pub struct PlotDocument {
     setup_lines: Vec<String>,
     ax0: Axis,
     ax1: Option<Axis>,
 }
 
 impl PlotDocument {
-    pub(crate) fn new(setup_lines: Vec<String>, ax0: Axis, ax1: Option<Axis>) -> Self {
+    pub fn new(setup_lines: Vec<String>, ax0: Axis, ax1: Option<Axis>) -> Self {
         PlotDocument { setup_lines, ax0, ax1 }
     }
 
-    pub(crate) fn render_tikz(&self) -> String {
+    pub fn render_tikz(&self) -> String {
         let mut out = String::new();
         for line in &self.setup_lines {
             out.push_str(line);
@@ -27,7 +27,7 @@ impl PlotDocument {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Axis {
+pub struct Axis {
     pub(crate) opts: Vec<AxisOption>,
     pub(crate) elements: Vec<AxisElement>,
 }
@@ -52,17 +52,17 @@ impl Axis {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum AxisOption {
+pub enum AxisOption {
     Flag(String),
     KeyValue { key: String, value: String },
 }
 
 impl AxisOption {
-    pub(crate) fn flag(value: impl Into<String>) -> Self {
+    pub fn flag(value: impl Into<String>) -> Self {
         Self::Flag(value.into())
     }
 
-    pub(crate) fn key_value(key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn key_value(key: impl Into<String>, value: impl Into<String>) -> Self {
         Self::KeyValue { key: key.into(), value: value.into() }
     }
 
@@ -75,7 +75,7 @@ impl AxisOption {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum AxisElement {
+pub enum AxisElement {
     Plot(AddPlot),
     LegendEntry(String),
     LegendImage(Vec<String>),
@@ -83,7 +83,7 @@ pub(crate) enum AxisElement {
 }
 
 impl AxisElement {
-    fn render_tikz(&self) -> String {
+    pub fn render_tikz(&self) -> String {
         match self {
             Self::Plot(plot) => plot.render_tikz(),
             Self::LegendEntry(label) => format!("\\addlegendentry{{{label}}}\n"),
@@ -101,14 +101,14 @@ impl AxisElement {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct AddPlot {
-    pub(crate) options: Vec<String>,
-    pub(crate) coordinates: Vec<Coordinate>,
-    pub(crate) closed_cycle: bool,
+pub struct AddPlot {
+    pub options: Vec<String>,
+    pub coordinates: Vec<Coordinate>,
+    pub closed_cycle: bool,
 }
 
 impl AddPlot {
-    fn render_tikz(&self) -> String {
+    pub fn render_tikz(&self) -> String {
         let mut out = format!("\\addplot[{}]\n  coordinates {{\n", self.options.join(","));
         for coordinate in &self.coordinates {
             out.push_str("    ");
@@ -126,13 +126,13 @@ impl AddPlot {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum Coordinate {
+pub enum Coordinate {
     Plain(f64, f64),
     AxisCs(f64, f64),
 }
 
 impl Coordinate {
-    fn render_tikz(&self) -> String {
+    pub fn render_tikz(&self) -> String {
         match self {
             Self::Plain(x, y) => format!("({}, {})", x, y),
             Self::AxisCs(x, y) => format!("(axis cs:{},{})", x, y),

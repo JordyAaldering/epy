@@ -37,7 +37,8 @@ fn twin() {
             "GFLOP/s",
             "Power limit (W)",
         )
-        .render();
+        .build_document()
+        .render_tikz();
 
     std::fs::write(".build/example_twin.tex", tikz).unwrap();
 }
@@ -62,7 +63,8 @@ fn ipc() {
             "IPC",
         )
         .series("ipc", "IPC", Color::Runtime)
-        .render();
+        .build_document()
+        .render_tikz();
 
     std::fs::write(".build/example_ipc.tex", tikz).unwrap();
 }
