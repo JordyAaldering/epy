@@ -82,6 +82,7 @@ fn zplot() {
             grouped,
             "gflop_s",
             "gflop_j",
+            "powercapW",
             "GFLOP/s",
             "GFLOP/J",
         )
