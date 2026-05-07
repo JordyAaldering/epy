@@ -6,30 +6,36 @@ use crate::{data::GroupedFrame, plot::group_stats, ir::*};
 /// maximum; 10 % is a conservative overshoot that covers most cases.
 const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 
-pub struct TwinPlot {
-    df: GroupedFrame,
-    bar_col: String,
+type Selector<T> = Box<dyn Fn(&T) -> f64 + 'static>;
+
+pub struct TwinPlot<T> {
+    df: GroupedFrame<T>,
+    bar_select: Selector<T>,
     bar_label: String,
-    line_col: String,
+    line_select: Selector<T>,
     line_label: String,
     xaxis_label: String,
     xtick_labels: Option<Vec<String>>,
 }
 
-impl TwinPlot {
-    pub fn new(
-        df: GroupedFrame,
-        bar_col: &str,
+impl<T> TwinPlot<T> {
+    pub fn new<BF, LF>(
+        df: GroupedFrame<T>,
+        bar_select: BF,
         bar_label: &str,
-        line_col: &str,
+        line_select: LF,
         line_label: &str,
         xaxis_label: &str,
-    ) -> Self {
+    ) -> Self
+    where
+        BF: Fn(&T) -> f64 + 'static,
+        LF: Fn(&T) -> f64 + 'static,
+    {
         TwinPlot {
             df,
-            bar_col: bar_col.into(),
+            bar_select: Box::new(bar_select),
             bar_label: bar_label.into(),
-            line_col: line_col.into(),
+            line_select: Box::new(line_select),
             line_label: line_label.into(),
             xaxis_label: xaxis_label.into(),
             xtick_labels: None,
@@ -51,7 +57,7 @@ impl TwinPlot {
 
     /// Return the maximum q3 value across all groups for the right (line) axis.
     fn max_line_value(&self) -> f64 {
-        let stats = group_stats(&self.df, &self.line_col);
+        let stats = group_stats(&self.df, self.line_select.as_ref());
         stats.iter().map(|s| s.q3).fold(0.0_f64, f64::max)
     }
 
@@ -99,7 +105,7 @@ impl TwinPlot {
         if let Some(ref lbls) = self.xtick_labels {
             lbls.join(",")
         } else {
-            keys.iter().map(|&k| k.to_string()).collect::<Vec<_>>().join(",")
+            keys.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(",")
         }
     }
 
@@ -122,7 +128,7 @@ impl TwinPlot {
 
         let mut elements = Vec::new();
 
-        let stats = group_stats(&self.df, &self.bar_col);
+    let stats = group_stats(&self.df, self.bar_select.as_ref());
 
         // Filled bars (median height)
         let mut bar_coordinates = Vec::new();
@@ -165,7 +171,7 @@ impl TwinPlot {
 
     fn build_right_axis(&self) -> Axis {
         let (xmin, xmax) = self.x_range();
-        let stats = group_stats(&self.df, &self.line_col);
+        let stats = group_stats(&self.df, self.line_select.as_ref());
         let mut opts = crate::plot::common_axis_options();
 
         opts.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
@@ -206,6 +212,7 @@ impl TwinPlot {
                     opts: vec![
                         "fill=epyruntimecompl".into(),
                         "draw=none".into(),
+                        "forget plot".into(),
                     ],
                     coords: band_coordinates,
                     closed_cycle: true,

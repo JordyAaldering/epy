@@ -27,11 +27,14 @@ pub(crate) fn common_axis_options() -> Vec<AxisOption> {
     ]
 }
 
-/// Compute per-group statistics for `col` from a [`GroupedFrame`].
-pub(crate) fn group_stats(gf: &GroupedFrame, col: &str) -> Vec<IQR> {
+/// Compute per-group statistics for values selected from a [`GroupedFrame`].
+pub(crate) fn group_stats<T, F>(gf: &GroupedFrame<T>, selector: &F) -> Vec<IQR>
+where
+    F: Fn(&T) -> f64 + ?Sized,
+{
     (0..gf.num_groups())
         .map(|gi| {
-            let xs = gf.group_values(gi, col);
+            let xs = gf.group_values(gi, selector);
             IQR {
                 median: median(&xs),
                 q1: q1(&xs),

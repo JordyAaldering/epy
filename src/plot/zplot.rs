@@ -2,29 +2,36 @@ use crate::{color::Color, data::GroupedFrame, ir::*, plot::common_axis_options};
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
 
-pub struct ZPlot {
-    df: GroupedFrame,
-    x_col: String,
-    y_col: String,
-    hue_col: String,
+type Selector<T> = Box<dyn Fn(&T) -> f64 + 'static>;
+
+pub struct ZPlot<T> {
+    df: GroupedFrame<T>,
+    x_select: Selector<T>,
+    y_select: Selector<T>,
+    hue_select: Selector<T>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-impl ZPlot {
-    pub fn new(
-        df: GroupedFrame,
-        x_col: &str,
-        y_col: &str,
-        hue_col: &str,
+impl<T> ZPlot<T> {
+    pub fn new<XF, YF, HF>(
+        df: GroupedFrame<T>,
+        x_select: XF,
+        y_select: YF,
+        hue_select: HF,
         xaxis_label: &str,
         yaxis_label: &str,
-    ) -> Self {
+    ) -> Self
+    where
+        XF: Fn(&T) -> f64 + 'static,
+        YF: Fn(&T) -> f64 + 'static,
+        HF: Fn(&T) -> f64 + 'static,
+    {
         ZPlot {
             df,
-            x_col: x_col.into(),
-            y_col: y_col.into(),
-            hue_col: hue_col.into(),
+            x_select: Box::new(x_select),
+            y_select: Box::new(y_select),
+            hue_select: Box::new(hue_select),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
@@ -51,8 +58,7 @@ impl ZPlot {
         let mut elements = Vec::new();
 
         for gi in 0..n {
-            let key = self.df.unique_keys[gi];
-            let label = key.to_string();
+            let label = self.df.unique_keys[gi].to_string();
             let cn = &color_names[gi];
             let marker = MARKERS[gi % MARKERS.len()];
 
@@ -75,9 +81,9 @@ impl ZPlot {
     }
 
     fn group_coordinates(&self, gi: usize) -> Vec<Coordinate> {
-        let hue_values = self.df.group_values(gi, &self.hue_col);
-        let xs = self.df.group_values(gi, &self.x_col);
-        let ys = self.df.group_values(gi, &self.y_col);
+        let hue_values = self.df.group_values(gi, self.hue_select.as_ref());
+        let xs = self.df.group_values(gi, self.x_select.as_ref());
+        let ys = self.df.group_values(gi, self.y_select.as_ref());
 
         let mut rows: Vec<(f64, f64, f64)> = hue_values
             .into_iter()

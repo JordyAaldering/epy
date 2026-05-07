@@ -1,23 +1,25 @@
 use crate::{color::Color, data::GroupedFrame, ir::*, plot::{common_axis_options, group_stats}};
 
-struct LineSeries {
-    col: String,
+type Selector<T> = Box<dyn Fn(&T) -> f64 + 'static>;
+
+struct LineSeries<T> {
+    select: Selector<T>,
     label: String,
     color: Color,
 }
 
-pub struct LinePlot {
-    df: GroupedFrame,
-    series: Vec<LineSeries>,
+pub struct LinePlot<T> {
+    df: GroupedFrame<T>,
+    series: Vec<LineSeries<T>>,
     xaxis_label: String,
     yaxis_label: String,
     ymin: Option<f64>,
     xtick_labels: Option<Vec<String>>,
 }
 
-impl LinePlot {
+impl<T> LinePlot<T> {
     pub fn new(
-        df: GroupedFrame,
+        df: GroupedFrame<T>,
         xaxis_label: &str,
         yaxis_label: &str,
     ) -> Self {
@@ -31,13 +33,16 @@ impl LinePlot {
         }
     }
 
-    pub fn series(
+    pub fn series<F>(
         mut self,
-        col: &str,
+        select: F,
         label: &str,
         color: Color,
-    ) -> Self {
-        self.series.push(LineSeries { col: col.into(), label: label.into(), color });
+    ) -> Self
+    where
+        F: Fn(&T) -> f64 + 'static,
+    {
+        self.series.push(LineSeries { select: Box::new(select), label: label.into(), color });
         self
     }
 
@@ -79,7 +84,7 @@ impl LinePlot {
         let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
             lbls.clone()
         } else {
-            keys.iter().map(|&k| k.to_string()).collect()
+            keys.iter().map(|k| k.to_string()).collect()
         };
         opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", labels.join(","))));
 
@@ -90,7 +95,7 @@ impl LinePlot {
         let mut elements = Vec::new();
 
         for (si, series) in self.series.iter().enumerate() {
-            let stats = group_stats(&self.df, &series.col);
+            let stats = group_stats(&self.df, series.select.as_ref());
             let cn = &color_names[si];
 
             // Transparent Q1-Q3 band (upper half forward, lower half backward).
@@ -106,6 +111,7 @@ impl LinePlot {
                     cn.clone(),
                     "opacity=0.3".into(),
                     "draw=none".into(),
+                    "forget plot".into(),
                 ],
                 coords: band_coordinates,
                 closed_cycle: true,
