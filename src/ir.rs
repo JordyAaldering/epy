@@ -5,6 +5,39 @@ pub struct PlotDocument {
     ax1: Option<Axis>,
 }
 
+#[derive(Clone, Debug)]
+pub struct Axis {
+    pub(crate) opts: Vec<AxisOption>,
+    pub(crate) elements: Vec<AxisElement>,
+}
+
+#[derive(Clone, Debug)]
+pub enum AxisOption {
+    Flag(String),
+    KeyValue { key: String, value: String },
+}
+
+#[derive(Clone, Debug)]
+pub enum AxisElement {
+    Plot(AddPlot),
+    LegendEntry(String),
+    LegendImage(Vec<String>),
+    DrawLine { options: Vec<String>, from: Coordinate, to: Coordinate },
+}
+
+#[derive(Clone, Debug)]
+pub struct AddPlot {
+    pub options: Vec<String>,
+    pub coordinates: Vec<Coordinate>,
+    pub closed_cycle: bool,
+}
+
+#[derive(Clone, Debug)]
+pub enum Coordinate {
+    Plain(f64, f64),
+    AxisCs(f64, f64),
+}
+
 impl PlotDocument {
     pub fn new(setup_lines: Vec<String>, ax0: Axis, ax1: Option<Axis>) -> Self {
         PlotDocument { setup_lines, ax0, ax1 }
@@ -26,12 +59,6 @@ impl PlotDocument {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Axis {
-    pub(crate) opts: Vec<AxisOption>,
-    pub(crate) elements: Vec<AxisElement>,
-}
-
 impl Axis {
     fn render_tikz(&self) -> String {
         let mut out = String::from("\\begin{axis}[\n");
@@ -51,12 +78,6 @@ impl Axis {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum AxisOption {
-    Flag(String),
-    KeyValue { key: String, value: String },
-}
-
 impl AxisOption {
     pub fn flag(value: impl Into<String>) -> Self {
         Self::Flag(value.into())
@@ -72,14 +93,6 @@ impl AxisOption {
             Self::KeyValue { key, value } => format!("{key}={value}"),
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum AxisElement {
-    Plot(AddPlot),
-    LegendEntry(String),
-    LegendImage(Vec<String>),
-    DrawLine { options: Vec<String>, from: Coordinate, to: Coordinate },
 }
 
 impl AxisElement {
@@ -100,13 +113,6 @@ impl AxisElement {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct AddPlot {
-    pub options: Vec<String>,
-    pub coordinates: Vec<Coordinate>,
-    pub closed_cycle: bool,
-}
-
 impl AddPlot {
     pub fn render_tikz(&self) -> String {
         let mut out = format!("\\addplot[{}]\n  coordinates {{\n", self.options.join(","));
@@ -123,12 +129,6 @@ impl AddPlot {
         }
         out
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum Coordinate {
-    Plain(f64, f64),
-    AxisCs(f64, f64),
 }
 
 impl Coordinate {

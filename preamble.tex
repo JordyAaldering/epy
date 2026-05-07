@@ -2,6 +2,8 @@
 \usepgfplotslibrary{groupplots,dateplot}
 \usetikzlibrary{patterns,shapes.arrows}
 
+\definecolor{epygridcolor}{RGB}{204,204,204}
+\definecolor{epyannotcolor}{RGB}{176,176,176}
 \definecolor{epyenergycolor}{RGB}{2,158,115}
 \definecolor{epyenergycompl}{RGB}{128,206,185}
 \definecolor{epyruntimecolor}{RGB}{1,115,178}
@@ -17,24 +19,20 @@
 \definecolor{epycolorblind8}{RGB}{236,225,51}
 \definecolor{epycolorblind9}{RGB}{86,180,233}
 
-% Grid and tick color used in all generated plots
-\definecolor{epygridcolor}{RGB}{204,204,204}
-
 % Font size commands for plot text
 \newcommand{\epylabelsize}{\scriptsize}
-\newcommand{\epyticksize}{\scriptsize}
+\newcommand{\epyannotsize}{\scriptsize}
 \newcommand{\epylegendsize}{\scriptsize}
+\newcommand{\epyticksize}{\scriptsize}
 
 % Figure dimensions used by generated plot code
 \newlength{\epyfigurewidth}
 \setlength{\epyfigurewidth}{\linewidth}
 \newlength{\epyfigureheight}
-\setlength{\epyfigureheight}{0.85\epyfigurewidth}
+\setlength{\epyfigureheight}{0.85\linewidth}
 
 % Right-side padding for twin-axis plots (set at compile time in generated code)
 \newlength{\epyrpad}
-\setlength{\epyrpad}{0pt}
 \newlength{\epyrlabelh}
-\setlength{\epyrlabelh}{0pt}
 
 \pgfplotsset{compat=newest}

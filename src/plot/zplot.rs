@@ -37,7 +37,7 @@ impl ZPlot {
         let color_names: Vec<String> = (0..n).map(|i| Color::Colorblind(i).tikz_name()).collect();
 
         let mut opts = common_axis_options();
-        opts.push(AxisOption::key_value("x grid style", "{epygridcolor}"));
+        opts.push(AxisOption::key_value("x grid style", format!("{{{}}}", Color::Grid.tikz_name())));
         opts.push(AxisOption::flag("xmajorgrids"));
         opts.push(AxisOption::key_value("width", "\\epyfigurewidth"));
         opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
