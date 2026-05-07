@@ -23,6 +23,7 @@ pub enum AxisElement {
     LegendEntry(String),
     LegendImage(Vec<String>),
     DrawLine { options: Vec<String>, from: Coordinate, to: Coordinate },
+    DrawArea { options: Vec<String>, bottom_left: Coordinate, top_right: Coordinate },
 }
 
 #[derive(Clone, Debug)]
@@ -41,6 +42,18 @@ pub enum Coordinate {
 impl PlotDocument {
     pub fn new(setup_lines: Vec<String>, ax0: Axis, ax1: Option<Axis>) -> Self {
         PlotDocument { setup_lines, ax0, ax1 }
+    }
+
+    pub fn annot_area(mut self, xmin: f64, xmax: f64, ymin: f64, ymax: f64) -> Self {
+        let options = vec![
+            "draw=epyannotcolor".into(),
+            "draw opacity=0.5".into(),
+            "postaction={pattern=north east lines, pattern color=epyannotcolor, fill opacity=0.5}".into(),
+        ];
+        let bottom_left = Coordinate::AxisCs(xmin, ymin);
+        let top_right = Coordinate::AxisCs(xmax, ymax);
+        self.ax0.elements.push(AxisElement::DrawArea { options, bottom_left, top_right });
+        self
     }
 
     pub fn render_tikz(&self) -> String {
@@ -97,18 +110,25 @@ impl AxisOption {
 
 impl AxisElement {
     pub fn render_tikz(&self) -> String {
+        use AxisElement::*;
         match self {
-            Self::Plot(plot) => plot.render_tikz(),
-            Self::LegendEntry(label) => format!("\\addlegendentry{{{label}}}\n"),
-            Self::LegendImage(options) => {
+            Plot(plot) => {
+                plot.render_tikz()
+            }
+            LegendEntry(label) => {
+                format!("\\addlegendentry{{{label}}}\n")
+            }
+            LegendImage(options) => {
                 format!("\\addlegendimage{{{}}}\n", options.join(","))
             }
-            Self::DrawLine { options, from, to } => format!(
-                "\\draw[{}] {} -- {};\n",
-                options.join(","),
-                from.render_tikz(),
-                to.render_tikz()
-            ),
+            DrawLine { options, from, to } => {
+                format!("\\draw[{}] {} -- {};\n",
+                    options.join(","), from.render_tikz(), to.render_tikz())
+            }
+            DrawArea { options, bottom_left, top_right } => {
+                format!("\\draw[{}] {} rectangle {};\n",
+                    options.join(","), bottom_left.render_tikz(), top_right.render_tikz())
+            }
         }
     }
 }
