@@ -113,9 +113,10 @@ impl AxisOption {
     }
 
     fn render_tikz(&self) -> String {
+        use AxisOption::*;
         match self {
-            Self::Flag(value) => value.clone(),
-            Self::KeyValue { key, value } => format!("{key}={value}"),
+            Flag(value) => value.clone(),
+            KeyValue { key, value } => format!("{key}={value}"),
         }
     }
 }
@@ -169,9 +170,10 @@ impl AddPlot {
 
 impl Coordinate {
     pub fn render_tikz(&self) -> String {
+        use Coordinate::*;
         match self {
-            Self::Plain(x, y) => format!("({}, {})", x, y),
-            Self::AxisCs(x, y) => format!("(axis cs:{},{})", x, y),
+            Plain(x, y) => format!("({},{})", x, y),
+            AxisCs(x, y) => format!("(axis cs:{},{})", x, y),
         }
     }
 }
