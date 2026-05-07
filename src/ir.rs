@@ -1,5 +1,5 @@
 use crate::color::Color;
-use std::{collections::HashSet, hash::{Hash, Hasher}};
+use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
 #[derive(Clone, Debug)]
 pub struct PlotDocument {
@@ -155,46 +155,9 @@ pub enum AxisOption {
     AxisYLineRight,
 }
 
-impl AxisOption {
-    fn slot(&self) -> u8 {
-        match self {
-            AxisOption::ScaleOnlyAxis => 0,
-            AxisOption::AxisLineColor(_) => 1,
-            AxisOption::XGridColor(_) => 2,
-            AxisOption::YGridColor(_) => 3,
-            AxisOption::XMajorGrids(_) => 4,
-            AxisOption::YMajorGrids(_) => 5,
-            AxisOption::MajorTickLength(_) => 6,
-            AxisOption::XTickStyle(_) => 7,
-            AxisOption::YTickStyle(_) => 8,
-            AxisOption::TickLabelStyle(_) => 9,
-            AxisOption::LegendStyle(_) => 10,
-            AxisOption::EnsureAxisHeightExtraYTick => 11,
-            AxisOption::EnsureAxisHeightExtraYTickLabels => 12,
-            AxisOption::EnsureAxisHeightExtraYTickStyle => 13,
-            AxisOption::Name(_) => 14,
-            AxisOption::TrimAxisRight => 15,
-            AxisOption::TrimAxisLeft => 16,
-            AxisOption::Width(_) => 17,
-            AxisOption::Height(_) => 18,
-            AxisOption::XLabel(_) => 19,
-            AxisOption::YLabel(_) => 20,
-            AxisOption::YMin(_) => 21,
-            AxisOption::XMin(_) => 22,
-            AxisOption::XMax(_) => 23,
-            AxisOption::XTicks(_) | AxisOption::EmptyXTicks => 24,
-            AxisOption::XTickLabels(_) | AxisOption::EmptyXTickLabels => 25,
-            AxisOption::AtMainAxisSouthWest => 26,
-            AxisOption::AnchorSouthWest => 27,
-            AxisOption::AxisXLineNone => 28,
-            AxisOption::AxisYLineRight => 29,
-        }
-    }
-}
-
 impl PartialEq for AxisOption {
     fn eq(&self, other: &Self) -> bool {
-        self.slot() == other.slot()
+        mem::discriminant(self) == mem::discriminant(other)
     }
 }
 
@@ -202,7 +165,7 @@ impl Eq for AxisOption {}
 
 impl Hash for AxisOption {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.slot().hash(state);
+        mem::discriminant(self).hash(state);
     }
 }
 
@@ -274,11 +237,9 @@ impl PlotDocument {
 impl Axis {
     fn render_tikz(&self) -> String {
         let mut out = String::from("\\begin{axis}[\n");
-        let mut options: Vec<&AxisOption> = self.opts.iter().collect();
-        options.sort_by_key(|option| option.slot());
-        for option in options {
+        for opt in &self.opts {
             out.push_str("  ");
-            out.push_str(&option.render_tikz());
+            out.push_str(&opt.render_tikz());
             out.push_str(",\n");
         }
         out.push_str("]\n");

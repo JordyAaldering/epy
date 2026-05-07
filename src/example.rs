@@ -18,11 +18,11 @@ fn load_data() -> DataFrame {
         .unwrap()
         .with_columns([
             // powercap is stored in µW; convert to W
-            (col("powercap").cast(DataType::Float64) / lit(1_000_000.0_f64))
+            (col("powercap").cast(DataType::Float64) / lit(1_000_000.0f64))
                 .alias("powercap_w"),
-            (col("insns").cast(DataType::Float64) / col("runtime") / lit(1e9_f64))
+            (col("insns").cast(DataType::Float64) / col("runtime") / lit(1e9f64))
                 .alias("gflop_s"),
-            (col("insns").cast(DataType::Float64) / col("rapl") / lit(1e9_f64))
+            (col("insns").cast(DataType::Float64) / col("rapl") / lit(1e9f64))
                 .alias("gflop_j"),
             (col("insns").cast(DataType::Float64) / col("cycs").cast(DataType::Float64))
                 .alias("ipc"),
