@@ -64,7 +64,8 @@ fn ipc() {
         )
         .series("ipc", "IPC", Color::Runtime)
         .build_document()
-        .annot_area((3.0 + 3.5) / 2.0, (7.125 + 7.75) / 2.0, 0.0, 0.4)
+        .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, Color::Annot)
+        .annot_label(7.0, 0.25, "Hello, world!")
         .render_tikz();
 
     std::fs::write(".build/example_ipc.tex", tikz).unwrap();

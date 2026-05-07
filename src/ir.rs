@@ -1,3 +1,5 @@
+use crate::color::Color;
+
 #[derive(Clone, Debug)]
 pub struct PlotDocument {
     setup_lines: Vec<String>,
@@ -24,6 +26,7 @@ pub enum AxisElement {
     LegendImage(Vec<String>),
     DrawLine { options: Vec<String>, from: Coordinate, to: Coordinate },
     DrawArea { options: Vec<String>, bottom_left: Coordinate, top_right: Coordinate },
+    DrawLabel { options: Vec<String>, at: Coordinate, label: String },
 }
 
 #[derive(Clone, Debug)]
@@ -44,15 +47,24 @@ impl PlotDocument {
         PlotDocument { setup_lines, ax0, ax1 }
     }
 
-    pub fn annot_area(mut self, xmin: f64, xmax: f64, ymin: f64, ymax: f64) -> Self {
+    pub fn annot_area(mut self, xmin: f64, ymin: f64, xmax: f64, ymax: f64, color: Color) -> Self {
         let options = vec![
-            "draw=epyannotcolor".into(),
+            format!("draw={}", color.tikz_name()),
             "draw opacity=0.5".into(),
-            "postaction={pattern=north east lines, pattern color=epyannotcolor, fill opacity=0.5}".into(),
+            format!("postaction={{pattern=north east lines, pattern color={}, fill opacity=0.5}}", color.tikz_name()),
         ];
         let bottom_left = Coordinate::AxisCs(xmin, ymin);
         let top_right = Coordinate::AxisCs(xmax, ymax);
         self.ax0.elements.push(AxisElement::DrawArea { options, bottom_left, top_right });
+        self
+    }
+
+    pub fn annot_label(mut self, x: f64, y: f64, label: &str) -> Self {
+        let options = vec![
+            "font=\\epyannotsize".into(),
+        ];
+        let at = Coordinate::AxisCs(x, y);
+        self.ax0.elements.push(AxisElement::DrawLabel { options, at, label: label.into() });
         self
     }
 
@@ -128,6 +140,10 @@ impl AxisElement {
             DrawArea { options, bottom_left, top_right } => {
                 format!("\\draw[{}] {} rectangle {};\n",
                     options.join(","), bottom_left.render_tikz(), top_right.render_tikz())
+            }
+            DrawLabel { options, at, label } => {
+                format!("\\draw {} node[{}] {{{}}};\n",
+                    at.render_tikz(), options.join(","), label)
             }
         }
     }
