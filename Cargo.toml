@@ -13,5 +13,4 @@ name = "epy"
 path = "src/example.rs"
 
 [dependencies]
-csv = "1.4.0"
-serde = { version = "1.0.228", features = ["derive"] }
+polars = { version = "0.53", features = ["lazy", "csv"] }

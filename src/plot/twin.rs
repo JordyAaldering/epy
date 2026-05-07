@@ -1,41 +1,38 @@
-use crate::{data::GroupedFrame, plot::group_stats, ir::*};
+use polars::prelude::*;
+use crate::{ir::*, plot::{common_axis_options, format_key, series_to_f64}};
 
 /// Extra multiplier applied to the data maximum when estimating the longest
 /// right-axis tick label.  pgfplots rounds the axis maximum up to the next
-/// "nice" tick value, so the actual label is slightly larger than the data
-/// maximum; 10 % is a conservative overshoot that covers most cases.
+/// "nice" tick value; 10 % is a conservative overshoot that covers most cases.
 const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 
-type Selector<T> = Box<dyn Fn(&T) -> f64 + 'static>;
-
-pub struct TwinPlot<T> {
-    df: GroupedFrame<T>,
-    bar_select: Selector<T>,
+pub struct TwinPlot {
+    df: DataFrame,
+    group_col: String,
+    bar_col: String,
     bar_label: String,
-    line_select: Selector<T>,
+    line_col: String,
     line_label: String,
     xaxis_label: String,
     xtick_labels: Option<Vec<String>>,
 }
 
-impl<T> TwinPlot<T> {
-    pub fn new<BF, LF>(
-        df: GroupedFrame<T>,
-        bar_select: BF,
+impl TwinPlot {
+    pub fn new(
+        df: DataFrame,
+        group_col: &str,
+        bar_col: &str,
         bar_label: &str,
-        line_select: LF,
+        line_col: &str,
         line_label: &str,
         xaxis_label: &str,
-    ) -> Self
-    where
-        BF: Fn(&T) -> f64 + 'static,
-        LF: Fn(&T) -> f64 + 'static,
-    {
+    ) -> Self {
         TwinPlot {
             df,
-            bar_select: Box::new(bar_select),
+            group_col: group_col.into(),
+            bar_col: bar_col.into(),
             bar_label: bar_label.into(),
-            line_select: Box::new(line_select),
+            line_col: line_col.into(),
             line_label: line_label.into(),
             xaxis_label: xaxis_label.into(),
             xtick_labels: None,
@@ -43,7 +40,6 @@ impl<T> TwinPlot<T> {
     }
 
     pub fn xtick_labels(mut self, labels: Vec<impl Into<String>>) -> Self {
-        assert_eq!(labels.len(), self.df.num_groups());
         self.xtick_labels = Some(labels.into_iter().map(|l| l.into()).collect());
         self
     }
@@ -55,67 +51,73 @@ impl<T> TwinPlot<T> {
         PlotDocument::new(setup_lines, ax1, Some(ax2))
     }
 
-    /// Return the maximum q3 value across all groups for the right (line) axis.
-    fn max_line_value(&self) -> f64 {
-        let stats = group_stats(&self.df, self.line_select.as_ref());
-        stats.iter().map(|s| s.q3).fold(0.0_f64, f64::max)
+    fn stats_columns(&self, value_col: &str) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
+        let result = self.df.clone().lazy()
+            .group_by([polars::prelude::col(&self.group_col)])
+            .agg([
+                polars::prelude::col(value_col).median().alias("_med"),
+                polars::prelude::col(value_col).quantile(polars::prelude::lit(0.25_f64), polars::prelude::QuantileMethod::Linear).alias("_q1"),
+                polars::prelude::col(value_col).quantile(polars::prelude::lit(0.75_f64), polars::prelude::QuantileMethod::Linear).alias("_q3"),
+            ])
+            .sort_by_exprs([polars::prelude::col(&self.group_col)], polars::prelude::SortMultipleOptions::default())
+            .collect()
+            .expect("TwinPlot aggregation failed");
+
+        (
+            series_to_f64(result.column(&self.group_col).unwrap()),
+            series_to_f64(result.column("_med").unwrap()),
+            series_to_f64(result.column("_q1").unwrap()),
+            series_to_f64(result.column("_q3").unwrap()),
+        )
+    }
+
+    fn max_line_q3(&self) -> f64 {
+        let (_, _, _, q3s) = self.stats_columns(&self.line_col);
+        q3s.into_iter().fold(0.0_f64, f64::max)
     }
 
     fn twin_setup_lines(&self) -> Vec<String> {
-        // Multiply max by TICK_ESTIMATE_BUFFER so the estimate covers the "nice"
-        // tick that pgfplots rounds up to above the data maximum.
-        let tick_estimate = (self.max_line_value() * TICK_ESTIMATE_BUFFER).to_string();
+        let tick_estimate = (self.max_line_q3() * TICK_ESTIMATE_BUFFER).to_string();
         let has_ylabel = !self.line_label.is_empty();
 
         let mut lines = Vec::new();
-
-        // \epyticksize is defined in the preamble and matches the font used for
-        // tick labels, so this measurement stays correct if the font changes.
         lines.push(format!(
             "\\settowidth{{\\epyrpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
         ));
-
         if has_ylabel {
-            // The right ylabel is rotated 90°; its horizontal footprint equals one
-            // \epyticksize line height.
             lines.push("\\settoheight{\\epyrlabelh}{\\normalfont\\epyticksize Ag}".to_owned());
             lines.push("\\addtolength{\\epyrpad}{\\epyrlabelh}".to_owned());
-            // tick length (3pt) + inner sep (2pt) + gap to ylabel (~5pt)
             lines.push("\\addtolength{\\epyrpad}{10pt}".to_owned());
         } else {
-            // tick length (3pt) + inner sep (2pt)
             lines.push("\\addtolength{\\epyrpad}{5pt}".to_owned());
         }
-
         lines
     }
 
-    fn x_range(&self) -> (f64, f64) {
-        let n = self.df.num_groups();
+    fn x_range(&self, n: usize) -> (f64, f64) {
         (-0.5, n as f64 - 0.5)
     }
 
-    fn xtick_str(&self) -> String {
-        let n = self.df.num_groups();
+    fn xtick_str(&self, n: usize) -> String {
         (0..n).map(|i| i.to_string()).collect::<Vec<_>>().join(",")
     }
 
-    fn xticklabels_str(&self) -> String {
-        let keys = self.df.keys();
+    fn xticklabels_str(&self, keys: &[f64]) -> String {
         if let Some(ref lbls) = self.xtick_labels {
             lbls.join(",")
         } else {
-            keys.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(",")
+            keys.iter().map(|&k| format_key(k)).collect::<Vec<_>>().join(",")
         }
     }
 
     fn build_left_axis(&self) -> Axis {
-        let (xmin, xmax) = self.x_range();
-        let mut opts = crate::plot::common_axis_options();
+        let (keys, meds, q1s, q3s) = self.stats_columns(&self.bar_col);
+        let n = keys.len();
+        let (xmin, xmax) = self.x_range(n);
+
+        let mut opts = common_axis_options();
         opts.push(AxisOption::key_value("name", "mainaxis"));
         opts.push(AxisOption::flag("trim axis right"));
-
-        // ── Axis options ──────────────────────────────────────────────────
         opts.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
         opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
         opts.push(AxisOption::key_value("xlabel", format!("{{\\epylabelsize {}}}", self.xaxis_label)));
@@ -123,18 +125,15 @@ impl<T> TwinPlot<T> {
         opts.push(AxisOption::key_value("ymin", "0"));
         opts.push(AxisOption::key_value("xmin", xmin.to_string()));
         opts.push(AxisOption::key_value("xmax", xmax.to_string()));
-        opts.push(AxisOption::key_value("xtick", format!("{{{}}}", self.xtick_str())));
-        opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", self.xticklabels_str())));
+        opts.push(AxisOption::key_value("xtick", format!("{{{}}}", self.xtick_str(n))));
+        opts.push(AxisOption::key_value("xticklabels", format!("{{{}}}", self.xticklabels_str(&keys))));
 
         let mut elements = Vec::new();
 
-    let stats = group_stats(&self.df, self.bar_select.as_ref());
-
         // Filled bars (median height)
-        let mut bar_coordinates = Vec::new();
-        for (i, s) in stats.iter().enumerate() {
-            bar_coordinates.push(Coordinate::Plain(i as f64, s.median));
-        }
+        let bar_coords: Vec<Coordinate> = meds.iter().enumerate()
+            .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+            .collect();
         elements.push(AxisElement::Plot(AddPlot {
             opts: vec![
                 "ybar".into(),
@@ -143,20 +142,21 @@ impl<T> TwinPlot<T> {
                 "draw=none".into(),
                 "area legend".into(),
             ],
-            coords: bar_coordinates,
+            coords: bar_coords,
             closed_cycle: false,
         }));
         elements.push(AxisElement::LegendEntry(self.bar_label.clone()));
 
-        // Simple error bars: vertical whiskers from Q1 to Q3.
-        for (i, s) in stats.iter().enumerate() {
+        // Error whiskers Q1–Q3
+        for i in 0..q1s.len() {
             elements.push(AxisElement::DrawLine {
                 options: vec!["black!60".into(), "line width=0.9pt".into()],
-                from: Coordinate::AxisCs(i as f64, s.q1),
-                to: Coordinate::AxisCs(i as f64, s.q3),
+                from: Coordinate::AxisCs(i as f64, q1s[i]),
+                to: Coordinate::AxisCs(i as f64, q3s[i]),
             });
         }
 
+        // Legend image + entry for the right-axis line series
         elements.push(AxisElement::LegendImage(vec![
             "epyruntimecolor".into(),
             "mark=*".into(),
@@ -170,10 +170,11 @@ impl<T> TwinPlot<T> {
     }
 
     fn build_right_axis(&self) -> Axis {
-        let (xmin, xmax) = self.x_range();
-        let stats = group_stats(&self.df, self.line_select.as_ref());
-        let mut opts = crate::plot::common_axis_options();
+        let (keys, meds, q1s, q3s) = self.stats_columns(&self.line_col);
+        let n = keys.len();
+        let (xmin, xmax) = self.x_range(n);
 
+        let mut opts = common_axis_options();
         opts.push(AxisOption::key_value("at", "{(mainaxis.south west)}"));
         opts.push(AxisOption::key_value("anchor", "south west"));
         opts.push(AxisOption::flag("trim axis left"));
@@ -182,7 +183,6 @@ impl<T> TwinPlot<T> {
         opts.push(AxisOption::key_value("ymajorgrids", "false"));
         opts.push(AxisOption::key_value("xtick", "\\empty"));
         opts.push(AxisOption::key_value("xticklabels", "\\empty"));
-
         opts.push(AxisOption::key_value("axis y line", "right"));
         opts.push(AxisOption::key_value("width", "{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}"));
         opts.push(AxisOption::key_value("height", "\\epyfigureheight"));
@@ -191,30 +191,24 @@ impl<T> TwinPlot<T> {
         opts.push(AxisOption::key_value("xmin", xmin.to_string()));
         opts.push(AxisOption::key_value("xmax", xmax.to_string()));
 
-        let mut band_coordinates = Vec::new();
+        let mut band = Vec::new();
+        for (i, q3) in q3s.iter().enumerate() {
+            band.push(Coordinate::Plain(i as f64, *q3));
+        }
+        for (i, q1) in q1s.iter().enumerate().rev() {
+            band.push(Coordinate::Plain(i as f64, *q1));
+        }
 
-        for (i, s) in stats.iter().enumerate() {
-            band_coordinates.push(Coordinate::Plain(i as f64, s.q3));
-        }
-        for (i, s) in stats.iter().enumerate().rev() {
-            band_coordinates.push(Coordinate::Plain(i as f64, s.q1));
-        }
-
-        let mut line_coordinates = Vec::new();
-        for (i, s) in stats.iter().enumerate() {
-            line_coordinates.push(Coordinate::Plain(i as f64, s.median));
-        }
+        let line: Vec<Coordinate> = meds.iter().enumerate()
+            .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+            .collect();
 
         Axis {
             opts,
             elements: vec![
                 AxisElement::Plot(AddPlot {
-                    opts: vec![
-                        "fill=epyruntimecompl".into(),
-                        "draw=none".into(),
-                        "forget plot".into(),
-                    ],
-                    coords: band_coordinates,
+                    opts: vec!["fill=epyruntimecompl".into(), "draw=none".into(), "forget plot".into()],
+                    coords: band,
                     closed_cycle: true,
                 }),
                 AxisElement::Plot(AddPlot {
@@ -225,7 +219,7 @@ impl<T> TwinPlot<T> {
                         "mark size=2pt".into(),
                         "line width=1pt".into(),
                     ],
-                    coords: line_coordinates,
+                    coords: line,
                     closed_cycle: false,
                 }),
             ],

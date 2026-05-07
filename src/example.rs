@@ -1,71 +1,52 @@
 mod color;
-mod data;
-mod plot;
 mod ir;
-mod stats;
+mod plot;
 
 pub mod prelude {
-    pub use crate::color::*;
-    pub use crate::data::*;
-    pub use crate::plot::*;
-    pub use crate::stats::*;
+    pub use crate::color::Color;
+    pub use crate::plot::{TwinPlot, LinePlot, ZPlot};
 }
 
-use serde::Deserialize;
-
+use polars::prelude::*;
 use prelude::*;
 
-#[derive(Deserialize)]
-struct Record {
-    threads: usize,
-    #[serde(deserialize_with = "from_micro")]
-    powercap: f64,
-    insns: usize,
-    rapl: f64,
-    runtime: f64,
-    cycs: usize,
+/// Load the CSV and compute all derived columns in one lazy pass.
+fn load_data() -> DataFrame {
+    LazyCsvReader::new("test_data.csv".into())
+        .with_has_header(true)
+        .finish()
+        .unwrap()
+        .with_columns([
+            // powercap is stored in µW; convert to W
+            (col("powercap").cast(DataType::Float64) / lit(1_000_000.0_f64))
+                .alias("powercap_w"),
+            (col("insns").cast(DataType::Float64) / col("runtime") / lit(1e9_f64))
+                .alias("gflop_s"),
+            (col("insns").cast(DataType::Float64) / col("rapl") / lit(1e9_f64))
+                .alias("gflop_j"),
+            (col("insns").cast(DataType::Float64) / col("cycs").cast(DataType::Float64))
+                .alias("ipc"),
+        ])
+        .collect()
+        .unwrap()
 }
 
-fn from_micro<'de, D>(de: D) -> Result<f64, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let x = usize::deserialize(de)?;
-    Ok(x as f64 / 1e6)
+/// Return the maximum thread count present in the data.
+fn max_threads(df: &DataFrame) -> i64 {
+    df.column("threads").unwrap().i64().unwrap().max().unwrap()
 }
 
-impl Record {
-    fn gflop_s(&self) -> f64 {
-        self.insns as f64 / self.runtime / 1e9
-    }
-
-    fn gflop_j(&self) -> f64 {
-        self.insns as f64 / self.rapl / 1e9
-    }
-
-    fn ipc(&self) -> f64 {
-        self.insns as f64 / self.cycs as f64
-    }
-}
-
-fn twin() {
-    let df = DataFrame::<Record>::from_csv("test_data.csv").unwrap();
-    let example_threads = df
-        .rows()
-        .last()
-        .expect("example fixture must contain at least one row");
-    let example_threads = example_threads.threads;
-
-    let grouped = df
-        .filter(|r| r.threads == example_threads)
-        .group_by(|r| r.powercap);
+fn twin(df: &DataFrame) {
+    let filtered = df.clone().lazy()
+        .filter(col("threads").eq(lit(max_threads(df))))
+        .collect()
+        .unwrap();
 
     let tikz = TwinPlot::new(
-            grouped,
-            |r| r.gflop_j(),
-            "GFLOP/J",
-            |r| r.gflop_s(),
-            "GFLOP/s",
+            filtered,
+            "powercap_w",
+            "gflop_j", "GFLOP/J",
+            "gflop_s", "GFLOP/s",
             "Power limit (W)",
         )
         .build_document()
@@ -74,24 +55,14 @@ fn twin() {
     std::fs::write(".build/example_twin.tex", tikz).unwrap();
 }
 
-fn ipc() {
-    let df = DataFrame::<Record>::from_csv("test_data.csv").unwrap();
-    let example_threads = df
-        .rows()
-        .last()
-        .expect("example fixture must contain at least one row");
-    let example_threads = example_threads.threads;
+fn ipc(df: &DataFrame) {
+    let filtered = df.clone().lazy()
+        .filter(col("threads").eq(lit(max_threads(df))))
+        .collect()
+        .unwrap();
 
-    let grouped = df
-        .filter(|r| r.threads == example_threads)
-        .group_by(|r| r.powercap);
-
-    let tikz = LinePlot::new(
-            grouped,
-            "Power limit (W)",
-            "IPC",
-        )
-        .series(|r| r.ipc(), "IPC", Color::Runtime)
+    let tikz = LinePlot::new(filtered, "powercap_w", "Power limit (W)", "IPC")
+        .series("ipc", "IPC", Color::Runtime)
         .build_document()
         .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, Color::Annot)
         .annot_label(7.0, 0.25, "Hello, world!")
@@ -100,18 +71,12 @@ fn ipc() {
     std::fs::write(".build/example_ipc.tex", tikz).unwrap();
 }
 
-fn zplot() {
-    let grouped = DataFrame::<Record>::from_csv("test_data.csv")
-        .unwrap()
-        .group_by(|r| r.threads as f64);
-
+fn zplot(df: &DataFrame) {
     let tikz = ZPlot::new(
-            grouped,
-            |r| r.gflop_s(),
-            |r| r.gflop_j(),
-            |r| r.powercap as f64,
-            "GFLOP/s",
-            "GFLOP/J",
+            df.clone(),
+            "threads", "powercap_w",
+            "gflop_s", "gflop_j",
+            "GFLOP/s", "GFLOP/J",
         )
         .build_document()
         .render_tikz();
@@ -120,7 +85,9 @@ fn zplot() {
 }
 
 fn main() {
-    twin();
-    ipc();
-    zplot();
+    std::fs::create_dir_all(".build").unwrap();
+    let df = load_data();
+    twin(&df);
+    ipc(&df);
+    zplot(&df);
 }

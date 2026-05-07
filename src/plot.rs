@@ -7,7 +7,8 @@ pub use line::LinePlot;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
-use crate::{color::Color, data::GroupedFrame, ir::*, stats::*};
+use crate::{color::Color, ir::*};
+use polars::prelude::*;
 
 pub(crate) fn common_axis_options() -> Vec<AxisOption> {
     vec![
@@ -20,26 +21,30 @@ pub(crate) fn common_axis_options() -> Vec<AxisOption> {
         AxisOption::key_value("ytick style", format!("{{color={}}}", Color::Grid.tikz_name())),
         AxisOption::key_value("tick label style", r"{font=\epyticksize, inner sep=2pt}"),
         AxisOption::key_value("legend style", format!("{{font=\\epylegendsize,draw={},fill opacity=0.8,draw opacity=1,text opacity=1}}", Color::Grid.tikz_name())),
-        // Phantom tick at ymax ensures consistent axis height across plots
         AxisOption::key_value("extra y ticks", r"{\pgfkeysvalueof{/pgfplots/ymax}}"),
         AxisOption::key_value("extra y tick labels", r"{\vphantom{Ag}}"),
         AxisOption::key_value("extra y tick style", "{yticklabel style={opacity=0,text opacity=0},major tick length=0pt}"),
     ]
 }
 
-/// Compute per-group statistics for values selected from a [`GroupedFrame`].
-pub(crate) fn group_stats<T, F>(gf: &GroupedFrame<T>, selector: &F) -> Vec<IQR>
-where
-    F: Fn(&T) -> f64 + ?Sized,
-{
-    (0..gf.num_groups())
-        .map(|gi| {
-            let xs = gf.group_values(gi, selector);
-            IQR {
-                median: median(&xs),
-                q1: q1(&xs),
-                q3: q3(&xs),
-            }
-        })
+/// Cast a polars `Column` to `Vec<f64>`, skipping any nulls.
+pub(crate) fn series_to_f64(c: &Column) -> Vec<f64> {
+    c.cast(&DataType::Float64)
+        .unwrap()
+        .as_series()
+        .unwrap()
+        .f64()
+        .unwrap()
+        .into_no_null_iter()
         .collect()
+}
+
+/// Format a float key for a tick label: whole-number values are rendered
+/// without a decimal point (e.g. `5.0` → `"5"`).
+pub(crate) fn format_key(k: f64) -> String {
+    if k.fract() == 0.0 && k.abs() < 1e15 {
+        format!("{}", k as i64)
+    } else {
+        format!("{k}")
+    }
 }
