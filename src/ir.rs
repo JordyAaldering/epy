@@ -45,6 +45,7 @@ impl Hash for Numeric {
 pub struct Style {
     pub color: Option<Color>,
     pub draw: Option<Color>,
+    pub line_width_pt: Option<Numeric>,
     pub font: Option<String>,
     pub inner_sep_pt: Option<Numeric>,
     pub fill_opacity: Option<Numeric>,
@@ -64,6 +65,11 @@ impl Style {
 
     pub fn with_draw(mut self, color: Color) -> Self {
         self.draw = Some(color);
+        self
+    }
+
+    pub fn with_line_width_pt(mut self, value: f64) -> Self {
+        self.line_width_pt = Some(Numeric::new(value));
         self
     }
 
@@ -100,6 +106,9 @@ impl Style {
         if let Some(draw) = self.draw {
             parts.push(format!("draw={}", draw.tikz_name()));
         }
+        if let Some(line_width_pt) = self.line_width_pt {
+            parts.push(format!("line width={}pt", line_width_pt.render_tikz()));
+        }
         if let Some(font) = &self.font {
             parts.push(format!("font={font}"));
         }
@@ -124,7 +133,7 @@ pub enum AxisOption {
     ScaleOnlyAxis,
     AxisLineColor(Color),
     XGridColor(Color),
-    YGridColor(Color),
+    YGridStyle(Style),
     TickAlignOutside,
     XTickPosLeft,
     YTickPosLeft,
@@ -263,7 +272,7 @@ impl AxisOption {
             AxisOption::ScaleOnlyAxis => "scale only axis".into(),
             AxisOption::AxisLineColor(color) => format!("axis line style={{{}}}", color.tikz_name()),
             AxisOption::XGridColor(color) => format!("x grid style={{{}}}", color.tikz_name()),
-            AxisOption::YGridColor(color) => format!("y grid style={{{}}}", color.tikz_name()),
+            AxisOption::YGridStyle(style) => format!("y grid style={{{}}}", style.render_tikz()),
             AxisOption::TickAlignOutside => "tick align=outside".into(),
             AxisOption::XTickPosLeft => "xtick pos=left".into(),
             AxisOption::YTickPosLeft => "ytick pos=left".into(),
@@ -279,7 +288,7 @@ impl AxisOption {
             AxisOption::LegendStyle(style) => format!("legend style={{{}}}", style.render_tikz()),
             AxisOption::EnsureAxisHeightExtraYTick => "extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}".into(),
             AxisOption::EnsureAxisHeightExtraYTickLabels => "extra y tick labels={\\vphantom{Ag}}".into(),
-            AxisOption::EnsureAxisHeightExtraYTickStyle => "extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt}".into(),
+            AxisOption::EnsureAxisHeightExtraYTickStyle => "extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt,grid=none}".into(),
             AxisOption::Name(name) => format!("name={name}"),
             AxisOption::TrimAxisRight => "trim axis right".into(),
             AxisOption::TrimAxisLeft => "trim axis left".into(),

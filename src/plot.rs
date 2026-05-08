@@ -14,14 +14,26 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     HashSet::from([
         AxisOption::ScaleOnlyAxis,
         AxisOption::AxisLineColor(Color::Grid),
-        AxisOption::YGridColor(Color::Grid),
+        AxisOption::YGridStyle(
+            Style::new()
+                .with_color(Color::Grid)
+                .with_line_width_pt(0.4),
+        ),
         AxisOption::TickAlignOutside,
         AxisOption::XTickPosLeft,
         AxisOption::YTickPosLeft,
         AxisOption::YMajorGrids(true),
         AxisOption::MajorTickLength(Numeric::new(2.0)),
-        AxisOption::XTickStyle(Style::new().with_color(Color::Grid)),
-        AxisOption::YTickStyle(Style::new().with_color(Color::Grid)),
+        AxisOption::XTickStyle(
+            Style::new()
+                .with_color(Color::Grid)
+                .with_line_width_pt(0.4),
+        ),
+        AxisOption::YTickStyle(
+            Style::new()
+                .with_color(Color::Grid)
+                .with_line_width_pt(0.4),
+        ),
         AxisOption::TickLabelStyle(Style::new().with_font("\\epyticksize").with_inner_sep_pt(2.0)),
         AxisOption::LegendStyle(
             Style::new()
