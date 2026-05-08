@@ -2,13 +2,13 @@ mod line;
 mod twin;
 mod zplot;
 
-use std::collections::HashSet;
-
 pub use line::LinePlot;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
 use crate::{color::Color, ir::*};
+
+use std::collections::HashSet;
 
 pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     HashSet::from([
@@ -51,17 +51,19 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     ])
 }
 
-pub(crate) fn mean(values: &[f64]) -> f64 {
-    if values.is_empty() {
-        return 0.0;
-    }
-    values.iter().sum::<f64>() / values.len() as f64
-}
-
 pub(crate) struct Quartiles {
     pub median: f64,
     pub q1: f64,
     pub q3: f64,
+}
+
+pub(crate) fn median(xs: &[f64]) -> f64 {
+    let n = xs.len();
+    if n % 2 == 0 {
+        (xs[n / 2 - 1] + xs[n / 2]) / 2.0
+    } else {
+        xs[n / 2]
+    }
 }
 
 pub(crate) fn quartiles(xs: &[f64]) -> Quartiles {
@@ -70,18 +72,9 @@ pub(crate) fn quartiles(xs: &[f64]) -> Quartiles {
     let mut xs = xs.to_vec();
     xs.sort_by(f64::total_cmp);
 
-    fn slice_median(xs: &[f64]) -> f64 {
-        let n = xs.len();
-        if n % 2 == 0 {
-            (xs[n / 2 - 1] + xs[n / 2]) / 2.0
-        } else {
-            xs[n / 2]
-        }
-    }
-
     let n = xs.len();
-    let median = slice_median(&xs);
-    let q1 = slice_median(&xs[..n / 2]);
-    let q3 = slice_median(&xs[(n + 1) / 2..]);
-    Quartiles { median, q1, q3 }
+    let m = median(&xs);
+    let q1 = median(&xs[..n / 2]);
+    let q3 = median(&xs[(n + 1) / 2..]);
+    Quartiles { median: m, q1, q3 }
 }

@@ -252,28 +252,30 @@ impl PlotDocument {
 }
 
 impl Axis {
-    /// Set the minimum y-axis value.
+    pub fn set_xmin(&mut self, value: f64) {
+        self.opts.replace(AxisOption::XMin(Numeric::new(value)));
+    }
+
+    pub fn set_xmax(&mut self, value: f64) {
+        self.opts.replace(AxisOption::XMax(Numeric::new(value)));
+    }
+
     pub fn set_ymin(&mut self, value: f64) {
         self.opts.replace(AxisOption::YMin(Numeric::new(value)));
     }
 
-    /// Set the maximum y-axis value.
     pub fn set_ymax(&mut self, value: f64) {
         self.opts.replace(AxisOption::YMax(Numeric::new(value)));
     }
 
-    /// Set the legend position (e.g., "south east", "outer north east").
     pub fn set_legend_pos(&mut self, position: impl Into<String>) {
         self.opts.replace(AxisOption::LegendPos(position.into()));
     }
 
-    /// Filter x-ticks and x-tick labels to show every nth tick (stride >= 1).
-    /// Keeps every stride-th element; stride=1 keeps all, stride=2 keeps every other, etc.
     pub fn filter_xticks_stride(&mut self, stride: usize) {
         let mut filtered_ticks = Vec::new();
         let mut filtered_labels = Vec::new();
 
-        // Extract current ticks and labels from opts
         let mut current_ticks: Option<Vec<String>> = None;
         let mut current_labels: Option<Vec<String>> = None;
 
@@ -311,12 +313,16 @@ impl Axis {
         }
     }
 
-    pub fn format_xticks_precision(&mut self, precision: usize) {
+    pub fn format_xticks_precision(&mut self, precision: usize, trim: bool) {
         self.format_xticks(|s| {
-            format!("{:.precision$}", s.parse::<f64>().unwrap())
-                .trim_end_matches('0')
-                .trim_end_matches('.')
-                .to_string()
+            if trim {
+                format!("{:.precision$}", s.parse::<f64>().unwrap())
+                    .trim_end_matches('0')
+                    .trim_end_matches('.')
+                    .to_string()
+            } else {
+                format!("{:.precision$}", s.parse::<f64>().unwrap())
+            }
         });
     }
 
@@ -324,7 +330,6 @@ impl Axis {
         let mut formatted_ticks = Vec::new();
         let mut formatted_labels = Vec::new();
 
-        // Extract current ticks and labels from opts
         let mut current_ticks: Option<Vec<String>> = None;
         let mut current_labels: Option<Vec<String>> = None;
 

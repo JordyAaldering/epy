@@ -4,7 +4,7 @@ use crate::{
     color::Color,
     data::DataFrame,
     ir::*,
-    plot::{common_axis_options, mean},
+    plot::{common_axis_options, median},
 };
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
@@ -67,13 +67,13 @@ impl<Row: Clone> ZPlot<Row> {
                 entry.2.push(y);
             }
 
-            let mut means_by_hue: Vec<(f64, f64, f64)> = by_hue
+            let mut medians_by_hue: Vec<(f64, f64, f64)> = by_hue
                 .into_values()
-                .map(|(hue, xs, ys)| (hue, mean(&xs), mean(&ys)))
+                .map(|(hue, xs, ys)| (hue, median(&xs), median(&ys)))
                 .collect();
-            means_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
+            medians_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
 
-            let coords = means_by_hue
+            let coords = medians_by_hue
                 .into_iter()
                 .map(|(_, x, y)| Coordinate::Plain(x, y))
                 .collect();

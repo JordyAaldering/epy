@@ -74,7 +74,7 @@ fn twin(df: &DataFrame<Record>) {
     doc.ax0.set_legend_pos("south east");
     doc.ax1.as_mut().unwrap().set_ymax(0.6);
     doc.ax0.filter_xticks_stride(2);
-    doc.ax0.format_xticks_precision(1);
+    doc.ax0.format_xticks_precision(1, false);
 
     let tikz = doc.render_tikz();
 
@@ -85,18 +85,22 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let tikz = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
+    let mut doc = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| r.ipc(), "IPC", Color::Runtime)
         .build_document()
         .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, Color::Annot)
-        .annot_label(7.0, 0.25, "Hello, world!")
-        .render_tikz();
+        .annot_label(7.0, 0.25, "Hello, world!");
+
+    doc.ax0.filter_xticks_stride(2);
+    doc.ax0.format_xticks_precision(1, false);
+
+    let tikz = doc.render_tikz();
 
     std::fs::write(".build/example_ipc.tex", tikz).unwrap();
 }
 
 fn zplot(df: &DataFrame<Record>) {
-    let tikz = ZPlot::new(
+    let mut doc = ZPlot::new(
             df.clone(),
             |r| r.threads as f64,
             |r| r.powercap,
@@ -105,8 +109,12 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/s",
             "GFLOP/J",
         )
-        .build_document()
-        .render_tikz();
+        .build_document();
+
+    doc.ax0.set_xmin(0.0);
+    doc.ax0.set_ymin(0.0);
+
+    let tikz = doc.render_tikz();
 
     std::fs::write(".build/example_zplot.tex", tikz).unwrap();
 }

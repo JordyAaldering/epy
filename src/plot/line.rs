@@ -139,7 +139,13 @@ impl<T: Clone> LinePlot<T> {
                 .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                 .collect();
             elements.push(AxisElement::Plot(AddPlot {
-                opts: vec![cn, "mark=*".into(), "mark size=2pt".into(), "line width=1pt".into()],
+                opts: vec![
+                    cn,
+                    "mark=*".into(),
+                    "mark size=2pt".into(),
+                    "mark options={solid,draw=white}".into(),
+                    "line width=1pt".into(),
+                ],
                 coords: line,
                 closed_cycle: false,
             }));
