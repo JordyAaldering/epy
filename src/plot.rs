@@ -46,6 +46,8 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         AxisOption::EnsureAxisHeightExtraYTick,
         AxisOption::EnsureAxisHeightExtraYTickLabels,
         AxisOption::EnsureAxisHeightExtraYTickStyle,
+        AxisOption::ScaledTicksFalse,
+        AxisOption::TickNumberFormatFixed,
     ])
 }
 
