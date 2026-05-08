@@ -3,15 +3,15 @@ use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
 #[derive(Clone, Debug)]
 pub struct PlotDocument {
-    setup_lines: Vec<String>,
-    ax0: Axis,
-    ax1: Option<Axis>,
+    pub setup_lines: Vec<String>,
+    pub ax0: Axis,
+    pub ax1: Option<Axis>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Axis {
-    pub(crate) opts: HashSet<AxisOption>,
-    pub(crate) elements: Vec<AxisElement>,
+    pub opts: HashSet<AxisOption>,
+    pub elements: Vec<AxisElement>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -156,6 +156,7 @@ pub enum AxisOption {
     XLabel(String),
     YLabel(String),
     YMin(Numeric),
+    YMax(Numeric),
     XMin(Numeric),
     XMax(Numeric),
     XTicks(Vec<String>),
@@ -250,6 +251,60 @@ impl PlotDocument {
 }
 
 impl Axis {
+    /// Set the minimum y-axis value.
+    pub fn set_ymin(&mut self, value: f64) {
+        self.opts.replace(AxisOption::YMin(Numeric::new(value)));
+    }
+
+    /// Set the maximum y-axis value.
+    pub fn set_ymax(&mut self, value: f64) {
+        self.opts.replace(AxisOption::YMax(Numeric::new(value)));
+    }
+
+    /// Filter x-ticks and x-tick labels to show every nth tick (stride >= 1).
+    /// Keeps every stride-th element; stride=1 keeps all, stride=2 keeps every other, etc.
+    pub fn filter_xticks_stride(&mut self, stride: usize) {
+        let mut filtered_ticks = Vec::new();
+        let mut filtered_labels = Vec::new();
+
+        // Extract current ticks and labels from opts
+        let mut current_ticks: Option<Vec<String>> = None;
+        let mut current_labels: Option<Vec<String>> = None;
+
+        for opt in &self.opts {
+            if let AxisOption::XTicks(ticks) = opt {
+                current_ticks = Some(ticks.clone());
+            }
+            if let AxisOption::XTickLabels(labels) = opt {
+                current_labels = Some(labels.clone());
+            }
+        }
+
+        // Filter ticks: keep every stride-th
+        if let Some(ticks) = current_ticks {
+            for (i, tick) in ticks.iter().enumerate() {
+                if i % stride == 0 {
+                    filtered_ticks.push(tick.clone());
+                }
+            }
+            if !filtered_ticks.is_empty() {
+                self.opts.replace(AxisOption::XTicks(filtered_ticks));
+            }
+        }
+
+        // Filter labels to match kept ticks
+        if let Some(labels) = current_labels {
+            for (i, label) in labels.iter().enumerate() {
+                if i % stride == 0 {
+                    filtered_labels.push(label.clone());
+                }
+            }
+            if !filtered_labels.is_empty() {
+                self.opts.replace(AxisOption::XTickLabels(filtered_labels));
+            }
+        }
+    }
+
     fn render_tikz(&self) -> String {
         let mut out = String::from("\\begin{axis}[\n");
         for opt in &self.opts {
@@ -299,6 +354,7 @@ impl AxisOption {
             AxisOption::XLabel(label) => format!("xlabel={{\\epylabelsize {label}}}"),
             AxisOption::YLabel(label) => format!("ylabel={{\\epylabelsize {label}}}"),
             AxisOption::YMin(value) => format!("ymin={}", value.render_tikz()),
+            AxisOption::YMax(value) => format!("ymax={}", value.render_tikz()),
             AxisOption::XMin(value) => format!("xmin={}", value.render_tikz()),
             AxisOption::XMax(value) => format!("xmax={}", value.render_tikz()),
             AxisOption::XTicks(values) => format!("xtick={{{}}}", values.join(",")),

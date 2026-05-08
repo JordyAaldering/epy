@@ -60,15 +60,23 @@ fn twin(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let tikz = TwinPlot::new(
+    let mut doc = TwinPlot::new(
             filtered,
             |r| r.powercap,
             |r| r.gflop_j(), "GFLOP/J",
             |r| r.gflop_s(), "GFLOP/s",
             "Power limit (W)",
         )
-        .build_document()
-        .render_tikz();
+        .build_document();
+
+    // Post-build modifications
+    doc.ax0.set_ymax(0.1);
+    doc.ax0.filter_xticks_stride(2);
+    if let Some(ax1) = &mut doc.ax1 {
+        ax1.set_ymax(0.6);
+    }
+
+    let tikz = doc.render_tikz();
 
     std::fs::write(".build/example_twin.tex", tikz).unwrap();
 }
