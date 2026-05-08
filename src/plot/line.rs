@@ -2,7 +2,7 @@ use crate::{
     color::Color,
     data::DataFrame,
     ir::*,
-    plot::{common_axis_options, median, quantile_linear},
+    plot::{common_axis_options, quartiles},
 };
 
 struct LineSeries<T> {
@@ -81,9 +81,10 @@ impl<T: Clone> LinePlot<T> {
 
                 for gi in 0..grouped.num_groups() {
                     let vals = grouped.group_values(gi, &*s.selector);
-                    meds.push(median(vals.clone()));
-                    q1s.push(quantile_linear(vals.clone(), 0.25));
-                    q3s.push(quantile_linear(vals, 0.75));
+                    let qs = quartiles(&vals);
+                    meds.push(qs.median);
+                    q1s.push(qs.q1);
+                    q3s.push(qs.q3);
                 }
 
                 (meds, q1s, q3s)

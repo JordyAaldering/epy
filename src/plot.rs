@@ -41,27 +41,30 @@ pub(crate) fn mean(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
 }
 
-pub(crate) fn quantile_linear(mut values: Vec<f64>, q: f64) -> f64 {
-    if values.is_empty() {
-        return 0.0;
-    }
-    values.sort_by(f64::total_cmp);
-    let n = values.len();
-    if n == 1 {
-        return values[0];
-    }
-
-    let pos = q.clamp(0.0, 1.0) * (n as f64 - 1.0);
-    let lo = pos.floor() as usize;
-    let hi = pos.ceil() as usize;
-    if lo == hi {
-        values[lo]
-    } else {
-        let t = pos - lo as f64;
-        values[lo] * (1.0 - t) + values[hi] * t
-    }
+pub(crate) struct Quartiles {
+    pub median: f64,
+    pub q1: f64,
+    pub q3: f64,
 }
 
-pub(crate) fn median(values: Vec<f64>) -> f64 {
-    quantile_linear(values, 0.5)
+pub(crate) fn quartiles(xs: &[f64]) -> Quartiles {
+    assert!(!xs.is_empty());
+
+    let mut xs = xs.to_vec();
+    xs.sort_by(f64::total_cmp);
+
+    fn slice_median(xs: &[f64]) -> f64 {
+        let n = xs.len();
+        if n % 2 == 0 {
+            (xs[n / 2 - 1] + xs[n / 2]) / 2.0
+        } else {
+            xs[n / 2]
+        }
+    }
+
+    let n = xs.len();
+    let median = slice_median(&xs);
+    let q1 = slice_median(&xs[..n / 2]);
+    let q3 = slice_median(&xs[(n + 1) / 2..]);
+    Quartiles { median, q1, q3 }
 }
