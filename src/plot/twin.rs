@@ -189,6 +189,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::EmptyXTicks);
         opts.replace(AxisOption::EmptyXTickLabels);
         opts.replace(AxisOption::AxisYLineRight);
+        opts.remove(&AxisOption::YTickPosLeft);
+        opts.replace(AxisOption::YTickPosRight);
         opts.replace(AxisOption::Width("{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}".into()));
         opts.replace(AxisOption::Height("\\epyfigureheight".into()));
         opts.replace(AxisOption::YLabel(self.line_label.clone()));
