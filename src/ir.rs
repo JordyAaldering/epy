@@ -305,6 +305,53 @@ impl Axis {
         }
     }
 
+    pub fn format_xticks_precision(&mut self, precision: usize) {
+        self.format_xticks(|s| {
+            format!("{:.precision$}", s.parse::<f64>().unwrap())
+                .trim_end_matches('0')
+                .trim_end_matches('.')
+                .to_string()
+        });
+    }
+
+    pub fn format_xticks(&mut self, fmt: impl Fn(&str) -> String) {
+        let mut formatted_ticks = Vec::new();
+        let mut formatted_labels = Vec::new();
+
+        // Extract current ticks and labels from opts
+        let mut current_ticks: Option<Vec<String>> = None;
+        let mut current_labels: Option<Vec<String>> = None;
+
+        for opt in &self.opts {
+            if let AxisOption::XTicks(ticks) = opt {
+                current_ticks = Some(ticks.clone());
+            }
+            if let AxisOption::XTickLabels(labels) = opt {
+                current_labels = Some(labels.clone());
+            }
+        }
+
+        // Format ticks
+        if let Some(ticks) = current_ticks {
+            for tick in ticks.iter() {
+                formatted_ticks.push(fmt(tick));
+            }
+            if !formatted_ticks.is_empty() {
+                self.opts.replace(AxisOption::XTicks(formatted_ticks));
+            }
+        }
+
+        // Format labels to match formatted ticks
+        if let Some(labels) = current_labels {
+            for label in labels.iter() {
+                formatted_labels.push(fmt(label));
+            }
+            if !formatted_labels.is_empty() {
+                self.opts.replace(AxisOption::XTickLabels(formatted_labels));
+            }
+        }
+    }
+
     fn render_tikz(&self) -> String {
         let mut out = String::from("\\begin{axis}[\n");
         for opt in &self.opts {

@@ -72,6 +72,7 @@ fn twin(df: &DataFrame<Record>) {
     // Post-build modifications
     doc.ax0.set_ymax(0.1);
     doc.ax0.filter_xticks_stride(2);
+    doc.ax0.format_xticks_precision(1);
     if let Some(ax1) = &mut doc.ax1 {
         ax1.set_ymax(0.6);
     }
