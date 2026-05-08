@@ -1,39 +1,43 @@
-use polars::prelude::*;
-use crate::{color::Color, ir::*, plot::{common_axis_options, series_to_f64}};
+use std::collections::HashMap;
+
+use crate::{
+    color::Color,
+    data::DataFrame,
+    ir::*,
+    plot::{common_axis_options, mean},
+};
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
 
-pub struct ZPlot {
-    df: DataFrame,
-    /// Column whose unique sorted values define the legend series.
-    series_col: String,
-    /// Column used to group points within each series (the "hue" dimension).
-    hue_col: String,
-    x_col: String,
-    y_col: String,
+pub struct ZPlot<Row> {
+    df: DataFrame<Row>,
+    series_selector: Box<dyn Fn(&Row) -> f64>,
+    hue_selector: Box<dyn Fn(&Row) -> f64>,
+    x_selector: Box<dyn Fn(&Row) -> f64>,
+    y_selector: Box<dyn Fn(&Row) -> f64>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-impl ZPlot {
-    /// Create a scatter plot where each unique value of `series_col` becomes a
-    /// separate series in the legend.  Within each series, rows are grouped by
-    /// `hue_col` and the mean `(x_col, y_col)` is plotted per group.
+impl<Row: Clone> ZPlot<Row> {
+    /// Create a scatter plot where each unique value of `series_selector` becomes a
+    /// separate series in the legend. Within each series, rows are grouped by
+    /// `hue_selector` and the mean `(x_selector, y_selector)` is plotted per group.
     pub fn new(
-        df: DataFrame,
-        series_col: &str,
-        hue_col: &str,
-        x_col: &str,
-        y_col: &str,
+        df: DataFrame<Row>,
+        series_selector: impl Fn(&Row) -> f64 + 'static,
+        hue_selector: impl Fn(&Row) -> f64 + 'static,
+        x_selector: impl Fn(&Row) -> f64 + 'static,
+        y_selector: impl Fn(&Row) -> f64 + 'static,
         xaxis_label: &str,
         yaxis_label: &str,
     ) -> Self {
         ZPlot {
             df,
-            series_col: series_col.into(),
-            hue_col: hue_col.into(),
-            x_col: x_col.into(),
-            y_col: y_col.into(),
+            series_selector: Box::new(series_selector),
+            hue_selector: Box::new(hue_selector),
+            x_selector: Box::new(x_selector),
+            y_selector: Box::new(y_selector),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
@@ -44,33 +48,36 @@ impl ZPlot {
     }
 
     fn build_axis(&self) -> Axis {
-        // Single polars query: group by (series, hue), average x and y.
-        // Sort by series first, then hue so we can scan in order.
-        let agg = self.df.clone().lazy()
-            .group_by([col(&self.series_col), col(&self.hue_col)])
-            .agg([
-                col(&self.x_col).mean().alias("_x"),
-                col(&self.y_col).mean().alias("_y"),
-            ])
-            .sort_by_exprs(
-                [col(&self.series_col), col(&self.hue_col)],
-                SortMultipleOptions::default(),
-            )
-            .collect()
-            .expect("ZPlot: polars aggregation failed");
-
-        let sv = series_to_f64(agg.column(&self.series_col).unwrap());
-        let xs = series_to_f64(agg.column("_x").unwrap());
-        let ys = series_to_f64(agg.column("_y").unwrap());
-
-        // Partition consecutive rows with the same series value into groups.
+        let grouped = self.df.clone().group_by(|row| (self.series_selector)(row));
         let mut series_groups: Vec<(f64, Vec<Coordinate>)> = Vec::new();
-        for i in 0..sv.len() {
-            let key = sv[i];
-            if series_groups.last().map_or(true, |(k, _)| k.to_bits() != key.to_bits()) {
-                series_groups.push((key, Vec::new()));
+
+        for gi in 0..grouped.num_groups() {
+            let series_key = grouped.keys()[gi];
+            let mut by_hue: HashMap<u64, (f64, Vec<f64>, Vec<f64>)> = HashMap::new();
+
+            for &ri in &grouped.groups[gi] {
+                let row = grouped.df.row(ri);
+                let hue = (self.hue_selector)(row);
+                let x = (self.x_selector)(row);
+                let y = (self.y_selector)(row);
+                let entry = by_hue
+                    .entry(hue.to_bits())
+                    .or_insert_with(|| (hue, Vec::new(), Vec::new()));
+                entry.1.push(x);
+                entry.2.push(y);
             }
-            series_groups.last_mut().unwrap().1.push(Coordinate::Plain(xs[i], ys[i]));
+
+            let mut means_by_hue: Vec<(f64, f64, f64)> = by_hue
+                .into_values()
+                .map(|(hue, xs, ys)| (hue, mean(&xs), mean(&ys)))
+                .collect();
+            means_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
+
+            let coords = means_by_hue
+                .into_iter()
+                .map(|(_, x, y)| Coordinate::Plain(x, y))
+                .collect();
+            series_groups.push((series_key, coords));
         }
 
         let mut opts = common_axis_options();

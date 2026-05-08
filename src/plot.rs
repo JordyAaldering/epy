@@ -1,4 +1,3 @@
-//! Plot builders for energy-measurement data.
 mod line;
 mod twin;
 mod zplot;
@@ -10,7 +9,6 @@ pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
 use crate::{color::Color, ir::*};
-use polars::prelude::*;
 
 pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     HashSet::from([
@@ -36,14 +34,34 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     ])
 }
 
-/// Cast a polars `Column` to `Vec<f64>`, skipping any nulls.
-pub(crate) fn series_to_f64(c: &Column) -> Vec<f64> {
-    c.cast(&DataType::Float64)
-        .unwrap()
-        .as_series()
-        .unwrap()
-        .f64()
-        .unwrap()
-        .into_no_null_iter()
-        .collect()
+pub(crate) fn mean(values: &[f64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    values.iter().sum::<f64>() / values.len() as f64
+}
+
+pub(crate) fn quantile_linear(mut values: Vec<f64>, q: f64) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    values.sort_by(f64::total_cmp);
+    let n = values.len();
+    if n == 1 {
+        return values[0];
+    }
+
+    let pos = q.clamp(0.0, 1.0) * (n as f64 - 1.0);
+    let lo = pos.floor() as usize;
+    let hi = pos.ceil() as usize;
+    if lo == hi {
+        values[lo]
+    } else {
+        let t = pos - lo as f64;
+        values[lo] * (1.0 - t) + values[hi] * t
+    }
+}
+
+pub(crate) fn median(values: Vec<f64>) -> f64 {
+    quantile_linear(values, 0.5)
 }

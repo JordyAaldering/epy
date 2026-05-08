@@ -1,28 +1,36 @@
-use polars::prelude::*;
+use crate::{
+    color::Color,
+    data::DataFrame,
+    ir::*,
+    plot::{common_axis_options, median, quantile_linear},
+};
 
-use crate::{color::Color, ir::*, plot::{common_axis_options, series_to_f64}};
-
-struct LineSeries {
-    col: String,
+struct LineSeries<T> {
+    selector: Box<dyn Fn(&T) -> f64>,
     label: String,
     color: Color,
 }
 
-pub struct LinePlot {
-    df: DataFrame,
-    x_col: String,
-    series: Vec<LineSeries>,
+pub struct LinePlot<T> {
+    df: DataFrame<T>,
+    x_selector: Box<dyn Fn(&T) -> f64>,
+    series: Vec<LineSeries<T>>,
     xaxis_label: String,
     yaxis_label: String,
     ymin: Option<f64>,
     xtick_labels: Option<Vec<String>>,
 }
 
-impl LinePlot {
-    pub fn new(df: DataFrame, x_col: &str, xaxis_label: &str, yaxis_label: &str) -> Self {
+impl<T: Clone> LinePlot<T> {
+    pub fn new(
+        df: DataFrame<T>,
+        x_selector: impl Fn(&T) -> f64 + 'static,
+        xaxis_label: &str,
+        yaxis_label: &str,
+    ) -> Self {
         LinePlot {
             df,
-            x_col: x_col.into(),
+            x_selector: Box::new(x_selector),
             series: Vec::new(),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
@@ -31,8 +39,17 @@ impl LinePlot {
         }
     }
 
-    pub fn series(mut self, col: &str, label: &str, color: Color) -> Self {
-        self.series.push(LineSeries { col: col.into(), label: label.into(), color });
+    pub fn series(
+        mut self,
+        selector: impl Fn(&T) -> f64 + 'static,
+        label: &str,
+        color: Color,
+    ) -> Self {
+        self.series.push(LineSeries {
+            selector: Box::new(selector),
+            label: label.into(),
+            color,
+        });
         self
     }
 
@@ -52,30 +69,27 @@ impl LinePlot {
     }
 
     fn build_axis(&self) -> Axis {
-        // Compute stats for every series up-front; all share the same x grouping.
-        let all_stats: Vec<(Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>)> = self.series.iter()
+        let grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
+        let keys = grouped.keys().to_vec();
+        let all_stats: Vec<(Vec<f64>, Vec<f64>, Vec<f64>)> = self
+            .series
+            .iter()
             .map(|s| {
-                let result = self.df.clone().lazy()
-                    .group_by([col(&self.x_col)])
-                    .agg([
-                        col(&s.col).median().alias("_med"),
-                        col(&s.col).quantile(lit(0.25_f64), QuantileMethod::Linear).alias("_q1"),
-                        col(&s.col).quantile(lit(0.75_f64), QuantileMethod::Linear).alias("_q3"),
-                    ])
-                    .sort_by_exprs([col(&self.x_col)], SortMultipleOptions::default())
-                    .collect()
-                    .expect("LinePlot aggregation failed");
+                let mut meds = Vec::with_capacity(grouped.num_groups());
+                let mut q1s = Vec::with_capacity(grouped.num_groups());
+                let mut q3s = Vec::with_capacity(grouped.num_groups());
 
-                (
-                    series_to_f64(result.column(&self.x_col).unwrap()),
-                    series_to_f64(result.column("_med").unwrap()),
-                    series_to_f64(result.column("_q1").unwrap()),
-                    series_to_f64(result.column("_q3").unwrap()),
-                )
+                for gi in 0..grouped.num_groups() {
+                    let vals = grouped.group_values(gi, &*s.selector);
+                    meds.push(median(vals.clone()));
+                    q1s.push(quantile_linear(vals.clone(), 0.25));
+                    q3s.push(quantile_linear(vals, 0.75));
+                }
+
+                (meds, q1s, q3s)
             })
             .collect();
 
-        let keys = all_stats.first().map(|(keys, _, _, _)| keys.clone()).unwrap_or_default();
         let n = keys.len();
 
         let mut opts = common_axis_options();
@@ -102,7 +116,7 @@ impl LinePlot {
         let mut elements = Vec::new();
 
         for (si, series) in self.series.iter().enumerate() {
-            let (_, meds, q1s, q3s) = &all_stats[si];
+            let (meds, q1s, q3s) = &all_stats[si];
             let cn = series.color.tikz_name().to_owned();
 
             // Transparent Q1–Q3 band

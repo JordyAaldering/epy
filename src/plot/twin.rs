@@ -1,38 +1,41 @@
-use polars::prelude::*;
-use crate::{ir::*, plot::{common_axis_options, series_to_f64}};
+use crate::{
+    data::{DataFrame, GroupedFrame},
+    ir::*,
+    plot::{common_axis_options, median, quantile_linear},
+};
 
 /// Extra multiplier applied to the data maximum when estimating the longest
 /// right-axis tick label.  pgfplots rounds the axis maximum up to the next
 /// "nice" tick value; 10 % is a conservative overshoot that covers most cases.
 const TICK_ESTIMATE_BUFFER: f64 = 1.1;
 
-pub struct TwinPlot {
-    df: DataFrame,
-    group_col: String,
-    bar_col: String,
+pub struct TwinPlot<Row> {
+    df: DataFrame<Row>,
+    group_selector: Box<dyn Fn(&Row) -> f64>,
+    bar_selector: Box<dyn Fn(&Row) -> f64>,
     bar_label: String,
-    line_col: String,
+    line_selector: Box<dyn Fn(&Row) -> f64>,
     line_label: String,
     xaxis_label: String,
     xtick_labels: Option<Vec<String>>,
 }
 
-impl TwinPlot {
+impl<Row: Clone> TwinPlot<Row> {
     pub fn new(
-        df: DataFrame,
-        group_col: &str,
-        bar_col: &str,
+        df: DataFrame<Row>,
+        group_selector: impl Fn(&Row) -> f64 + 'static,
+        bar_selector: impl Fn(&Row) -> f64 + 'static,
         bar_label: &str,
-        line_col: &str,
+        line_selector: impl Fn(&Row) -> f64 + 'static,
         line_label: &str,
         xaxis_label: &str,
     ) -> Self {
         TwinPlot {
             df,
-            group_col: group_col.into(),
-            bar_col: bar_col.into(),
+            group_selector: Box::new(group_selector),
+            bar_selector: Box::new(bar_selector),
             bar_label: bar_label.into(),
-            line_col: line_col.into(),
+            line_selector: Box::new(line_selector),
             line_label: line_label.into(),
             xaxis_label: xaxis_label.into(),
             xtick_labels: None,
@@ -51,28 +54,33 @@ impl TwinPlot {
         PlotDocument::new(setup_lines, ax1, Some(ax2))
     }
 
-    fn stats_columns(&self, value_col: &str) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
-        let result = self.df.clone().lazy()
-            .group_by([polars::prelude::col(&self.group_col)])
-            .agg([
-                polars::prelude::col(value_col).median().alias("_med"),
-                polars::prelude::col(value_col).quantile(polars::prelude::lit(0.25_f64), polars::prelude::QuantileMethod::Linear).alias("_q1"),
-                polars::prelude::col(value_col).quantile(polars::prelude::lit(0.75_f64), polars::prelude::QuantileMethod::Linear).alias("_q3"),
-            ])
-            .sort_by_exprs([polars::prelude::col(&self.group_col)], polars::prelude::SortMultipleOptions::default())
-            .collect()
-            .expect("TwinPlot aggregation failed");
+    fn grouped(&self) -> GroupedFrame<Row> {
+        self.df.clone().group_by(|row| (self.group_selector)(row))
+    }
 
-        (
-            series_to_f64(result.column(&self.group_col).unwrap()),
-            series_to_f64(result.column("_med").unwrap()),
-            series_to_f64(result.column("_q1").unwrap()),
-            series_to_f64(result.column("_q3").unwrap()),
-        )
+    fn stats_for_selector(
+        &self,
+        grouped: &GroupedFrame<Row>,
+        selector: &dyn Fn(&Row) -> f64,
+    ) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
+        let keys = grouped.keys().to_vec();
+        let mut meds = Vec::with_capacity(grouped.num_groups());
+        let mut q1s = Vec::with_capacity(grouped.num_groups());
+        let mut q3s = Vec::with_capacity(grouped.num_groups());
+
+        for gi in 0..grouped.num_groups() {
+            let vals = grouped.group_values(gi, selector);
+            meds.push(median(vals.clone()));
+            q1s.push(quantile_linear(vals.clone(), 0.25));
+            q3s.push(quantile_linear(vals, 0.75));
+        }
+
+        (keys, meds, q1s, q3s)
     }
 
     fn max_line_q3(&self) -> f64 {
-        let (_, _, _, q3s) = self.stats_columns(&self.line_col);
+        let grouped = self.grouped();
+        let (_, _, _, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
         q3s.into_iter().fold(0.0_f64, f64::max)
     }
 
@@ -99,7 +107,8 @@ impl TwinPlot {
     }
 
     fn build_left_axis(&self) -> Axis {
-        let (keys, meds, q1s, q3s) = self.stats_columns(&self.bar_col);
+        let grouped = self.grouped();
+        let (keys, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.bar_selector);
         let n = keys.len();
         let (xmin, xmax) = self.x_range(n);
 
@@ -164,7 +173,8 @@ impl TwinPlot {
     }
 
     fn build_right_axis(&self) -> Axis {
-        let (keys, meds, q1s, q3s) = self.stats_columns(&self.line_col);
+        let grouped = self.grouped();
+        let (keys, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
         let n = keys.len();
         let (xmin, xmax) = self.x_range(n);
 
