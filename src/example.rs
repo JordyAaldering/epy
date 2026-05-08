@@ -71,6 +71,7 @@ fn twin(df: &DataFrame<Record>) {
 
     // Post-build modifications
     doc.ax0.set_ymax(0.09);
+    doc.ax0.set_legend_pos("south east");
     doc.ax1.as_mut().unwrap().set_ymax(0.6);
     doc.ax0.filter_xticks_stride(2);
     doc.ax0.format_xticks_precision(1);

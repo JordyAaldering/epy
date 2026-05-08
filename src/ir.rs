@@ -169,6 +169,7 @@ pub enum AxisOption {
     AxisYLineRight,
     ScaledTicksFalse,
     TickNumberFormatFixed,
+    LegendPos(String),
 }
 
 impl PartialEq for AxisOption {
@@ -259,6 +260,11 @@ impl Axis {
     /// Set the maximum y-axis value.
     pub fn set_ymax(&mut self, value: f64) {
         self.opts.replace(AxisOption::YMax(Numeric::new(value)));
+    }
+
+    /// Set the legend position (e.g., "south east", "outer north east").
+    pub fn set_legend_pos(&mut self, position: impl Into<String>) {
+        self.opts.replace(AxisOption::LegendPos(position.into()));
     }
 
     /// Filter x-ticks and x-tick labels to show every nth tick (stride >= 1).
@@ -414,6 +420,7 @@ impl AxisOption {
             AxisOption::AxisYLineRight => "axis y line*=right".into(),
             AxisOption::ScaledTicksFalse => "scaled ticks=false".into(),
             AxisOption::TickNumberFormatFixed => "/pgf/number format/fixed".into(),
+            AxisOption::LegendPos(pos) => format!("legend pos={pos}"),
         }
     }
 }
