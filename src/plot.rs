@@ -19,7 +19,7 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         AxisOption::XTickPosLeft,
         AxisOption::YTickPosLeft,
         AxisOption::YMajorGrids(true),
-        AxisOption::MajorTickLength(Numeric::new(3.0)),
+        AxisOption::MajorTickLength(Numeric::new(2.0)),
         AxisOption::XTickStyle(Style::new().with_color(Color::Grid)),
         AxisOption::YTickStyle(Style::new().with_color(Color::Grid)),
         AxisOption::TickLabelStyle(Style::new().with_font("\\epyticksize").with_inner_sep_pt(2.0)),
