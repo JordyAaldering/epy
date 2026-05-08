@@ -47,17 +47,13 @@ impl Record {
     }
 }
 
-fn load_data() -> DataFrame<Record> {
-    DataFrame::from_csv("test_data.csv").unwrap()
-}
-
 /// Return the maximum thread count present in the data.
 fn max_threads(df: &DataFrame<Record>) -> usize {
     df.rows()
         .iter()
         .map(|r| r.threads)
         .max()
-        .unwrap_or(0)
+        .unwrap()
 }
 
 fn twin(df: &DataFrame<Record>) {
@@ -98,7 +94,8 @@ fn zplot(df: &DataFrame<Record>) {
             |r| r.powercap,
             |r| r.gflop_s(),
             |r| r.gflop_j(),
-            "GFLOP/s", "GFLOP/J",
+            "GFLOP/s",
+            "GFLOP/J",
         )
         .build_document()
         .render_tikz();
@@ -108,7 +105,7 @@ fn zplot(df: &DataFrame<Record>) {
 
 fn main() {
     std::fs::create_dir_all(".build").unwrap();
-    let df = load_data();
+    let df = DataFrame::from_csv("test_data.csv").unwrap();
     twin(&df);
     ipc(&df);
     zplot(&df);
