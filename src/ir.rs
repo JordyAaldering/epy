@@ -411,7 +411,7 @@ impl AxisOption {
             AxisOption::AtMainAxisSouthWest => "at={(mainaxis.south west)}".into(),
             AxisOption::AnchorSouthWest => "anchor=south west".into(),
             AxisOption::AxisXLineNone => "axis x line=none".into(),
-            AxisOption::AxisYLineRight => "axis y line=right".into(),
+            AxisOption::AxisYLineRight => "axis y line*=right".into(),
             AxisOption::ScaledTicksFalse => "scaled ticks=false".into(),
             AxisOption::TickNumberFormatFixed => "/pgf/number format/fixed".into(),
         }
