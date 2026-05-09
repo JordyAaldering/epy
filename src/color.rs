@@ -20,8 +20,8 @@ impl Color {
     pub fn tikz_name(self) -> String {
         use Color::*;
         match self {
-            Grid => "epygridcolor".to_owned(),
-            Annot => "epyannotcolor".to_owned(),
+            Grid => "black!20".to_owned(),
+            Annot => "black!30".to_owned(),
             Energy => "epyenergycolor".to_owned(),
             Runtime => "epyruntimecolor".to_owned(),
             EnergyComplementary => "epyenergycompl".to_owned(),
