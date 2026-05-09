@@ -63,12 +63,7 @@ impl<T: Clone> LinePlot<T> {
         self
     }
 
-    pub fn build_document(&self) -> PlotDocument {
-        let ax = self.build_axis();
-        PlotDocument::new(Vec::new(), ax, None)
-    }
-
-    fn build_axis(&self) -> Axis {
+    pub fn build_axis(&self) -> Axis {
         let grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
         let keys = grouped.keys().to_vec();
         let all_stats: Vec<(Vec<f64>, Vec<f64>, Vec<f64>)> = self

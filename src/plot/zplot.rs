@@ -43,11 +43,7 @@ impl<Row: Clone> ZPlot<Row> {
         }
     }
 
-    pub fn build_document(&self) -> PlotDocument {
-        PlotDocument::new(Vec::new(), self.build_axis(), None)
-    }
-
-    fn build_axis(&self) -> Axis {
+    pub fn build_axis(&self) -> Axis {
         let grouped = self.df.clone().group_by(|row| (self.series_selector)(row));
         let mut series_groups: Vec<(f64, Vec<Coordinate>)> = Vec::new();
 

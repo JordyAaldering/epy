@@ -6,6 +6,7 @@ mod plot;
 pub mod prelude {
     pub use crate::color::*;
     pub use crate::data::*;
+    pub use crate::ir::*;
     pub use crate::plot::*;
 }
 
@@ -60,21 +61,22 @@ fn twin(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let mut doc = TwinPlot::new(
+    let (mut ax0, mut ax1) = TwinPlot::new(
             filtered,
             |r| r.powercap,
             |r| r.gflop_j(), "GFLOP/J",
             |r| r.gflop_s(), "GFLOP/s",
             "Power limit (W)",
         )
-        .build_document();
+        .build_axes();
 
-    // Post-build modifications
-    doc.ax0.set_ymax(0.09);
-    doc.ax0.set_legend_pos("south east");
-    doc.ax1.as_mut().unwrap().set_ymax(0.6);
-    doc.ax0.filter_xticks_stride(2);
-    doc.ax0.format_xticks_precision(1, false);
+    ax0.set_ymax(0.09);
+    ax0.set_legend_pos("south east");
+    ax1.set_ymax(0.6);
+    ax0.filter_xticks_stride(2);
+    ax0.format_xticks_precision(1, false);
+
+    let doc = ir::PlotDocument::from_twin_axes(ax0, ax1);
 
     let tikz = doc.render_tikz();
 
@@ -85,14 +87,16 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let mut doc = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
+    let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| r.ipc(), "IPC", Color::Runtime)
-        .build_document()
+        .build_axis();
+
+    ax0.filter_xticks_stride(2);
+    ax0.format_xticks_precision(1, false);
+
+    let doc = ir::PlotDocument::from_axis(ax0)
         .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, Color::Annot)
         .annot_label(7.0, 0.25, "Hello, world!");
-
-    doc.ax0.filter_xticks_stride(2);
-    doc.ax0.format_xticks_precision(1, false);
 
     let tikz = doc.render_tikz();
 
@@ -100,7 +104,7 @@ fn ipc(df: &DataFrame<Record>) {
 }
 
 fn zplot(df: &DataFrame<Record>) {
-    let mut doc = ZPlot::new(
+    let mut ax0 = ZPlot::new(
             df.clone(),
             |r| r.threads as f64,
             |r| r.powercap,
@@ -109,10 +113,12 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/s",
             "GFLOP/J",
         )
-        .build_document();
+        .build_axis();
 
-    doc.ax0.set_xmin(0.0);
-    doc.ax0.set_ymin(0.0);
+    ax0.set_xmin(0.0);
+    ax0.set_ymin(0.0);
+
+    let doc = ir::PlotDocument::from_axis(ax0);
 
     let tikz = doc.render_tikz();
 

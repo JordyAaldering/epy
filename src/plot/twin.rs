@@ -47,11 +47,10 @@ impl<Row: Clone> TwinPlot<Row> {
         self
     }
 
-    pub fn build_document(&self) -> PlotDocument {
-        let setup_lines = self.twin_setup_lines();
+    pub fn build_axes(&self) -> (Axis, Axis) {
         let ax1 = self.build_left_axis();
         let ax2 = self.build_right_axis();
-        PlotDocument::new(setup_lines, ax1, Some(ax2))
+        (ax1, ax2)
     }
 
     fn grouped(&self) -> GroupedFrame<Row> {
@@ -77,30 +76,6 @@ impl<Row: Clone> TwinPlot<Row> {
         }
 
         (keys, meds, q1s, q3s)
-    }
-
-    fn max_line_q3(&self) -> f64 {
-        let grouped = self.grouped();
-        let (_, _, _, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
-        q3s.into_iter().fold(0.0_f64, f64::max)
-    }
-
-    fn twin_setup_lines(&self) -> Vec<String> {
-        let tick_estimate = (self.max_line_q3() * TICK_ESTIMATE_BUFFER).to_string();
-        let has_ylabel = !self.line_label.is_empty();
-
-        let mut lines = Vec::new();
-        lines.push(format!(
-            "\\settowidth{{\\epyrpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
-        ));
-        if has_ylabel {
-            lines.push("\\settoheight{\\epyrlabelh}{\\normalfont\\epyticksize Ag}".to_owned());
-            lines.push("\\addtolength{\\epyrpad}{\\epyrlabelh}".to_owned());
-            lines.push("\\addtolength{\\epyrpad}{10pt}".to_owned());
-        } else {
-            lines.push("\\addtolength{\\epyrpad}{5pt}".to_owned());
-        }
-        lines
     }
 
     fn x_range(&self, n: usize) -> (f64, f64) {
@@ -195,6 +170,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::Height("\\epyfigureheight".into()));
         opts.replace(AxisOption::YLabel(self.line_label.clone()));
         opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        let line_max = q3s.iter().copied().fold(0.0_f64, f64::max) * TICK_ESTIMATE_BUFFER;
+        opts.replace(AxisOption::YMax(Numeric::new(line_max)));
         opts.replace(AxisOption::XMin(Numeric::new(xmin)));
         opts.replace(AxisOption::XMax(Numeric::new(xmax)));
 

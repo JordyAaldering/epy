@@ -214,6 +214,59 @@ impl PlotDocument {
         PlotDocument { setup_lines, ax0, ax1 }
     }
 
+    pub fn from_axis(ax0: Axis) -> Self {
+        Self::new(Self::single_setup_lines(), ax0, None)
+    }
+
+    pub fn from_twin_axes(ax0: Axis, ax1: Axis) -> Self {
+        let setup_lines = Self::twin_setup_lines(&ax1);
+        Self::new(setup_lines, ax0, Some(ax1))
+    }
+
+    fn single_setup_lines() -> Vec<String> {
+        Vec::new()
+    }
+
+    fn twin_setup_lines(right_axis: &Axis) -> Vec<String> {
+        let tick_estimate = right_axis
+            .opts
+            .iter()
+            .find_map(|opt| {
+                if let AxisOption::YMax(value) = opt {
+                    Some(value.0 * 1.1)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(1.0)
+            .to_string();
+
+        let has_ylabel = right_axis
+            .opts
+            .iter()
+            .find_map(|opt| {
+                if let AxisOption::YLabel(label) = opt {
+                    Some(!label.is_empty())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(false);
+
+        let mut lines = Vec::new();
+        lines.push(format!(
+            "\\settowidth{{\\epyrpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
+        ));
+        if has_ylabel {
+            lines.push("\\settoheight{\\epyrlabelh}{\\normalfont\\epyticksize Ag}".to_owned());
+            lines.push("\\addtolength{\\epyrpad}{\\epyrlabelh}".to_owned());
+            lines.push("\\addtolength{\\epyrpad}{10pt}".to_owned());
+        } else {
+            lines.push("\\addtolength{\\epyrpad}{5pt}".to_owned());
+        }
+        lines
+    }
+
     pub fn annot_area(mut self, xmin: f64, ymin: f64, xmax: f64, ymax: f64, color: Color) -> Self {
         let options = vec![
             format!("draw={}", color.tikz_name()),
