@@ -4,11 +4,6 @@ use crate::{
     plot::{common_axis_options, quartiles},
 };
 
-/// Extra multiplier applied to the data maximum when estimating the longest
-/// right-axis tick label.  pgfplots rounds the axis maximum up to the next
-/// "nice" tick value; 10 % is a conservative overshoot that covers most cases.
-const TICK_ESTIMATE_BUFFER: f64 = 1.1;
-
 pub struct TwinPlot<Row> {
     df: DataFrame<Row>,
     group_selector: Box<dyn Fn(&Row) -> f64>,
@@ -78,15 +73,10 @@ impl<Row: Clone> TwinPlot<Row> {
         (keys, meds, q1s, q3s)
     }
 
-    fn x_range(&self, n: usize) -> (f64, f64) {
-        (-0.5, n as f64 - 0.5)
-    }
-
     fn build_left_axis(&self) -> Axis {
         let grouped = self.grouped();
         let (keys, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.bar_selector);
         let n = keys.len();
-        let (xmin, xmax) = self.x_range(n);
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::Name("mainaxis".into()));
@@ -96,8 +86,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
         opts.replace(AxisOption::YLabel(self.bar_label.clone()));
         opts.replace(AxisOption::YMin(Numeric::new(0.0)));
-        opts.replace(AxisOption::XMin(Numeric::new(xmin)));
-        opts.replace(AxisOption::XMax(Numeric::new(xmax)));
+        opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
+        opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
         opts.replace(AxisOption::XTicks((0..n).map(|i| i.to_string()).collect()));
         opts.replace(AxisOption::XTickLabels(
             if let Some(ref lbls) = self.xtick_labels {
@@ -150,9 +140,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
     fn build_right_axis(&self) -> Axis {
         let grouped = self.grouped();
-        let (keys, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
-        let n = keys.len();
-        let (xmin, xmax) = self.x_range(n);
+        let (_, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::AtMainAxisSouthWest);
@@ -169,11 +157,6 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::Width("{\\dimexpr \\epyfigurewidth - \\epyrpad\\relax}".into()));
         opts.replace(AxisOption::Height("\\epyfigureheight".into()));
         opts.replace(AxisOption::YLabel(self.line_label.clone()));
-        opts.replace(AxisOption::YMin(Numeric::new(0.0)));
-        let line_max = q3s.iter().copied().fold(0.0_f64, f64::max) * TICK_ESTIMATE_BUFFER;
-        opts.replace(AxisOption::YMax(Numeric::new(line_max)));
-        opts.replace(AxisOption::XMin(Numeric::new(xmin)));
-        opts.replace(AxisOption::XMax(Numeric::new(xmax)));
 
         let mut band = Vec::new();
         for (i, q3) in q3s.iter().enumerate() {

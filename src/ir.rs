@@ -233,12 +233,12 @@ impl PlotDocument {
             .iter()
             .find_map(|opt| {
                 if let AxisOption::YMax(value) = opt {
-                    Some(value.0 * 1.1)
+                    Some(value.0)
                 } else {
                     None
                 }
             })
-            .unwrap_or(1.0)
+            .unwrap_or(0.0)
             .to_string();
 
         let has_ylabel = right_axis
