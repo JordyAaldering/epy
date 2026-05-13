@@ -141,6 +141,7 @@ impl<Row: Clone> TwinPlot<Row> {
     fn build_right_axis(&self) -> Axis {
         let grouped = self.grouped();
         let (_, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
+        let n = meds.len();
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::AtMainAxisSouthWest);
@@ -156,6 +157,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::YTickPosRight);
         opts.replace(AxisOption::Width("{\\dimexpr\\epyfigurewidth-\\epyrpad\\relax}".into()));
         opts.replace(AxisOption::Height("{\\dimexpr\\epyheightratio\\epyfigurewidth\\relax}".into()));
+        opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
+        opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
         opts.replace(AxisOption::YLabel(self.line_label.clone()));
 
         let mut band = Vec::new();
