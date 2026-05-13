@@ -238,11 +238,11 @@ impl PlotDocument {
             .unwrap_or("0.00".to_string());
 
         let mut lines = Vec::new();
-        lines.push("\\ifx\\epyrpad\\undefined\\newlength{\\epyrpad}\\fi%".to_owned());
+        lines.push("\\ifx\\epyrpad\\undefined\\newlength{\\epyrpad}\\fi%".into());
         lines.push(format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}%"));
         // Representative glyph sample used to estimate tick-label ascent/height when
         // reserving right-axis padding. "Ag" provides a stable height across fonts.
-        lines.push("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup%".to_owned());
+        lines.push("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup%".into());
         // An axis label is always assumed to present.
         lines.push(format!("\\addtolength{{\\epyrpad}}{{{}em}}%", TWIN_PADDING_EM));
         lines

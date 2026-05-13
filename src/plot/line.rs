@@ -90,7 +90,7 @@ impl<T: Clone> LinePlot<T> {
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
-        opts.replace(AxisOption::Height("\\epyfigureheight".into()));
+        opts.replace(AxisOption::Height("{\\dimexpr \\epyheightratio\\epyfigurewidth\\relax}".into()));
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
         opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
         if let Some(v) = self.ymin {
@@ -113,7 +113,7 @@ impl<T: Clone> LinePlot<T> {
 
         for (si, series) in self.series.iter().enumerate() {
             let (meds, q1s, q3s) = &all_stats[si];
-            let cn = series.color.tikz_name().to_owned();
+            let cn = series.color.tikz_name().to_string();
 
             // Transparent Q1–Q3 band
             let mut band = Vec::new();
