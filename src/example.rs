@@ -93,8 +93,8 @@ fn ipc(df: &DataFrame<Record>) {
     ax0.format_xticks_precision(1, false);
 
     let doc = ir::PlotDocument::from_axis(ax0)
-        .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, "black!30".into())
-        .annot_label(7.0, 0.25, "Hello, world!");
+        .annot_area(5.5, 0.0, 12.5, 1.0, "black!30".into())
+        .annot_label(5.0, 0.35, "Hello, world!");
 
     let tikz = doc.render_tikz();
 
