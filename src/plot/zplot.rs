@@ -80,7 +80,7 @@ impl<Row: Clone> ZPlot<Row> {
         opts.replace(AxisOption::XGridColor(Color::Grid));
         opts.replace(AxisOption::XMajorGrids(true));
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
-        opts.replace(AxisOption::Height("{\\dimexpr \\epyheightratio\\epyfigurewidth\\relax}".into()));
+        opts.replace(AxisOption::Height("{\\dimexpr\\epyheightratio\\epyfigurewidth\\relax}".into()));
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
         opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
         opts.replace(AxisOption::YMin(Numeric::new(0.0)));

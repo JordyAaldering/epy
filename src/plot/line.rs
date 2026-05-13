@@ -90,7 +90,7 @@ impl<T: Clone> LinePlot<T> {
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
-        opts.replace(AxisOption::Height("{\\dimexpr \\epyheightratio\\epyfigurewidth\\relax}".into()));
+        opts.replace(AxisOption::Height("{\\dimexpr\\epyheightratio\\epyfigurewidth\\relax}".into()));
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
         opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
         if let Some(v) = self.ymin {
