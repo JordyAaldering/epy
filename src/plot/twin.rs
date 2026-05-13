@@ -174,7 +174,7 @@ impl<Row: Clone> TwinPlot<Row> {
             opts,
             elements: vec![
                 AxisElement::Plot(AddPlot {
-                    opts: vec!["fill=epyruntimecolor".into(), "draw=none".into(), "forget plot".into()],
+                    opts: vec!["fill=epyruntimecolor".into(), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
                     coords: band,
                     closed_cycle: true,
                 }),

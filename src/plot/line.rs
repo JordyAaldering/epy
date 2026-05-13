@@ -119,7 +119,7 @@ impl<T: Clone> LinePlot<T> {
                 band.push(Coordinate::Plain(i as f64, *q1));
             }
             elements.push(AxisElement::Plot(AddPlot {
-                opts: vec![cn.clone(), "opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
+                opts: vec![format!("fill={}", cn), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
                 coords: band,
                 closed_cycle: true,
             }));
