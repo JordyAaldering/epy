@@ -46,7 +46,6 @@ pub struct Style {
     pub color: Option<Color>,
     pub draw: Option<Color>,
     pub line_width_pt: Option<Numeric>,
-    pub font: Option<String>,
     pub inner_sep_pt: Option<Numeric>,
     pub fill_opacity: Option<Numeric>,
     pub draw_opacity: Option<Numeric>,
@@ -70,11 +69,6 @@ impl Style {
 
     pub fn with_line_width_pt(mut self, value: f64) -> Self {
         self.line_width_pt = Some(Numeric::new(value));
-        self
-    }
-
-    pub fn with_font(mut self, font: impl Into<String>) -> Self {
-        self.font = Some(font.into());
         self
     }
 
@@ -108,9 +102,6 @@ impl Style {
         }
         if let Some(line_width_pt) = self.line_width_pt {
             parts.push(format!("line width={}pt", line_width_pt.render_tikz()));
-        }
-        if let Some(font) = &self.font {
-            parts.push(format!("font={font}"));
         }
         if let Some(inner_sep_pt) = self.inner_sep_pt {
             parts.push(format!("inner sep={}pt", inner_sep_pt.render_tikz()));
@@ -255,10 +246,10 @@ impl PlotDocument {
 
         let mut lines = Vec::new();
         lines.push(format!(
-            "\\settowidth{{\\epyrpad}}{{\\normalfont\\epyticksize {tick_estimate}}}"
+            "\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}"
         ));
         if has_ylabel {
-            lines.push("\\settoheight{\\epyrlabelh}{\\normalfont\\epyticksize Ag}".to_owned());
+            lines.push("\\settoheight{\\epyrlabelh}{\\normalfont Ag}".to_owned());
             lines.push("\\addtolength{\\epyrpad}{\\epyrlabelh}".to_owned());
             lines.push("\\addtolength{\\epyrpad}{10pt}".to_owned());
         } else {
@@ -280,9 +271,7 @@ impl PlotDocument {
     }
 
     pub fn annot_label(mut self, x: f64, y: f64, label: &str) -> Self {
-        let options = vec![
-            "font=\\epyannotsize".into(),
-        ];
+        let options = Vec::new();
         let at = Coordinate::AxisCs(x, y);
         self.ax0.elements.push(AxisElement::DrawLabel { options, at, label: label.into() });
         self
@@ -462,8 +451,8 @@ impl AxisOption {
             AxisOption::TrimAxisLeft => "trim axis left".into(),
             AxisOption::Width(width) => format!("width={width}"),
             AxisOption::Height(height) => format!("height={height}"),
-            AxisOption::XLabel(label) => format!("xlabel={{\\epylabelsize {label}}}"),
-            AxisOption::YLabel(label) => format!("ylabel={{\\epylabelsize {label}}}"),
+            AxisOption::XLabel(label) => format!("xlabel={{{label}}}"),
+            AxisOption::YLabel(label) => format!("ylabel={{{label}}}"),
             AxisOption::YMin(value) => format!("ymin={}", value.render_tikz()),
             AxisOption::YMax(value) => format!("ymax={}", value.render_tikz()),
             AxisOption::XMin(value) => format!("xmin={}", value.render_tikz()),
@@ -505,8 +494,12 @@ impl AxisElement {
                     options.join(","), bottom_left.render_tikz(), top_right.render_tikz())
             }
             DrawLabel { options, at, label } => {
-                format!("\\draw {} node[{}] {{{}}};\n",
-                    at.render_tikz(), options.join(","), label)
+                if options.is_empty() {
+                    format!("\\draw {} node {{{}}};\n", at.render_tikz(), label)
+                } else {
+                    format!("\\draw {} node[{}] {{{}}};\n",
+                        at.render_tikz(), options.join(","), label)
+                }
             }
         }
     }

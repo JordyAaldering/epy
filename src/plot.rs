@@ -34,10 +34,9 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
                 .with_color(Color::Grid)
                 .with_line_width_pt(0.4),
         ),
-        AxisOption::TickLabelStyle(Style::new().with_font("\\epyticksize").with_inner_sep_pt(2.0)),
+        AxisOption::TickLabelStyle(Style::new().with_inner_sep_pt(2.0)),
         AxisOption::LegendStyle(
             Style::new()
-                .with_font("\\epylegendsize")
                 .with_draw(Color::Grid)
                 .with_fill_opacity(0.8)
                 .with_draw_opacity(1.0)

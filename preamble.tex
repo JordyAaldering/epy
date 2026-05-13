@@ -1,6 +1,7 @@
 \usepackage{pgfplots}
-\usepgfplotslibrary{groupplots,dateplot}
 \usetikzlibrary{patterns,shapes.arrows}
+\usepgfplotslibrary{groupplots,dateplot}
+\pgfplotsset{compat=newest}
 
 \definecolor{epyenergycolor}{RGB}{2,158,115}
 \definecolor{epyenergycompl}{RGB}{128,206,185}
@@ -17,12 +18,6 @@
 \definecolor{epycolorblind8}{RGB}{236,225,51}
 \definecolor{epycolorblind9}{RGB}{86,180,233}
 
-% Font size commands for plot text
-\newcommand{\epylabelsize}{\scriptsize}
-\newcommand{\epyannotsize}{\scriptsize}
-\newcommand{\epylegendsize}{\scriptsize}
-\newcommand{\epyticksize}{\scriptsize}
-
 % Figure dimensions used by generated plot code
 \newlength{\epyfigurewidth}
 \setlength{\epyfigurewidth}{\linewidth}
@@ -32,5 +27,3 @@
 % Right-side padding for twin-axis plots (set at compile time in generated code)
 \newlength{\epyrpad}
 \newlength{\epyrlabelh}
-
-\pgfplotsset{compat=newest}
