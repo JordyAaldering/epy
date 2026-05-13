@@ -116,10 +116,10 @@ impl<Row: Clone> TwinPlot<Row> {
         }));
         elements.push(AxisElement::LegendEntry(self.bar_label.clone()));
 
-        // Error whiskers Q1–Q3
+        // Error whiskers
         for i in 0..q1s.len() {
             elements.push(AxisElement::DrawLine {
-                options: vec!["black!60".into(), "line width=0.9pt".into()],
+                options: vec!["black!90".into(), "line width=0.9pt".into()],
                 from: Coordinate::AxisCs(i as f64, q1s[i]),
                 to: Coordinate::AxisCs(i as f64, q3s[i]),
             });
