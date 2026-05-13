@@ -23,7 +23,7 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         AxisOption::XTickPosLeft,
         AxisOption::YTickPosLeft,
         AxisOption::YMajorGrids(true),
-        AxisOption::MajorTickLength(Numeric::new(2.0)),
+        AxisOption::MajorTickLength(Numeric::new(MAJOR_TICK_LENGTH_EM)),
         AxisOption::XTickStyle(
             Style::new()
                 .with_color(Color::Grid)
@@ -34,7 +34,7 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
                 .with_color(Color::Grid)
                 .with_line_width_pt(0.4),
         ),
-        AxisOption::TickLabelStyle(Style::new().with_inner_sep_pt(2.0)),
+        AxisOption::TickLabelStyle(Style::new().with_inner_sep_pt(TICK_LABEL_INNER_SEP_EM)),
         AxisOption::LegendStyle(
             Style::new()
                 .with_draw(Color::Grid)

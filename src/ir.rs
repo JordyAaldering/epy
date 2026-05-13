@@ -1,6 +1,11 @@
 use crate::color::Color;
 use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
+pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.2;
+pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.2;
+/// Extra right padding for twin-axis plots
+pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
+
 #[derive(Clone, Debug)]
 pub struct PlotDocument {
     pub setup_lines: Vec<String>,
@@ -104,7 +109,7 @@ impl Style {
             parts.push(format!("line width={}pt", line_width_pt.render_tikz()));
         }
         if let Some(inner_sep_pt) = self.inner_sep_pt {
-            parts.push(format!("inner sep={}pt", inner_sep_pt.render_tikz()));
+            parts.push(format!("inner sep={}em", inner_sep_pt.render_tikz()));
         }
         if let Some(fill_opacity) = self.fill_opacity {
             parts.push(format!("fill opacity={}", fill_opacity.render_tikz()));
@@ -232,29 +237,13 @@ impl PlotDocument {
             .unwrap_or(0.0)
             .to_string();
 
-        let has_ylabel = right_axis
-            .opts
-            .iter()
-            .find_map(|opt| {
-                if let AxisOption::YLabel(label) = opt {
-                    Some(!label.is_empty())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or(false);
-
         let mut lines = Vec::new();
-        lines.push(format!(
-            "\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}"
-        ));
-        if has_ylabel {
-            lines.push("\\settoheight{\\epyrlabelh}{\\normalfont Ag}".to_owned());
-            lines.push("\\addtolength{\\epyrpad}{\\epyrlabelh}".to_owned());
-            lines.push("\\addtolength{\\epyrpad}{10pt}".to_owned());
-        } else {
-            lines.push("\\addtolength{\\epyrpad}{5pt}".to_owned());
-        }
+        lines.push(format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}"));
+        // Representative glyph sample used to estimate tick-label ascent/height when
+        // reserving right-axis padding. "Ag" provides a stable height across fonts.
+        lines.push("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup".to_owned());
+        // An axis label is always assumed to present.
+        lines.push(format!("\\addtolength{{\\epyrpad}}{{{}em}}", TWIN_PADDING_EM));
         lines
     }
 
@@ -438,7 +427,7 @@ impl AxisOption {
             AxisOption::XMajorGrids(false) => "xmajorgrids=false".into(),
             AxisOption::YMajorGrids(true) => "ymajorgrids".into(),
             AxisOption::YMajorGrids(false) => "ymajorgrids=false".into(),
-            AxisOption::MajorTickLength(value) => format!("major tick length={}pt", value.render_tikz()),
+            AxisOption::MajorTickLength(value) => format!("major tick length={}em", value.render_tikz()),
             AxisOption::XTickStyle(style) => format!("xtick style={{{}}}", style.render_tikz()),
             AxisOption::YTickStyle(style) => format!("ytick style={{{}}}", style.render_tikz()),
             AxisOption::TickLabelStyle(style) => format!("tick label style={{{}}}", style.render_tikz()),
