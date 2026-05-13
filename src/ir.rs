@@ -1,7 +1,7 @@
 use crate::color::Color;
 use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
-pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.2;
+pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.4;
 pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.2;
 /// Extra right padding for twin-axis plots
 pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
@@ -229,13 +229,13 @@ impl PlotDocument {
             .iter()
             .find_map(|opt| {
                 if let AxisOption::YMax(value) = opt {
-                    Some(value.0)
+                    Some(value.0.to_string())
                 } else {
                     None
                 }
             })
-            .unwrap_or(0.0)
-            .to_string();
+            // Assume a default tick precision if no upper bound is found
+            .unwrap_or("0.00".to_string());
 
         let mut lines = Vec::new();
         lines.push(format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}"));
