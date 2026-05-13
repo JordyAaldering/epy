@@ -1,10 +1,8 @@
-mod color;
 mod data;
 mod ir;
 mod plot;
 
 pub mod prelude {
-    pub use crate::color::*;
     pub use crate::data::*;
     pub use crate::ir::*;
     pub use crate::plot::*;
@@ -88,14 +86,14 @@ fn ipc(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
     let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
-        .series(|r| r.ipc(), "IPC", Color::Runtime)
+        .series(|r| r.ipc(), "IPC", "epyruntimecolor".into())
         .build_axis();
 
     ax0.filter_xticks_stride(2);
     ax0.format_xticks_precision(1, false);
 
     let doc = ir::PlotDocument::from_axis(ax0)
-        .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, Color::Annot)
+        .annot_area((3.0 + 3.5) / 2.0, 0.0, (7.125 + 7.75) / 2.0, 1.0, "black!30".into())
         .annot_label(7.0, 0.25, "Hello, world!");
 
     let tikz = doc.render_tikz();

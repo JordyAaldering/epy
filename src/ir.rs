@@ -1,10 +1,11 @@
-use crate::color::Color;
 use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
 pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.4;
 pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.2;
 /// Extra right padding for twin-axis plots
 pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
+
+pub(crate) const GRID_COLOR: &'static str = "black!20";
 
 #[derive(Clone, Debug)]
 pub struct PlotDocument {
@@ -48,8 +49,8 @@ impl Hash for Numeric {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Style {
-    pub color: Option<Color>,
-    pub draw: Option<Color>,
+    pub color: Option<String>,
+    pub draw: Option<String>,
     pub line_width_pt: Option<Numeric>,
     pub inner_sep_pt: Option<Numeric>,
     pub fill_opacity: Option<Numeric>,
@@ -62,12 +63,12 @@ impl Style {
         Self::default()
     }
 
-    pub fn with_color(mut self, color: Color) -> Self {
+    pub fn with_color(mut self, color: String) -> Self {
         self.color = Some(color);
         self
     }
 
-    pub fn with_draw(mut self, color: Color) -> Self {
+    pub fn with_draw(mut self, color: String) -> Self {
         self.draw = Some(color);
         self
     }
@@ -99,11 +100,11 @@ impl Style {
 
     fn render_tikz(&self) -> String {
         let mut parts = Vec::new();
-        if let Some(color) = self.color {
-            parts.push(format!("color={}", color.tikz_name()));
+        if let Some(color) = &self.color {
+            parts.push(format!("color={}", color));
         }
-        if let Some(draw) = self.draw {
-            parts.push(format!("draw={}", draw.tikz_name()));
+        if let Some(draw) = &self.draw {
+            parts.push(format!("draw={}", draw));
         }
         if let Some(line_width_pt) = self.line_width_pt {
             parts.push(format!("line width={}pt", line_width_pt.render_tikz()));
@@ -127,8 +128,8 @@ impl Style {
 #[derive(Clone, Debug)]
 pub enum AxisOption {
     ScaleOnlyAxis,
-    AxisLineColor(Color),
-    XGridColor(Color),
+    AxisLineColor(String),
+    SetXGridColor,
     YGridStyle(Style),
     TickAlignOutside,
     XTickPosLeft,
@@ -248,11 +249,11 @@ impl PlotDocument {
         lines
     }
 
-    pub fn annot_area(mut self, xmin: f64, ymin: f64, xmax: f64, ymax: f64, color: Color) -> Self {
+    pub fn annot_area(mut self, xmin: f64, ymin: f64, xmax: f64, ymax: f64, color: String) -> Self {
         let options = vec![
-            format!("draw={}", color.tikz_name()),
+            format!("draw={}", color),
             "draw opacity=0.5".into(),
-            format!("postaction={{pattern=north east lines, pattern color={}, fill opacity=0.5}}", color.tikz_name()),
+            format!("postaction={{pattern=north east lines, pattern color={}, fill opacity=0.5}}", color),
         ];
         let bottom_left = Coordinate::AxisCs(xmin, ymin);
         let top_right = Coordinate::AxisCs(xmax, ymax);
@@ -417,49 +418,50 @@ impl Axis {
 
 impl AxisOption {
     fn render_tikz(&self) -> String {
+        use AxisOption::*;
         match self {
-            AxisOption::ScaleOnlyAxis => "scale only axis".into(),
-            AxisOption::AxisLineColor(color) => format!("axis line style={{{}}}", color.tikz_name()),
-            AxisOption::XGridColor(color) => format!("x grid style={{{}}}", color.tikz_name()),
-            AxisOption::YGridStyle(style) => format!("y grid style={{{}}}", style.render_tikz()),
-            AxisOption::TickAlignOutside => "tick align=outside".into(),
-            AxisOption::XTickPosLeft => "xtick pos=left".into(),
-            AxisOption::YTickPosLeft => "ytick pos=left".into(),
-            AxisOption::YTickPosRight => "ytick pos=right".into(),
-            AxisOption::XMajorGrids(true) => "xmajorgrids".into(),
-            AxisOption::XMajorGrids(false) => "xmajorgrids=false".into(),
-            AxisOption::YMajorGrids(true) => "ymajorgrids".into(),
-            AxisOption::YMajorGrids(false) => "ymajorgrids=false".into(),
-            AxisOption::MajorTickLength(value) => format!("major tick length={}em", value.render_tikz()),
-            AxisOption::XTickStyle(style) => format!("xtick style={{{}}}", style.render_tikz()),
-            AxisOption::YTickStyle(style) => format!("ytick style={{{}}}", style.render_tikz()),
-            AxisOption::TickLabelStyle(style) => format!("tick label style={{{}}}", style.render_tikz()),
-            AxisOption::LegendStyle(style) => format!("legend style={{{}}}", style.render_tikz()),
-            AxisOption::EnsureAxisHeightExtraYTick => "extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}".into(),
-            AxisOption::EnsureAxisHeightExtraYTickLabels => "extra y tick labels={\\vphantom{Ag}}".into(),
-            AxisOption::EnsureAxisHeightExtraYTickStyle => "extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt,grid=none}".into(),
-            AxisOption::Name(name) => format!("name={name}"),
-            AxisOption::TrimAxisRight => "trim axis right".into(),
-            AxisOption::TrimAxisLeft => "trim axis left".into(),
-            AxisOption::Width(width) => format!("width={width}"),
-            AxisOption::Height(height) => format!("height={height}"),
-            AxisOption::XLabel(label) => format!("xlabel={{{label}}}"),
-            AxisOption::YLabel(label) => format!("ylabel={{{label}}}"),
-            AxisOption::YMin(value) => format!("ymin={}", value.render_tikz()),
-            AxisOption::YMax(value) => format!("ymax={}", value.render_tikz()),
-            AxisOption::XMin(value) => format!("xmin={}", value.render_tikz()),
-            AxisOption::XMax(value) => format!("xmax={}", value.render_tikz()),
-            AxisOption::XTicks(values) => format!("xtick={{{}}}", values.join(",")),
-            AxisOption::EmptyXTicks => "xtick=\\empty".into(),
-            AxisOption::XTickLabels(values) => format!("xticklabels={{{}}}", values.join(",")),
-            AxisOption::EmptyXTickLabels => "xticklabels=\\empty".into(),
-            AxisOption::AtMainAxisSouthWest => "at={(mainaxis.south west)}".into(),
-            AxisOption::AnchorSouthWest => "anchor=south west".into(),
-            AxisOption::AxisXLineNone => "axis x line=none".into(),
-            AxisOption::AxisYLineRight => "axis y line*=right".into(),
-            AxisOption::ScaledTicksFalse => "scaled ticks=false".into(),
-            AxisOption::TickNumberFormatFixed => "/pgf/number format/fixed".into(),
-            AxisOption::LegendPos(pos) => format!("legend pos={pos}"),
+            ScaleOnlyAxis => "scale only axis".into(),
+            AxisLineColor(color) => format!("axis line style={{{}}}", color),
+            SetXGridColor => format!("x grid style={{{}}}", GRID_COLOR),
+            YGridStyle(style) => format!("y grid style={{{}}}", style.render_tikz()),
+            TickAlignOutside => "tick align=outside".into(),
+            XTickPosLeft => "xtick pos=left".into(),
+            YTickPosLeft => "ytick pos=left".into(),
+            YTickPosRight => "ytick pos=right".into(),
+            XMajorGrids(true) => "xmajorgrids".into(),
+            XMajorGrids(false) => "xmajorgrids=false".into(),
+            YMajorGrids(true) => "ymajorgrids".into(),
+            YMajorGrids(false) => "ymajorgrids=false".into(),
+            MajorTickLength(value) => format!("major tick length={}em", value.render_tikz()),
+            XTickStyle(style) => format!("xtick style={{{}}}", style.render_tikz()),
+            YTickStyle(style) => format!("ytick style={{{}}}", style.render_tikz()),
+            TickLabelStyle(style) => format!("tick label style={{{}}}", style.render_tikz()),
+            LegendStyle(style) => format!("legend style={{{}}}", style.render_tikz()),
+            EnsureAxisHeightExtraYTick => "extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}".into(),
+            EnsureAxisHeightExtraYTickLabels => "extra y tick labels={\\vphantom{Ag}}".into(),
+            EnsureAxisHeightExtraYTickStyle => "extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt,grid=none}".into(),
+            Name(name) => format!("name={name}"),
+            TrimAxisRight => "trim axis right".into(),
+            TrimAxisLeft => "trim axis left".into(),
+            Width(width) => format!("width={width}"),
+            Height(height) => format!("height={height}"),
+            XLabel(label) => format!("xlabel={{{label}}}"),
+            YLabel(label) => format!("ylabel={{{label}}}"),
+            YMin(value) => format!("ymin={}", value.render_tikz()),
+            YMax(value) => format!("ymax={}", value.render_tikz()),
+            XMin(value) => format!("xmin={}", value.render_tikz()),
+            XMax(value) => format!("xmax={}", value.render_tikz()),
+            XTicks(values) => format!("xtick={{{}}}", values.join(",")),
+            EmptyXTicks => "xtick=\\empty".into(),
+            XTickLabels(values) => format!("xticklabels={{{}}}", values.join(",")),
+            EmptyXTickLabels => "xticklabels=\\empty".into(),
+            AtMainAxisSouthWest => "at={(mainaxis.south west)}".into(),
+            AnchorSouthWest => "anchor=south west".into(),
+            AxisXLineNone => "axis x line=none".into(),
+            AxisYLineRight => "axis y line*=right".into(),
+            ScaledTicksFalse => "scaled ticks=false".into(),
+            TickNumberFormatFixed => "/pgf/number format/fixed".into(),
+            LegendPos(pos) => format!("legend pos={pos}"),
         }
     }
 }

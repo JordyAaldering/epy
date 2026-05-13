@@ -1,11 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    color::Color,
-    data::DataFrame,
-    ir::*,
-    plot::{common_axis_options, median},
-};
+use crate::{data::DataFrame, ir::*, plot::{common_axis_options, median}};
 
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
 
@@ -77,7 +72,7 @@ impl<Row: Clone> ZPlot<Row> {
         }
 
         let mut opts = common_axis_options();
-        opts.replace(AxisOption::XGridColor(Color::Grid));
+        opts.replace(AxisOption::SetXGridColor);
         opts.replace(AxisOption::XMajorGrids(true));
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
         opts.replace(AxisOption::Height("{\\dimexpr\\epyheightratio\\epyfigurewidth\\relax}".into()));
@@ -87,7 +82,7 @@ impl<Row: Clone> ZPlot<Row> {
 
         let mut elements = Vec::new();
         for (gi, (key, coords)) in series_groups.into_iter().enumerate() {
-            let cn = Color::Colorblind(gi).tikz_name();
+            let cn = format!("epycolorblind{}", gi);
             let marker = MARKERS[gi % MARKERS.len()];
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![

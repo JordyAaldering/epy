@@ -6,17 +6,17 @@ pub use line::LinePlot;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
-use crate::{color::Color, ir::*};
+use crate::ir::*;
 
 use std::collections::HashSet;
 
 pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     HashSet::from([
         AxisOption::ScaleOnlyAxis,
-        AxisOption::AxisLineColor(Color::Grid),
+        AxisOption::AxisLineColor(GRID_COLOR.into()),
         AxisOption::YGridStyle(
             Style::new()
-                .with_color(Color::Grid)
+                .with_color(GRID_COLOR.into())
                 .with_line_width_pt(0.4),
         ),
         AxisOption::TickAlignOutside,
@@ -26,18 +26,18 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         AxisOption::MajorTickLength(Numeric::new(MAJOR_TICK_LENGTH_EM)),
         AxisOption::XTickStyle(
             Style::new()
-                .with_color(Color::Grid)
+                .with_color(GRID_COLOR.into())
                 .with_line_width_pt(0.4),
         ),
         AxisOption::YTickStyle(
             Style::new()
-                .with_color(Color::Grid)
+                .with_color(GRID_COLOR.into())
                 .with_line_width_pt(0.4),
         ),
         AxisOption::TickLabelStyle(Style::new().with_inner_sep_pt(TICK_LABEL_INNER_SEP_EM)),
         AxisOption::LegendStyle(
             Style::new()
-                .with_draw(Color::Grid)
+                .with_draw(GRID_COLOR.into())
                 .with_fill_opacity(0.9)
                 .with_draw_opacity(1.0)
                 .with_text_opacity(1.0),

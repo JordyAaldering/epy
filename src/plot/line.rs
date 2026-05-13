@@ -1,14 +1,9 @@
-use crate::{
-    color::Color,
-    data::DataFrame,
-    ir::*,
-    plot::{common_axis_options, quartiles},
-};
+use crate::{data::DataFrame, ir::*, plot::{common_axis_options, quartiles}};
 
 struct LineSeries<T> {
     selector: Box<dyn Fn(&T) -> f64>,
     label: String,
-    color: Color,
+    color: String,
 }
 
 pub struct LinePlot<T> {
@@ -43,8 +38,8 @@ impl<T: Clone> LinePlot<T> {
         mut self,
         selector: impl Fn(&T) -> f64 + 'static,
         label: &str,
-        color: Color,
-    ) -> Self {
+        color: String,
+) -> Self {
         self.series.push(LineSeries {
             selector: Box::new(selector),
             label: label.into(),
@@ -113,7 +108,7 @@ impl<T: Clone> LinePlot<T> {
 
         for (si, series) in self.series.iter().enumerate() {
             let (meds, q1s, q3s) = &all_stats[si];
-            let cn = series.color.tikz_name().to_string();
+            let cn = series.color.to_string();
 
             // Transparent Q1–Q3 band
             let mut band = Vec::new();
