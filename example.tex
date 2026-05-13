@@ -1,6 +1,9 @@
 \documentclass{article}
 
 \input{preamble.tex}
+% For debugging actual figure sizes
+% (add [show background rectangle] after \begin{tikzpicture})
+\usetikzlibrary{backgrounds}
 
 \begin{document}
 
@@ -19,6 +22,12 @@
     \setlength{\epyfigurewidth}{.75\linewidth}
     \setlength{\epyfigureheight}{.6\epyfigurewidth}
     \input{.build/example_ipc.tex}%
+    \caption{Caption}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \input{.build/example_zplot.tex}%
     \caption{Caption}
 \end{figure}
 

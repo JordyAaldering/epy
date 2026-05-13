@@ -38,7 +38,7 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         AxisOption::LegendStyle(
             Style::new()
                 .with_draw(Color::Grid)
-                .with_fill_opacity(0.8)
+                .with_fill_opacity(0.9)
                 .with_draw_opacity(1.0)
                 .with_text_opacity(1.0),
         ),

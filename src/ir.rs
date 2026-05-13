@@ -238,12 +238,13 @@ impl PlotDocument {
             .unwrap_or("0.00".to_string());
 
         let mut lines = Vec::new();
-        lines.push(format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}"));
+        lines.push("\\ifx\\epyrpad\\undefined\\newlength{\\epyrpad}\\fi%".to_owned());
+        lines.push(format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}%"));
         // Representative glyph sample used to estimate tick-label ascent/height when
         // reserving right-axis padding. "Ag" provides a stable height across fonts.
-        lines.push("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup".to_owned());
+        lines.push("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup%".to_owned());
         // An axis label is always assumed to present.
-        lines.push(format!("\\addtolength{{\\epyrpad}}{{{}em}}", TWIN_PADDING_EM));
+        lines.push(format!("\\addtolength{{\\epyrpad}}{{{}em}}%", TWIN_PADDING_EM));
         lines
     }
 
@@ -272,7 +273,9 @@ impl PlotDocument {
             out.push_str(line);
             out.push('\n');
         }
-        out.push_str("\\begin{tikzpicture}\n");
+        // Add bounding box for debugging
+        out.push_str("\\begin{tikzpicture}[show background rectangle]\n");
+        //out.push_str("\\begin{tikzpicture}\n");
         out.push_str(&self.ax0.render_tikz());
         if let Some(ax1) = &self.ax1 {
             out.push_str(&ax1.render_tikz());
