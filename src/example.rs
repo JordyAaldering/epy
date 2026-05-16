@@ -86,7 +86,7 @@ fn ipc(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
     let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
-        .series(|r| r.ipc(), "IPC", "epyruntimecolor".into())
+        .series(|r| Some(r.ipc()), "IPC", "epyruntimecolor".into())
         .build_axis();
 
     ax0.filter_xticks_stride(2);
@@ -99,6 +99,21 @@ fn ipc(df: &DataFrame<Record>) {
     let tikz = doc.render_tikz();
 
     std::fs::write(".build/example_ipc.tex", tikz).unwrap();
+}
+
+fn power(df: &DataFrame<Record>) {
+    let grouped = df.clone().group_by(|r| r.threads as f64);
+
+    let ax = LineGrouped::new(grouped,
+        |r| r.powercap,
+        |r| r.rapl / r.runtime,
+        "Configured power limit (W)",
+        "Actual power draw (W)")
+        .build_axis();
+
+    let doc = ir::PlotDocument::from_axis(ax);
+    let tikz = doc.render_tikz();
+    std::fs::write(".build/example_power.tex", tikz).unwrap();
 }
 
 fn zplot(df: &DataFrame<Record>) {
@@ -128,5 +143,6 @@ fn main() {
     let df = DataFrame::from_csv("test_data.csv").unwrap();
     twin(&df);
     ipc(&df);
+    power(&df);
     zplot(&df);
 }

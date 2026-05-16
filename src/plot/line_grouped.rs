@@ -1,57 +1,37 @@
-use crate::{data::DataFrame, ir::*, plot::{common_axis_options, quartiles}};
+use std::collections::HashMap;
+
+use crate::{data::GroupedFrame, ir::*, plot::{common_axis_options, quartiles}};
 
 /// TODO: actually use the markers, simply increment index for each time series is called
 const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
 
-pub struct LinePlot<T> {
-    df: DataFrame<T>,
+pub struct LineGrouped<T> {
+    df: GroupedFrame<T>,
     x_selector: Box<dyn Fn(&T) -> f64>,
-    series: Vec<LineSeries<T>>,
+    y_selector: Box<dyn Fn(&T) -> f64>,
     xaxis_label: String,
     yaxis_label: String,
     ymin: Option<f64>,
     xtick_labels: Option<Vec<String>>,
 }
 
-struct LineSeries<T> {
-    selector: Box<dyn Fn(&T) -> Option<f64>>,
-    label: String,
-    color: String,
-    marker: String,
-}
-
-impl<T: Clone> LinePlot<T> {
+impl<T: Clone> LineGrouped<T> {
     pub fn new(
-        df: DataFrame<T>,
+        df: GroupedFrame<T>,
         x_selector: impl Fn(&T) -> f64 + 'static,
+        y_selector: impl Fn(&T) -> f64 + 'static,
         xaxis_label: &str,
         yaxis_label: &str,
     ) -> Self {
-        LinePlot {
+        LineGrouped {
             df,
             x_selector: Box::new(x_selector),
-            series: Vec::new(),
+            y_selector: Box::new(y_selector),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
             ymin: Some(0.0),
             xtick_labels: None,
         }
-    }
-
-    pub fn series(
-        mut self,
-        selector: impl Fn(&T) -> Option<f64> + 'static,
-        label: &str,
-        color: String,
-    ) -> Self {
-        let marker = MARKERS[self.series.len() % MARKERS.len()].to_string();
-        self.series.push(LineSeries {
-            selector: Box::new(selector),
-            label: label.into(),
-            color,
-            marker,
-        });
-        self
     }
 
     pub fn ymin(mut self, v: Option<f64>) -> Self {
@@ -65,29 +45,26 @@ impl<T: Clone> LinePlot<T> {
     }
 
     pub fn build_axis(&self) -> Axis {
-        let grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
-        let keys = grouped.keys().to_vec();
-        let all_stats: Vec<(Vec<f64>, Vec<f64>, Vec<f64>)> = self
-            .series
+        // Build the shared x-domain across all groups so every line is aligned to the same ticks.
+        let mut unique_x: HashMap<u64, f64> = HashMap::new();
+        for gi in 0..self.df.num_groups() {
+            for &ri in &self.df.groups[gi] {
+                let row = self.df.df.row(ri);
+                let x = (self.x_selector)(row);
+                unique_x.entry(x.to_bits()).or_insert(x);
+            }
+        }
+
+        let mut x_keys: Vec<f64> = unique_x.into_values().collect();
+        x_keys.sort_by(f64::total_cmp);
+
+        let x_to_index: HashMap<u64, usize> = x_keys
             .iter()
-            .map(|s| {
-                let mut meds = Vec::with_capacity(grouped.num_groups());
-                let mut q1s = Vec::with_capacity(grouped.num_groups());
-                let mut q3s = Vec::with_capacity(grouped.num_groups());
-
-                for gi in 0..grouped.num_groups() {
-                    let vals = grouped.group_options(gi, &*s.selector);
-                    let qs = quartiles(&vals);
-                    meds.push(qs.median);
-                    q1s.push(qs.q1);
-                    q3s.push(qs.q3);
-                }
-
-                (meds, q1s, q3s)
-            })
+            .enumerate()
+            .map(|(i, &x)| (x.to_bits(), i))
             .collect();
 
-        let n = keys.len();
+        let n = x_keys.len();
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
@@ -104,7 +81,7 @@ impl<T: Clone> LinePlot<T> {
         let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
             lbls.clone()
         } else {
-            keys.iter().map(ToString::to_string).collect()
+            x_keys.iter().map(ToString::to_string).collect()
         };
         opts.replace(AxisOption::XTickLabels(labels));
         opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
@@ -112,17 +89,35 @@ impl<T: Clone> LinePlot<T> {
 
         let mut elements = Vec::new();
 
-        for (si, series) in self.series.iter().enumerate() {
-            let (meds, q1s, q3s) = &all_stats[si];
-            let cn = series.color.to_string();
+        for gi in 0..self.df.num_groups() {
+            let mut by_x: HashMap<u64, (f64, Vec<f64>)> = HashMap::new();
+            for &ri in &self.df.groups[gi] {
+                let row = self.df.df.row(ri);
+                let x = (self.x_selector)(row);
+                let y = (self.y_selector)(row);
+                let entry = by_x.entry(x.to_bits()).or_insert_with(|| (x, Vec::new()));
+                entry.1.push(y);
+            }
+
+            let mut stats_by_index: Vec<(usize, f64, f64, f64)> = by_x
+                .into_values()
+                .map(|(x, ys)| {
+                    let qs = quartiles(&ys);
+                    (x_to_index[&x.to_bits()], qs.median, qs.q1, qs.q3)
+                })
+                .collect();
+            stats_by_index.sort_by_key(|(xi, _, _, _)| *xi);
+
+            let cn = format!("epycolorblind{}", gi);
+            let marker = MARKERS[gi % MARKERS.len()];
 
             // Transparent Q1–Q3 band
             let mut band = Vec::new();
-            for (i, q3) in q3s.iter().enumerate() {
-                band.push(Coordinate::Plain(i as f64, *q3));
+            for (xi, _, _, q3) in &stats_by_index {
+                band.push(Coordinate::Plain(*xi as f64, *q3));
             }
-            for (i, q1) in q1s.iter().enumerate().rev() {
-                band.push(Coordinate::Plain(i as f64, *q1));
+            for (xi, _, q1, _) in stats_by_index.iter().rev() {
+                band.push(Coordinate::Plain(*xi as f64, *q1));
             }
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![format!("fill={}", cn), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
@@ -130,14 +125,14 @@ impl<T: Clone> LinePlot<T> {
                 closed_cycle: true,
             }));
 
-            // Median line
-            let line: Vec<Coordinate> = meds.iter().enumerate()
-                .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+            let line: Vec<Coordinate> = stats_by_index
+                .iter()
+                .map(|(xi, median, _, _)| Coordinate::Plain(*xi as f64, *median))
                 .collect();
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![
                     cn,
-                    format!("mark={}", series.marker),
+                    format!("mark={marker}"),
                     "mark size=2pt".into(),
                     "mark options={solid,draw=white}".into(),
                     "line width=1pt".into(),
@@ -146,7 +141,7 @@ impl<T: Clone> LinePlot<T> {
                 closed_cycle: false,
             }));
 
-            elements.push(AxisElement::LegendEntry(series.label.clone()));
+            elements.push(AxisElement::LegendEntry(self.df.keys()[gi].to_string()));
         }
 
         Axis { opts, elements }
