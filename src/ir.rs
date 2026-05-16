@@ -276,8 +276,8 @@ impl PlotDocument {
             out.push('\n');
         }
         // Add bounding box for debugging
-        out.push_str("\\begin{tikzpicture}[show background rectangle]\n");
-        //out.push_str("\\begin{tikzpicture}\n");
+        //out.push_str("\\begin{tikzpicture}[show background rectangle]\n");
+        out.push_str("\\begin{tikzpicture}\n");
         out.push_str(&self.ax0.render_tikz());
         if let Some(ax1) = &self.ax1 {
             out.push_str(&ax1.render_tikz());
