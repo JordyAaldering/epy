@@ -257,7 +257,10 @@ impl PlotDocument {
     }
 
     pub fn annot_line(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: String) -> Self {
-        let options = vec![format!("draw={}", color)];
+        let options = vec![
+            format!("draw={}", color),
+            "dashed".into(),
+        ];
         let from = Coordinate::AxisCs(x1, y1);
         let to = Coordinate::AxisCs(x2, y2);
         self.ax0.elements.push(AxisElement::DrawLine { options, from, to });
