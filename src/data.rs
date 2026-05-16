@@ -114,15 +114,4 @@ impl<T> GroupedFrame<T> {
             .map(|&ri| selector(&self.df.data[ri]))
             .collect()
     }
-
-    /// Collect values produced by `selector` for group `gi`.
-    pub fn group_options<F>(&self, gi: usize, selector: &F) -> Vec<f64>
-    where
-        F: Fn(&T) -> Option<f64> + ?Sized,
-    {
-        self.groups[gi]
-            .iter()
-            .filter_map(|&ri| selector(&self.df.data[ri]))
-            .collect()
-    }
 }

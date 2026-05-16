@@ -15,7 +15,7 @@ pub struct LinePlot<T> {
 }
 
 struct LineSeries<T> {
-    selector: Box<dyn Fn(&T) -> Option<f64>>,
+    selector: Box<dyn Fn(&T) -> f64>,
     label: String,
     color: String,
     marker: String,
@@ -42,7 +42,7 @@ impl<T: Clone> LinePlot<T> {
 
     pub fn series(
         mut self,
-        selector: impl Fn(&T) -> Option<f64> + 'static,
+        selector: impl Fn(&T) -> f64 + 'static,
         label: &str,
         color: String,
     ) -> Self {
@@ -84,7 +84,7 @@ impl<T: Clone> LinePlot<T> {
                 let mut q3s = Vec::with_capacity(grouped.num_groups());
 
                 for gi in 0..grouped.num_groups() {
-                    let vals = grouped.group_options(gi, &*s.selector);
+                    let vals = grouped.group_values(gi, &*s.selector);
                     let qs = quartiles(&vals);
                     meds.push(qs.median);
                     q1s.push(qs.q1);
