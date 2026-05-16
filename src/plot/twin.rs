@@ -82,8 +82,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::ScaleOnlyAxis);
         opts.replace(AxisOption::Name("mainaxis".into()));
         opts.replace(AxisOption::TrimAxisRight);
-        opts.replace(AxisOption::Width("{\\dimexpr\\epyfigurewidth-\\epyrpad\\relax}".into()));
-        opts.replace(AxisOption::Height("{\\dimexpr\\epyheightratio\\epyfigurewidth\\relax}".into()));
+        opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
+        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
         opts.replace(AxisOption::YLabel(self.bar_label.clone()));
         opts.replace(AxisOption::YMin(Numeric::new(0.0)));
@@ -157,8 +157,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::AxisYLineRight);
         opts.remove(&AxisOption::YTickPosLeft);
         opts.replace(AxisOption::YTickPosRight);
-        opts.replace(AxisOption::Width("{\\dimexpr\\epyfigurewidth-\\epyrpad\\relax}".into()));
-        opts.replace(AxisOption::Height("{\\dimexpr\\epyheightratio\\epyfigurewidth\\relax}".into()));
+        opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
+        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
         opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
         opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
         opts.replace(AxisOption::YLabel(self.line_label.clone()));
