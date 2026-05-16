@@ -1,9 +1,13 @@
 use crate::{data::DataFrame, ir::*, plot::{common_axis_options, quartiles}};
 
+/// TODO: actually use the markers, simply increment index for each time series is called
+const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
+
 struct LineSeries<T> {
     selector: Box<dyn Fn(&T) -> f64>,
     label: String,
     color: String,
+    marker: String,
 }
 
 pub struct LinePlot<T> {
@@ -39,11 +43,13 @@ impl<T: Clone> LinePlot<T> {
         selector: impl Fn(&T) -> f64 + 'static,
         label: &str,
         color: String,
-) -> Self {
+    ) -> Self {
+        let marker = MARKERS[self.series.len() % MARKERS.len()].to_string();
         self.series.push(LineSeries {
             selector: Box::new(selector),
             label: label.into(),
             color,
+            marker,
         });
         self
     }
@@ -131,7 +137,7 @@ impl<T: Clone> LinePlot<T> {
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![
                     cn,
-                    "mark=*".into(),
+                    format!("mark={}", series.marker),
                     "mark size=2pt".into(),
                     "mark options={solid,draw=white}".into(),
                     "line width=1pt".into(),
