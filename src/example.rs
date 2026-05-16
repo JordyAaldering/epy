@@ -68,11 +68,11 @@ fn twin(df: &DataFrame<Record>) {
         )
         .build_axes();
 
-    ax0.set_ymax(0.09);
-    ax0.set_legend_pos("south east");
-    ax1.set_ymax(0.6);
-    ax0.filter_xticks_stride(0, 2);
-    ax0.format_xticks_precision(1, false);
+    ax0 = ax0.set_ymax(0.09)
+        .set_legend_pos("south east")
+        .filter_xticks_stride(0, 2)
+        .format_xticks_precision(1, false);
+    ax1 = ax1.set_ymax(0.6);
 
     let doc = ir::PlotDocument::from_twin_axes(ax0, ax1);
 
@@ -85,12 +85,11 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
+    let ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| Some(r.ipc()), "IPC", "epyruntimecolor".into())
-        .build_axis();
-
-    ax0.filter_xticks_stride(0, 2);
-    ax0.format_xticks_precision(1, false);
+        .build_axis()
+        .filter_xticks_stride(0, 2)
+        .format_xticks_precision(1, false);
 
     let doc = ir::PlotDocument::from_axis(ax0)
         .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
@@ -117,7 +116,7 @@ fn power(df: &DataFrame<Record>) {
 }
 
 fn zplot(df: &DataFrame<Record>) {
-    let mut ax0 = ZPlot::new(
+    let ax = ZPlot::new(
             df.clone(),
             |r| r.threads as f64,
             |r| r.powercap,
@@ -126,12 +125,11 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/s",
             "GFLOP/J",
         )
-        .build_axis();
+        .build_axis()
+        .set_xmin(0.0)
+        .set_ymin(0.0);
 
-    ax0.set_xmin(0.0);
-    ax0.set_ymin(0.0);
-
-    let doc = ir::PlotDocument::from_axis(ax0);
+    let doc = ir::PlotDocument::from_axis(ax);
 
     let tikz = doc.render_tikz();
 

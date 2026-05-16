@@ -299,35 +299,41 @@ impl PlotDocument {
 }
 
 impl Axis {
-    pub fn set_xmin(&mut self, value: f64) {
+    pub fn set_xmin(mut self, value: f64) -> Self {
         self.opts.replace(AxisOption::XMin(Numeric::new(value)));
+        self
     }
 
-    pub fn set_xmax(&mut self, value: f64) {
+    pub fn set_xmax(mut self, value: f64) -> Self {
         self.opts.replace(AxisOption::XMax(Numeric::new(value)));
+        self
     }
 
-    pub fn set_ymin(&mut self, value: f64) {
+    pub fn set_ymin(mut self, value: f64) -> Self {
         self.opts.replace(AxisOption::YMin(Numeric::new(value)));
+        self
     }
 
-    pub fn set_ymax(&mut self, value: f64) {
+    pub fn set_ymax(mut self, value: f64) -> Self {
         self.opts.replace(AxisOption::YMax(Numeric::new(value)));
+        self
     }
 
-    pub fn set_xtick_distance(&mut self, distance: f64) {
+    pub fn set_xtick_distance(mut self, distance: f64) -> Self {
         self.opts.remove(&AxisOption::XTicks(Vec::new()));
         self.opts.remove(&AxisOption::EmptyXTicks);
         self.opts.remove(&AxisOption::XTickLabels(Vec::new()));
         self.opts.remove(&AxisOption::EmptyXTickLabels);
         self.opts.replace(AxisOption::XTickDistance(Numeric::new(distance)));
+        self
     }
 
-    pub fn set_legend_pos(&mut self, position: impl Into<String>) {
+    pub fn set_legend_pos(mut self, position: impl Into<String>) -> Self {
         self.opts.replace(AxisOption::LegendPos(position.into()));
+        self
     }
 
-    pub fn filter_xticks_stride(&mut self, start: usize, stride: usize) {
+    pub fn filter_xticks_stride(mut self, start: usize, stride: usize) -> Self {
         let mut filtered_ticks = Vec::new();
         let mut filtered_labels = Vec::new();
 
@@ -366,9 +372,11 @@ impl Axis {
                 self.opts.replace(AxisOption::XTickLabels(filtered_labels));
             }
         }
+
+        self
     }
 
-    pub fn format_xticks_precision(&mut self, precision: usize, trim: bool) {
+    pub fn format_xticks_precision(mut self, precision: usize, trim: bool) -> Self {
         self.format_xticks(|s| {
             if trim {
                 format!("{:.precision$}", s.parse::<f64>().unwrap())
@@ -378,10 +386,10 @@ impl Axis {
             } else {
                 format!("{:.precision$}", s.parse::<f64>().unwrap())
             }
-        });
+        })
     }
 
-    pub fn format_xticks(&mut self, fmt: impl Fn(&str) -> String) {
+    pub fn format_xticks(mut self, fmt: impl Fn(&str) -> String) -> Self {
         let mut formatted_ticks = Vec::new();
         let mut formatted_labels = Vec::new();
 
@@ -416,6 +424,8 @@ impl Axis {
                 self.opts.replace(AxisOption::XTickLabels(formatted_labels));
             }
         }
+
+        self
     }
 
     fn render_tikz(&self) -> String {
