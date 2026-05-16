@@ -249,22 +249,30 @@ impl PlotDocument {
         lines
     }
 
-    pub fn annot_area(mut self, xmin: f64, ymin: f64, xmax: f64, ymax: f64, color: String) -> Self {
+    pub fn annot_label(mut self, (x, y): (f64, f64), label: &str) -> Self {
+        let options = vec!["anchor=south west".into()];
+        let at = Coordinate::AxisCs(x, y);
+        self.ax0.elements.push(AxisElement::DrawLabel { options, at, label: label.into() });
+        self
+    }
+
+    pub fn annot_line(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: String) -> Self {
+        let options = vec![format!("draw={}", color)];
+        let from = Coordinate::AxisCs(x1, y1);
+        let to = Coordinate::AxisCs(x2, y2);
+        self.ax0.elements.push(AxisElement::DrawLine { options, from, to });
+        self
+    }
+
+    pub fn annot_area(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: String) -> Self {
         let options = vec![
             format!("draw={}", color),
             "draw opacity=0.5".into(),
             format!("postaction={{pattern=north east lines, pattern color={}, fill opacity=0.5}}", color),
         ];
-        let bottom_left = Coordinate::AxisCs(xmin, ymin);
-        let top_right = Coordinate::AxisCs(xmax, ymax);
+        let bottom_left = Coordinate::AxisCs(x1, y1);
+        let top_right = Coordinate::AxisCs(x2, y2);
         self.ax0.elements.push(AxisElement::DrawArea { options, bottom_left, top_right });
-        self
-    }
-
-    pub fn annot_label(mut self, x: f64, y: f64, label: &str) -> Self {
-        let options = vec!["anchor=south west".into()];
-        let at = Coordinate::AxisCs(x, y);
-        self.ax0.elements.push(AxisElement::DrawLabel { options, at, label: label.into() });
         self
     }
 
