@@ -156,7 +156,6 @@ pub enum AxisOption {
     YMax(Numeric),
     XMin(Numeric),
     XMax(Numeric),
-    XTickDistance(Numeric),
     XTicks(Vec<String>),
     EmptyXTicks,
     XTickLabels(Vec<String>),
@@ -308,14 +307,6 @@ impl Axis {
         self.opts.replace(AxisOption::LegendPos(position.into()));
     }
 
-    pub fn set_xtick_distance(&mut self, distance: f64) {
-        self.opts.remove(&AxisOption::XTicks(Vec::new()));
-        self.opts.remove(&AxisOption::EmptyXTicks);
-        self.opts.remove(&AxisOption::XTickLabels(Vec::new()));
-        self.opts.remove(&AxisOption::EmptyXTickLabels);
-        self.opts.replace(AxisOption::XTickDistance(Numeric::new(distance)));
-    }
-
     pub fn filter_xticks_stride(&mut self, stride: usize) {
         let mut filtered_ticks = Vec::new();
         let mut filtered_labels = Vec::new();
@@ -460,7 +451,6 @@ impl AxisOption {
             YMax(value) => format!("ymax={}", value.render_tikz()),
             XMin(value) => format!("xmin={}", value.render_tikz()),
             XMax(value) => format!("xmax={}", value.render_tikz()),
-            XTickDistance(value) => format!("xtick distance={}", value.render_tikz()),
             XTicks(values) => format!("xtick={{{}}}", values.join(",")),
             EmptyXTicks => "xtick=\\empty".into(),
             XTickLabels(values) => format!("xticklabels={{{}}}", values.join(",")),
