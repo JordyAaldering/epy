@@ -12,6 +12,7 @@ pub struct LineGrouped<T> {
     xaxis_label: String,
     yaxis_label: String,
     ymin: Option<f64>,
+    manual_xticks: bool,
     xtick_labels: Option<Vec<String>>,
 }
 
@@ -30,6 +31,7 @@ impl<T: Clone> LineGrouped<T> {
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
             ymin: Some(0.0),
+            manual_xticks: false,
             xtick_labels: None,
         }
     }
@@ -39,7 +41,13 @@ impl<T: Clone> LineGrouped<T> {
         self
     }
 
+    pub fn manual_xticks(mut self, enabled: bool) -> Self {
+        self.manual_xticks = enabled;
+        self
+    }
+
     pub fn xtick_labels(mut self, labels: Vec<String>) -> Self {
+        self.manual_xticks = true;
         self.xtick_labels = Some(labels);
         self
     }
@@ -58,14 +66,6 @@ impl<T: Clone> LineGrouped<T> {
         let mut x_keys: Vec<f64> = unique_x.into_values().collect();
         x_keys.sort_by(f64::total_cmp);
 
-        let x_to_index: HashMap<u64, usize> = x_keys
-            .iter()
-            .enumerate()
-            .map(|(i, &x)| (x.to_bits(), i))
-            .collect();
-
-        let n = x_keys.len();
-
         let mut opts = common_axis_options();
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
         opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
@@ -75,17 +75,17 @@ impl<T: Clone> LineGrouped<T> {
             opts.replace(AxisOption::YMin(Numeric::new(v)));
         }
 
-        let tick_str: Vec<String> = (0..n).map(|i| i.to_string()).collect();
-        opts.replace(AxisOption::XTicks(tick_str));
+        if self.manual_xticks {
+            let ticks: Vec<String> = x_keys.iter().map(ToString::to_string).collect();
+            opts.replace(AxisOption::XTicks(ticks));
 
-        let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
-            lbls.clone()
-        } else {
-            x_keys.iter().map(ToString::to_string).collect()
-        };
-        opts.replace(AxisOption::XTickLabels(labels));
-        opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
-        opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
+            let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
+                lbls.clone()
+            } else {
+                x_keys.iter().map(ToString::to_string).collect()
+            };
+            opts.replace(AxisOption::XTickLabels(labels));
+        }
 
         let mut elements = Vec::new();
 
@@ -99,25 +99,25 @@ impl<T: Clone> LineGrouped<T> {
                 entry.1.push(y);
             }
 
-            let mut stats_by_index: Vec<(usize, f64, f64, f64)> = by_x
+            let mut stats_by_x: Vec<(f64, f64, f64, f64)> = by_x
                 .into_values()
                 .map(|(x, ys)| {
                     let qs = quartiles(&ys);
-                    (x_to_index[&x.to_bits()], qs.median, qs.q1, qs.q3)
+                    (x, qs.median, qs.q1, qs.q3)
                 })
                 .collect();
-            stats_by_index.sort_by_key(|(xi, _, _, _)| *xi);
+            stats_by_x.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
 
             let cn = format!("epycolorblind{}", gi);
             let marker = MARKERS[gi % MARKERS.len()];
 
             // Transparent Q1–Q3 band
             let mut band = Vec::new();
-            for (xi, _, _, q3) in &stats_by_index {
-                band.push(Coordinate::Plain(*xi as f64, *q3));
+            for (x, _, _, q3) in &stats_by_x {
+                band.push(Coordinate::Plain(*x, *q3));
             }
-            for (xi, _, q1, _) in stats_by_index.iter().rev() {
-                band.push(Coordinate::Plain(*xi as f64, *q1));
+            for (x, _, q1, _) in stats_by_x.iter().rev() {
+                band.push(Coordinate::Plain(*x, *q1));
             }
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![format!("fill={}", cn), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
@@ -125,9 +125,9 @@ impl<T: Clone> LineGrouped<T> {
                 closed_cycle: true,
             }));
 
-            let line: Vec<Coordinate> = stats_by_index
+            let line: Vec<Coordinate> = stats_by_x
                 .iter()
-                .map(|(xi, median, _, _)| Coordinate::Plain(*xi as f64, *median))
+                .map(|(x, median, _, _)| Coordinate::Plain(*x, *median))
                 .collect();
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![

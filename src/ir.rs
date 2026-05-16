@@ -160,6 +160,7 @@ pub enum AxisOption {
     EmptyXTicks,
     XTickLabels(Vec<String>),
     EmptyXTickLabels,
+    XTickDistance(Numeric),
     AtMainAxisSouthWest,
     AnchorSouthWest,
     AxisXLineNone,
@@ -314,6 +315,14 @@ impl Axis {
         self.opts.replace(AxisOption::YMax(Numeric::new(value)));
     }
 
+    pub fn set_xtick_distance(&mut self, distance: f64) {
+        self.opts.remove(&AxisOption::XTicks(Vec::new()));
+        self.opts.remove(&AxisOption::EmptyXTicks);
+        self.opts.remove(&AxisOption::XTickLabels(Vec::new()));
+        self.opts.remove(&AxisOption::EmptyXTickLabels);
+        self.opts.replace(AxisOption::XTickDistance(Numeric::new(distance)));
+    }
+
     pub fn set_legend_pos(&mut self, position: impl Into<String>) {
         self.opts.replace(AxisOption::LegendPos(position.into()));
     }
@@ -466,6 +475,7 @@ impl AxisOption {
             EmptyXTicks => "xtick=\\empty".into(),
             XTickLabels(values) => format!("xticklabels={{{}}}", values.join(",")),
             EmptyXTickLabels => "xticklabels=\\empty".into(),
+            XTickDistance(value) => format!("xtick distance={}", value.render_tikz()),
             AtMainAxisSouthWest => "at={(mainaxis.south west)}".into(),
             AnchorSouthWest => "anchor=south west".into(),
             AxisXLineNone => "axis x line=none".into(),
