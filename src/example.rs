@@ -71,7 +71,7 @@ fn twin(df: &DataFrame<Record>) {
     ax0.set_ymax(0.09);
     ax0.set_legend_pos("south east");
     ax1.set_ymax(0.6);
-    ax0.filter_xticks_stride(2);
+    ax0.filter_xticks_stride(0, 2);
     ax0.format_xticks_precision(1, false);
 
     let doc = ir::PlotDocument::from_twin_axes(ax0, ax1);
@@ -89,7 +89,7 @@ fn ipc(df: &DataFrame<Record>) {
         .series(|r| Some(r.ipc()), "IPC", "epyruntimecolor".into())
         .build_axis();
 
-    ax0.filter_xticks_stride(2);
+    ax0.filter_xticks_stride(0, 2);
     ax0.format_xticks_precision(1, false);
 
     let doc = ir::PlotDocument::from_axis(ax0)

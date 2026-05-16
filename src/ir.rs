@@ -307,7 +307,7 @@ impl Axis {
         self.opts.replace(AxisOption::LegendPos(position.into()));
     }
 
-    pub fn filter_xticks_stride(&mut self, stride: usize) {
+    pub fn filter_xticks_stride(&mut self, start: usize, stride: usize) {
         let mut filtered_ticks = Vec::new();
         let mut filtered_labels = Vec::new();
 
@@ -326,7 +326,7 @@ impl Axis {
         // Filter ticks: keep every stride-th
         if let Some(ticks) = current_ticks {
             for (i, tick) in ticks.iter().enumerate() {
-                if i % stride == 0 {
+                if i >= start && (i - start) % stride == 0 {
                     filtered_ticks.push(tick.clone());
                 }
             }
@@ -338,7 +338,7 @@ impl Axis {
         // Filter labels to match kept ticks
         if let Some(labels) = current_labels {
             for (i, label) in labels.iter().enumerate() {
-                if i % stride == 0 {
+                if i >= start && (i - start) % stride == 0 {
                     filtered_labels.push(label.clone());
                 }
             }
