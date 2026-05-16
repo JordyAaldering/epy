@@ -14,7 +14,6 @@ use std::collections::HashSet;
 
 pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     HashSet::from([
-        AxisOption::ScaleOnlyAxis,
         AxisOption::AxisLineColor(GRID_COLOR.into()),
         AxisOption::YGridStyle(
             Style::new()
