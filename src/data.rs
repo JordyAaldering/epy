@@ -52,6 +52,14 @@ impl<T> DataFrame<T> {
         &self.data[idx]
     }
 
+    pub fn map<F, U>(self, f: F) -> DataFrame<U>
+    where
+        F: Fn(T) -> U,
+    {
+        let data = self.data.into_iter().map(f).collect();
+        DataFrame { data }
+    }
+
     /// Keep only rows that satisfy `predicate`.
     pub fn filter<F>(mut self, predicate: F) -> Self
     where
