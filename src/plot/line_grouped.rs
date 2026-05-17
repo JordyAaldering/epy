@@ -108,7 +108,7 @@ impl<T: Clone> LineGrouped<T> {
                 .collect();
             stats_by_x.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
 
-            let cn = format!("epycolorblind{}", gi);
+            let cn = format!("colorblind{}", gi);
             let marker = MARKERS[gi % MARKERS.len()];
 
             // Transparent Q1–Q3 band

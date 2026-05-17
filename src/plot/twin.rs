@@ -108,7 +108,7 @@ impl<Row: Clone> TwinPlot<Row> {
             opts: vec![
                 "ybar".into(),
                 "bar width=0.7".into(),
-                "fill=epyenergycolor".into(),
+                "fill=energycolor".into(),
                 "draw=none".into(),
                 "area legend".into(),
             ],
@@ -128,7 +128,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
         // Legend image + entry for the right-axis line series
         elements.push(AxisElement::LegendImage(vec![
-            "epyruntimecolor".into(),
+            "runtimecolor".into(),
             "mark=*".into(),
             "mark options={solid,draw=white}".into(),
             "mark size=2pt".into(),
@@ -179,13 +179,13 @@ impl<Row: Clone> TwinPlot<Row> {
             opts,
             elements: vec![
                 AxisElement::Plot(AddPlot {
-                    opts: vec!["fill=epyruntimecolor".into(), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
+                    opts: vec!["fill=runtimecolor".into(), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
                     coords: band,
                     closed_cycle: true,
                 }),
                 AxisElement::Plot(AddPlot {
                     opts: vec![
-                        "epyruntimecolor".into(),
+                        "runtimecolor".into(),
                         "mark=*".into(),
                         "mark options={solid,draw=white}".into(),
                         "mark size=2pt".into(),

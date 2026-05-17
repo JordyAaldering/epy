@@ -86,7 +86,7 @@ fn ipc(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
     let ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
-        .series(|r| r.ipc(), "IPC", "epyruntimecolor".into())
+        .series(|r| r.ipc(), "IPC", "runtimecolor".into())
         .build_axis()
         .filter_xticks_stride(0, 2)
         .format_xticks_precision(1, false);

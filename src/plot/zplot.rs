@@ -82,7 +82,7 @@ impl<Row: Clone> ZPlot<Row> {
 
         let mut elements = Vec::new();
         for (gi, (key, coords)) in series_groups.into_iter().enumerate() {
-            let cn = format!("epycolorblind{}", gi);
+            let cn = format!("colorblind{}", gi);
             let marker = MARKERS[gi % MARKERS.len()];
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![
