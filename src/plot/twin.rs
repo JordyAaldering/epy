@@ -79,7 +79,6 @@ impl<Row: Clone> TwinPlot<Row> {
         let n = keys.len();
 
         let mut opts = common_axis_options();
-        opts.replace(AxisOption::ScaleOnlyAxis);
         opts.replace(AxisOption::Name("mainaxis".into()));
         opts.replace(AxisOption::TrimAxisRight);
         opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
@@ -145,7 +144,6 @@ impl<Row: Clone> TwinPlot<Row> {
         let n = meds.len();
 
         let mut opts = common_axis_options();
-        opts.replace(AxisOption::ScaleOnlyAxis);
         opts.replace(AxisOption::AtMainAxisSouthWest);
         opts.replace(AxisOption::AnchorSouthWest);
         opts.replace(AxisOption::TrimAxisLeft);
