@@ -51,13 +51,13 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
     ])
 }
 
-pub(crate) struct Quartiles {
+pub struct Quartiles {
     pub median: f64,
     pub q1: f64,
     pub q3: f64,
 }
 
-pub(crate) fn median(xs: &[f64]) -> f64 {
+pub fn median(xs: &[f64]) -> f64 {
     let n = xs.len();
     if n % 2 == 0 {
         (xs[n / 2 - 1] + xs[n / 2]) / 2.0
@@ -66,7 +66,7 @@ pub(crate) fn median(xs: &[f64]) -> f64 {
     }
 }
 
-pub(crate) fn quartiles(xs: &[f64]) -> Quartiles {
+pub fn quartiles(xs: &[f64]) -> Quartiles {
     assert!(!xs.is_empty());
 
     let mut xs = xs.to_vec();
