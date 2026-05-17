@@ -376,7 +376,7 @@ impl Axis {
         self
     }
 
-    pub fn format_xticks_precision(mut self, precision: usize, trim: bool) -> Self {
+    pub fn format_xticks_precision(self, precision: usize, trim: bool) -> Self {
         self.format_xticks(|s| {
             if trim {
                 format!("{:.precision$}", s.parse::<f64>().unwrap())
