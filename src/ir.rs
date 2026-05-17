@@ -1,7 +1,7 @@
 use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
-pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.4;
-pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.2;
+pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.3;
+pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.15;
 /// Extra right padding for twin-axis plots
 pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
 
