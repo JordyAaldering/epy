@@ -52,12 +52,12 @@ impl<T> DataFrame<T> {
         &self.data[idx]
     }
 
-    pub fn map<F, U>(self, f: F) -> DataFrame<U>
+    pub fn map<F>(mut self, f: F) -> Self
     where
-        F: Fn(T) -> U,
+        F: Fn(&mut T),
     {
-        let data = self.data.into_iter().map(f).collect();
-        DataFrame { data }
+        self.data.iter_mut().for_each(f);
+        self
     }
 
     /// Keep only rows that satisfy `predicate`.
