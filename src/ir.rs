@@ -4,7 +4,7 @@ pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.3;
 // Outer sep affects only the distance between the tick values and the axis.
 // Inner sep affects both that distance, and the distance between the tick values and the axis label.
 // Thus, we set inner sep to a negative value to decrease spacing between the tick values and the axis label, and we adjust the outer sep to compensate.
-pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = -0.4;
+pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = -0.3;
 pub(crate) const TICK_LABEL_OUTER_SEP_EM: f64 = 0.15 - TICK_LABEL_INNER_SEP_EM;
 /// Extra right padding for twin-axis plots
 pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
