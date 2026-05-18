@@ -128,10 +128,10 @@ impl<Row: Clone> TwinPlot<Row> {
         // Legend image + entry for the right-axis line series
         elements.push(AxisElement::LegendImage(vec![
             "runtimecolor".into(),
-            "mark=*".into(),
-            "mark options={solid,draw=white}".into(),
-            "mark size=2pt".into(),
             "line width=1pt".into(),
+            format!("mark={}", MARKERS[0]),
+            format!("mark size={}pt", MARK_SIZE_PT),
+            format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
         ]));
         elements.push(AxisElement::LegendEntry(self.line_label.clone()));
 
@@ -184,10 +184,10 @@ impl<Row: Clone> TwinPlot<Row> {
                 AxisElement::Plot(AddPlot {
                     opts: vec![
                         "runtimecolor".into(),
-                        "mark=*".into(),
-                        "mark options={solid,draw=white}".into(),
-                        "mark size=2pt".into(),
                         "line width=1pt".into(),
+                        format!("mark={}", MARKERS[0]),
+                        format!("mark size={}pt", MARK_SIZE_PT),
+                        format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
                     ],
                     coords: line,
                     closed_cycle: false,

@@ -2,9 +2,6 @@ use std::collections::HashMap;
 
 use crate::{data::GroupedFrame, ir::*, plot::{common_axis_options, quartiles}};
 
-/// TODO: actually use the markers, simply increment index for each time series is called
-const MARKERS: &[&str] = &["*", "square*", "triangle*", "diamond*", "pentagon*", "o", "square", "triangle"];
-
 pub struct LineGrouped<T> {
     df: GroupedFrame<T>,
     x_selector: Box<dyn Fn(&T) -> f64>,
@@ -132,10 +129,10 @@ impl<T: Clone> LineGrouped<T> {
             elements.push(AxisElement::Plot(AddPlot {
                 opts: vec![
                     cn,
-                    format!("mark={marker}"),
-                    "mark size=2pt".into(),
-                    "mark options={solid,draw=white}".into(),
                     "line width=1pt".into(),
+                    format!("mark={}", marker),
+                    format!("mark size={}pt", MARK_SIZE_PT),
+                    format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
                 ],
                 coords: line,
                 closed_cycle: false,
