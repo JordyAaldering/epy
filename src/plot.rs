@@ -43,7 +43,7 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         ),
         AxisOption::LegendStyle(
             Style::new()
-                .with_inner_sep_em(0.3)
+                .with_inner_sep_em(0.2)
                 .with_draw(GRID_COLOR.into())
                 .with_fill_opacity(0.9)
                 .with_draw_opacity(1.0)
