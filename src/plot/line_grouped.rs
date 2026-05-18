@@ -117,7 +117,12 @@ impl<T: Clone> LineGrouped<T> {
                 band.push(Coordinate::Plain(*x, *q1));
             }
             elements.push(AxisElement::Plot(AddPlot {
-                opts: vec![format!("fill={}", cn), "fill opacity=0.3".into(), "draw=none".into(), "forget plot".into()],
+                opts: vec![
+                    format!("fill={}", cn),
+                    "fill opacity=0.3".into(),
+                    "draw=none".into(),
+                    "forget plot".into(),
+                ],
                 coords: band,
                 closed_cycle: true,
             }));
