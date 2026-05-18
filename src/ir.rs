@@ -278,7 +278,7 @@ impl PlotDocument {
         let options = vec![
             format!("anchor={}", anchor.unwrap_or("south west")),
             "inner xsep=0em".into(),
-            "inner ysep=0.2em".into(),
+            "inner ysep=0.1em".into(),
         ];
         let at = Coordinate::AxisCs(x, y);
         self.ax0.elements.push(AxisElement::DrawLabel { options, at, label: label.into() });
