@@ -10,6 +10,8 @@ pub struct ZPlot<Row> {
     hue_selector: Box<dyn Fn(&Row) -> f64>,
     x_selector: Box<dyn Fn(&Row) -> f64>,
     y_selector: Box<dyn Fn(&Row) -> f64>,
+    /// Filter elements after median aggregation
+    agg_filter: Option<Box<dyn Fn(f64, f64, f64) -> bool>>,
     xaxis_label: String,
     yaxis_label: String,
 }
@@ -33,9 +35,16 @@ impl<Row: Clone> ZPlot<Row> {
             hue_selector: Box::new(hue_selector),
             x_selector: Box::new(x_selector),
             y_selector: Box::new(y_selector),
+            agg_filter: None,
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
+    }
+
+    /// Filter elements after median aggregation
+    pub fn with_filter(mut self, filter: impl Fn(f64, f64, f64) -> bool + 'static) -> Self {
+        self.agg_filter = Some(Box::new(filter));
+        self
     }
 
     pub fn build_axis(&self) -> Axis {
@@ -61,6 +70,13 @@ impl<Row: Clone> ZPlot<Row> {
             let mut medians_by_hue: Vec<(f64, f64, f64)> = by_hue
                 .into_values()
                 .map(|(hue, xs, ys)| (hue, median(&xs), median(&ys)))
+                .filter(|(hue, med_x, med_y)| {
+                    if let Some(filter) = &self.agg_filter {
+                        filter(*hue, *med_x, *med_y)
+                    } else {
+                        true
+                    }
+                })
                 .collect();
             medians_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
 
