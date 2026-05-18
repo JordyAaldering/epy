@@ -14,7 +14,7 @@ pub(crate) const GRID_COLOR: &'static str = "black!20";
 
 /// See: https://tikz.dev/pgfplots/reference-markers
 pub(crate) const MARKERS: &[&str] = &[
-    "*", "square*", "diamond*", "triangle*", "pentagon*",
+    "*", "square*", "pentagon*", "diamond*", "triangle*",
     "halfcircle*", "halfsquare*", "halfdiamond*"];
 pub(crate) const MARK_SIZE_PT: f64 = 2.0;
 pub(crate) const MARK_OUTLINE_PT: f64 = MARK_SIZE_PT / 5.0;
