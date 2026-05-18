@@ -1,7 +1,11 @@
 use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
 pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.3;
-pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.15;
+// Outer sep affects only the distance between the tick values and the axis.
+// Inner sep affects both that distance, and the distance between the tick values and the axis label.
+// Thus, we set inner sep to a negative value to decrease spacing between the tick values and the axis label, and we adjust the outer sep to compensate.
+pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = -0.4;
+pub(crate) const TICK_LABEL_OUTER_SEP_EM: f64 = 0.15 - TICK_LABEL_INNER_SEP_EM;
 /// Extra right padding for twin-axis plots
 pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
 
@@ -52,7 +56,8 @@ pub struct Style {
     pub color: Option<String>,
     pub draw: Option<String>,
     pub line_width_pt: Option<Numeric>,
-    pub inner_sep_pt: Option<Numeric>,
+    pub inner_sep_em: Option<Numeric>,
+    pub outer_sep_em: Option<Numeric>,
     pub fill_opacity: Option<Numeric>,
     pub draw_opacity: Option<Numeric>,
     pub text_opacity: Option<Numeric>,
@@ -78,8 +83,13 @@ impl Style {
         self
     }
 
-    pub fn with_inner_sep_pt(mut self, value: f64) -> Self {
-        self.inner_sep_pt = Some(Numeric::new(value));
+    pub fn with_inner_sep_em(mut self, value: f64) -> Self {
+        self.inner_sep_em = Some(Numeric::new(value));
+        self
+    }
+
+    pub fn with_outer_sep_em(mut self, value: f64) -> Self {
+        self.outer_sep_em = Some(Numeric::new(value));
         self
     }
 
@@ -109,8 +119,11 @@ impl Style {
         if let Some(line_width_pt) = self.line_width_pt {
             parts.push(format!("line width={}pt", line_width_pt.render_tikz()));
         }
-        if let Some(inner_sep_pt) = self.inner_sep_pt {
+        if let Some(inner_sep_pt) = self.inner_sep_em {
             parts.push(format!("inner sep={}em", inner_sep_pt.render_tikz()));
+        }
+        if let Some(outer_sep_pt) = self.outer_sep_em {
+            parts.push(format!("outer sep={}em", outer_sep_pt.render_tikz()));
         }
         if let Some(fill_opacity) = self.fill_opacity {
             parts.push(format!("fill opacity={}", fill_opacity.render_tikz()));

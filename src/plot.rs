@@ -35,7 +35,10 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
                 .with_color(GRID_COLOR.into())
                 .with_line_width_pt(0.4),
         ),
-        AxisOption::TickLabelStyle(Style::new().with_inner_sep_pt(TICK_LABEL_INNER_SEP_EM)),
+        AxisOption::TickLabelStyle(Style::new()
+            .with_inner_sep_em(TICK_LABEL_INNER_SEP_EM)
+            .with_outer_sep_em(TICK_LABEL_OUTER_SEP_EM)
+        ),
         AxisOption::LegendStyle(
             Style::new()
                 .with_draw(GRID_COLOR.into())
