@@ -93,7 +93,7 @@ fn ipc(df: &DataFrame<Record>) {
 
     let doc = ir::PlotDocument::from_axis(ax0)
         .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
-        .annot_label((5.0, 0.35), "Hello, world!");
+        .annot_label((5.0, 0.35), "Hello, world!", None);
 
     let tikz = doc.render_tikz();
 
