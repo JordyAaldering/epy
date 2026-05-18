@@ -44,13 +44,13 @@ impl<T: Clone> LinePlot<T> {
         mut self,
         selector: impl Fn(&T) -> f64 + 'static,
         label: &str,
-        color: String,
+        color: &str,
     ) -> Self {
         let marker = MARKERS[self.series.len() % MARKERS.len()].to_string();
         self.series.push(LineSeries {
             selector: Box::new(selector),
             label: label.into(),
-            color,
+            color: color.into(),
             marker,
         });
         self
