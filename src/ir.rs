@@ -253,6 +253,8 @@ impl PlotDocument {
     pub fn annot_label(mut self, (x, y): (f64, f64), label: &str, anchor: Option<&str>) -> Self {
         let options = vec![
             format!("anchor={}", anchor.unwrap_or("south west")),
+            "inner xsep=0em".into(),
+            "inner ysep=0.2em".into(),
         ];
         let at = Coordinate::AxisCs(x, y);
         self.ax0.elements.push(AxisElement::DrawLabel { options, at, label: label.into() });
