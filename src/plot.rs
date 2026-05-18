@@ -37,6 +37,8 @@ pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
         ),
         AxisOption::TickLabelStyle(Style::new()
             .with_inner_sep_em(TICK_LABEL_INNER_SEP_EM)
+        ),
+        AxisOption::YLabelStyle(Style::new()
             .with_outer_sep_em(TICK_LABEL_OUTER_SEP_EM)
         ),
         AxisOption::LegendStyle(

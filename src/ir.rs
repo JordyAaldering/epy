@@ -1,12 +1,13 @@
 use std::{collections::HashSet, hash::{Hash, Hasher}, mem};
 
 pub(crate) const MAJOR_TICK_LENGTH_EM: f64 = 0.3;
-// Outer sep affects only the distance between the tick values and the axis.
-// Inner sep affects both that distance, and the distance between the tick values and the axis label.
-// Thus, we set inner sep to a negative value to decrease spacing between the tick values and the axis label, and we adjust the outer sep to compensate.
-pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = -0.3;
-pub(crate) const TICK_LABEL_OUTER_SEP_EM: f64 = 0.15 - TICK_LABEL_INNER_SEP_EM;
-/// Extra right padding for twin-axis plots
+
+/// Outer sep affects only the distance between the tick values and the axis.
+pub(crate) const TICK_LABEL_OUTER_SEP_EM: f64 = -0.25;
+/// Inner sep affects both he distance between the tick values and the axis,
+/// and the distance between the tick values and the axis label.
+pub(crate) const TICK_LABEL_INNER_SEP_EM: f64 = 0.15;
+/// Extra right padding for twin-axis plots.
 pub(crate) const TWIN_PADDING_EM: f64 = 1.0;
 
 pub(crate) const GRID_COLOR: &'static str = "black!20";
@@ -119,11 +120,11 @@ impl Style {
         if let Some(line_width_pt) = self.line_width_pt {
             parts.push(format!("line width={}pt", line_width_pt.render_tikz()));
         }
-        if let Some(inner_sep_pt) = self.inner_sep_em {
-            parts.push(format!("inner sep={}em", inner_sep_pt.render_tikz()));
+        if let Some(inner_sep_em) = self.inner_sep_em {
+            parts.push(format!("inner sep={}em", inner_sep_em.render_tikz()));
         }
-        if let Some(outer_sep_pt) = self.outer_sep_em {
-            parts.push(format!("outer sep={}em", outer_sep_pt.render_tikz()));
+        if let Some(outer_sep_em) = self.outer_sep_em {
+            parts.push(format!("outer sep={}em", outer_sep_em.render_tikz()));
         }
         if let Some(fill_opacity) = self.fill_opacity {
             parts.push(format!("fill opacity={}", fill_opacity.render_tikz()));
@@ -154,6 +155,7 @@ pub enum AxisOption {
     XTickStyle(Style),
     YTickStyle(Style),
     TickLabelStyle(Style),
+    YTickLabelStyle(Style),
     LegendStyle(Style),
     EnsureAxisHeightExtraYTick,
     EnsureAxisHeightExtraYTickLabels,
@@ -165,6 +167,7 @@ pub enum AxisOption {
     Height(String),
     XLabel(String),
     YLabel(String),
+    YLabelStyle(Style),
     YMin(Numeric),
     YMax(Numeric),
     XMin(Numeric),
@@ -483,6 +486,7 @@ impl AxisOption {
             XTickStyle(style) => format!("xtick style={{{}}}", style.render_tikz()),
             YTickStyle(style) => format!("ytick style={{{}}}", style.render_tikz()),
             TickLabelStyle(style) => format!("tick label style={{{}}}", style.render_tikz()),
+            YTickLabelStyle(style) => format!("yticklabel style={{{}}}", style.render_tikz()),
             LegendStyle(style) => format!("legend style={{{}}}", style.render_tikz()),
             EnsureAxisHeightExtraYTick => "extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}".into(),
             EnsureAxisHeightExtraYTickLabels => "extra y tick labels={\\vphantom{Ag}}".into(),
@@ -494,6 +498,7 @@ impl AxisOption {
             Height(height) => format!("height={height}"),
             XLabel(label) => format!("xlabel={{{label}}}"),
             YLabel(label) => format!("ylabel={{{label}}}"),
+            YLabelStyle(style) => format!("ylabel style={{{}}}", style.render_tikz()),
             YMin(value) => format!("ymin={}", value.render_tikz()),
             YMax(value) => format!("ymax={}", value.render_tikz()),
             XMin(value) => format!("xmin={}", value.render_tikz()),
