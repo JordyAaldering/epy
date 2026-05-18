@@ -257,7 +257,7 @@ impl PlotDocument {
         self
     }
 
-    pub fn annot_line(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: String) -> Self {
+    pub fn annot_line(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: &str) -> Self {
         let options = vec![
             format!("draw={}", color),
             "dashed".into(),
@@ -268,7 +268,7 @@ impl PlotDocument {
         self
     }
 
-    pub fn annot_area(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: String) -> Self {
+    pub fn annot_area(mut self, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: &str) -> Self {
         let options = vec![
             format!("draw={}", color),
             "draw opacity=0.5".into(),
