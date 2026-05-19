@@ -93,13 +93,13 @@ fn ipc(df: &DataFrame<Record>) {
 }
 
 fn power(df: &DataFrame<Record>) {
-    let grouped = df.clone().group_by(|r| r.threads as f64);
-
-    let ax = LineGrouped::new(grouped,
+    let ax = LinePlot::new(
+        df.clone(),
         |r| r.powercap,
-        |r| r.rapl / r.runtime,
         "Configured power limit (W)",
-        "Actual power draw (W)")
+        "Actual power draw (W)",
+    )
+        .grouped_series(|r| r.threads as f64, |r| r.rapl / r.runtime)
         .build_axis();
 
     let doc = PlotDocument::from_axis(ax);

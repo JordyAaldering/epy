@@ -1,9 +1,7 @@
-mod line_grouped;
 mod line;
 mod twin;
 mod zplot;
 
-pub use line_grouped::LineGrouped;
 pub use line::LinePlot;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
