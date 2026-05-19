@@ -54,10 +54,13 @@ fn twin(df: &DataFrame<Record>) {
     let (mut ax0, mut ax1) = TwinPlot::new(
             filtered,
             |r| r.powercap,
-            |r| r.gflop_j(), "GFLOP/J",
-            |r| r.gflop_s(), "GFLOP/s",
             "Power limit (W)",
+            "GFLOP/J",
+            "GFLOP/s",
         )
+        .ax0_bar(|r| r.gflop_j(), "GFLOP/J")
+        .ax1_line(|r| r.gflop_s(), "GFLOP/s")
+        .ax1_line(|r| r.gflop_s() / 2.0, "half")
         .build_axes();
 
     ax0 = ax0.set_ymax(0.09)

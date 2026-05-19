@@ -7,34 +7,96 @@ use crate::{
 pub struct TwinPlot<Row> {
     df: DataFrame<Row>,
     group_selector: Box<dyn Fn(&Row) -> f64>,
-    bar_selector: Box<dyn Fn(&Row) -> f64>,
-    bar_label: String,
-    line_selector: Box<dyn Fn(&Row) -> f64>,
-    line_label: String,
+    ax0_series: Vec<TwinSeries<Row>>,
+    ax1_series: Vec<TwinSeries<Row>>,
+    ax0_yaxis_label: String,
+    ax1_yaxis_label: String,
     xaxis_label: String,
     xtick_labels: Option<Vec<String>>,
+}
+
+struct TwinSeries<Row> {
+    kind: TwinSeriesKind,
+    selector: Box<dyn Fn(&Row) -> f64>,
+    label: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TwinSeriesKind {
+    Bar,
+    Line,
 }
 
 impl<Row: Clone> TwinPlot<Row> {
     pub fn new(
         df: DataFrame<Row>,
         group_selector: impl Fn(&Row) -> f64 + 'static,
-        bar_selector: impl Fn(&Row) -> f64 + 'static,
-        bar_label: &str,
-        line_selector: impl Fn(&Row) -> f64 + 'static,
-        line_label: &str,
         xaxis_label: &str,
+        ax0_yaxis_label: &str,
+        ax1_yaxis_label: &str,
     ) -> Self {
         TwinPlot {
             df,
             group_selector: Box::new(group_selector),
-            bar_selector: Box::new(bar_selector),
-            bar_label: bar_label.into(),
-            line_selector: Box::new(line_selector),
-            line_label: line_label.into(),
+            ax0_series: Vec::new(),
+            ax1_series: Vec::new(),
+            ax0_yaxis_label: ax0_yaxis_label.into(),
+            ax1_yaxis_label: ax1_yaxis_label.into(),
             xaxis_label: xaxis_label.into(),
             xtick_labels: None,
         }
+    }
+
+    pub fn ax0_bar(
+        mut self,
+        selector: impl Fn(&Row) -> f64 + 'static,
+        label: &str,
+    ) -> Self {
+        self.ax0_series.push(TwinSeries {
+            kind: TwinSeriesKind::Bar,
+            selector: Box::new(selector),
+            label: label.into(),
+        });
+        self
+    }
+
+    pub fn ax0_line(
+        mut self,
+        selector: impl Fn(&Row) -> f64 + 'static,
+        label: &str,
+    ) -> Self {
+        self.ax0_series.push(TwinSeries {
+            kind: TwinSeriesKind::Line,
+            selector: Box::new(selector),
+            label: label.into(),
+        });
+        self
+    }
+
+    pub fn ax1_bar(
+        mut self,
+        selector: impl Fn(&Row) -> f64 + 'static,
+        label: &str,
+    ) -> Self {
+        self.ax1_series.push(TwinSeries {
+            kind: TwinSeriesKind::Bar,
+            selector: Box::new(selector),
+            label: label.into(),
+        });
+        self
+    }
+
+    pub fn ax1_line(
+        mut self,
+        selector: impl Fn(&Row) -> f64 + 'static,
+        label: &str,
+    ) -> Self {
+        self.ax1_series.push(TwinSeries {
+            kind: TwinSeriesKind::Line,
+            selector: Box::new(selector),
+            label: label.into(),
+        });
+        self
     }
 
     pub fn xtick_labels(mut self, labels: Vec<impl Into<String>>) -> Self {
@@ -75,7 +137,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
     fn build_left_axis(&self) -> Axis {
         let grouped = self.grouped();
-        let (keys, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.bar_selector);
+        let keys = grouped.keys().to_vec();
         let n = keys.len();
 
         let mut opts = common_axis_options();
@@ -84,8 +146,10 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
         opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
-        opts.replace(AxisOption::YLabel(self.bar_label.clone()));
-        opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        opts.replace(AxisOption::YLabel(self.ax0_yaxis_label.clone()));
+        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
+            opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        }
         opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
         opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
         opts.replace(AxisOption::XTicks((0..n).map(|i| i.to_string()).collect()));
@@ -98,50 +162,14 @@ impl<Row: Clone> TwinPlot<Row> {
         ));
 
         let mut elements = Vec::new();
-
-        // Filled bars (median height)
-        let bar_coords: Vec<Coordinate> = meds.iter().enumerate()
-            .map(|(i, median)| Coordinate::Plain(i as f64, *median))
-            .collect();
-        elements.push(AxisElement::Plot(AddPlot {
-            opts: vec![
-                "ybar".into(),
-                "bar width=0.7".into(),
-                "fill=energycolor".into(),
-                "draw=none".into(),
-                "area legend".into(),
-            ],
-            coords: bar_coords,
-            closed_cycle: false,
-        }));
-        elements.push(AxisElement::LegendEntry(self.bar_label.clone()));
-
-        // Error whiskers
-        for i in 0..q1s.len() {
-            elements.push(AxisElement::DrawLine {
-                options: vec!["black!90".into(), "line width=0.9pt".into()],
-                from: Coordinate::AxisCs(i as f64, q1s[i]),
-                to: Coordinate::AxisCs(i as f64, q3s[i]),
-            });
-        }
-
-        // Legend image + entry for the right-axis line series
-        elements.push(AxisElement::LegendImage(vec![
-            "runtimecolor".into(),
-            "line width=1pt".into(),
-            format!("mark={}", MARKERS[0]),
-            format!("mark size={}pt", MARK_SIZE_PT),
-            format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-        ]));
-        elements.push(AxisElement::LegendEntry(self.line_label.clone()));
+        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements);
 
         Axis { opts, elements }
     }
 
     fn build_right_axis(&self) -> Axis {
         let grouped = self.grouped();
-        let (_, meds, q1s, q3s) = self.stats_for_selector(&grouped, &*self.line_selector);
-        let n = meds.len();
+        let n = grouped.num_groups();
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::AtMainAxisSouthWest);
@@ -155,49 +183,104 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::AxisYLineRight);
         opts.remove(&AxisOption::YTickPosLeft);
         opts.replace(AxisOption::YTickPosRight);
+        opts.replace(AxisOption::YLabel(self.ax1_yaxis_label.clone()));
+        if self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
+            opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        }
         opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
         opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
         opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
         opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
-        opts.replace(AxisOption::YLabel(self.line_label.clone()));
 
-        let mut band = Vec::new();
-        for (i, q3) in q3s.iter().enumerate() {
-            band.push(Coordinate::Plain(i as f64, *q3));
+        let mut elements = Vec::new();
+        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements);
+
+        Axis { opts, elements }
+    }
+
+    fn push_axis_series_elements(
+        &self,
+        grouped: &GroupedFrame<Row>,
+        series: &[TwinSeries<Row>],
+        elements: &mut Vec<AxisElement>,
+    ) {
+        for (series_i, spec) in series.iter().enumerate() {
+            let (_, meds, q1s, q3s) = self.stats_for_selector(grouped, &*spec.selector);
+            let color = self.series_color(series_i, spec.kind);
+
+            match spec.kind {
+                TwinSeriesKind::Bar => {
+                    let bar_coords: Vec<Coordinate> = meds.iter().enumerate()
+                        .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+                        .collect();
+                    elements.push(AxisElement::Plot(AddPlot {
+                        opts: vec![
+                            "ybar".into(),
+                            "bar width=0.7".into(),
+                            format!("fill={}", color),
+                            "draw=none".into(),
+                            "area legend".into(),
+                        ],
+                        coords: bar_coords,
+                        closed_cycle: false,
+                    }));
+                    elements.push(AxisElement::LegendEntry(spec.label.clone()));
+
+                    for i in 0..q1s.len() {
+                        elements.push(AxisElement::DrawLine {
+                            options: vec!["black!90".into(), "line width=0.9pt".into()],
+                            from: Coordinate::AxisCs(i as f64, q1s[i]),
+                            to: Coordinate::AxisCs(i as f64, q3s[i]),
+                        });
+                    }
+                }
+                TwinSeriesKind::Line => {
+                    let mut band = Vec::new();
+                    for (i, q3) in q3s.iter().enumerate() {
+                        band.push(Coordinate::Plain(i as f64, *q3));
+                    }
+                    for (i, q1) in q1s.iter().enumerate().rev() {
+                        band.push(Coordinate::Plain(i as f64, *q1));
+                    }
+                    elements.push(AxisElement::Plot(AddPlot {
+                        opts: vec![
+                            format!("fill={}", color),
+                            "fill opacity=0.3".into(),
+                            "draw=none".into(),
+                            "forget plot".into(),
+                        ],
+                        coords: band,
+                        closed_cycle: true,
+                    }));
+
+                    let line: Vec<Coordinate> = meds.iter().enumerate()
+                        .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+                        .collect();
+                    elements.push(AxisElement::Plot(AddPlot {
+                        opts: vec![
+                            color,
+                            "line width=1pt".into(),
+                            format!("mark={}", MARKERS[series_i % MARKERS.len()]),
+                            format!("mark size={}pt", MARK_SIZE_PT),
+                            format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
+                        ],
+                        coords: line,
+                        closed_cycle: false,
+                    }));
+                    elements.push(AxisElement::LegendEntry(spec.label.clone()));
+                }
+            }
         }
-        for (i, q1) in q1s.iter().enumerate().rev() {
-            band.push(Coordinate::Plain(i as f64, *q1));
-        }
+    }
 
-        let line: Vec<Coordinate> = meds.iter().enumerate()
-            .map(|(i, median)| Coordinate::Plain(i as f64, *median))
-            .collect();
-
-        Axis {
-            opts,
-            elements: vec![
-                AxisElement::Plot(AddPlot {
-                    opts: vec![
-                        "fill=runtimecolor".into(),
-                        "fill opacity=0.3".into(),
-                        "draw=none".into(),
-                        "forget plot".into(),
-                    ],
-                    coords: band,
-                    closed_cycle: true,
-                }),
-                AxisElement::Plot(AddPlot {
-                    opts: vec![
-                        "runtimecolor".into(),
-                        "line width=1pt".into(),
-                        format!("mark={}", MARKERS[0]),
-                        format!("mark size={}pt", MARK_SIZE_PT),
-                        format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-                    ],
-                    coords: line,
-                    closed_cycle: false,
-                }),
-            ],
+    fn series_color(&self, series_i: usize, kind: TwinSeriesKind) -> String {
+        if series_i == 0 {
+            match kind {
+                TwinSeriesKind::Bar => "energycolor".into(),
+                TwinSeriesKind::Line => "runtimecolor".into(),
+            }
+        } else {
+            format!("colorblind{}", series_i)
         }
     }
 }
