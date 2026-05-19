@@ -1,14 +1,6 @@
-mod data;
-mod ir;
-mod plot;
+use std::fs;
 
-pub mod prelude {
-    pub use crate::data::*;
-    pub use crate::ir::*;
-    pub use crate::plot::*;
-}
-
-use prelude::*;
+use epy::prelude::*;
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
@@ -74,11 +66,11 @@ fn twin(df: &DataFrame<Record>) {
         .format_xticks_precision(1, false);
     ax1 = ax1.set_ymax(0.6);
 
-    let doc = ir::PlotDocument::from_twin_axes(ax0, ax1);
+    let doc = PlotDocument::from_twin_axes(ax0, ax1);
 
     let tikz = doc.render_tikz();
 
-    std::fs::write(".build/example_twin.tex", tikz).unwrap();
+    fs::write(".build/example_twin.tex", tikz).unwrap();
 }
 
 fn ipc(df: &DataFrame<Record>) {
@@ -91,13 +83,13 @@ fn ipc(df: &DataFrame<Record>) {
         .filter_xticks_stride(0, 2)
         .format_xticks_precision(1, false);
 
-    let doc = ir::PlotDocument::from_axis(ax0)
+    let doc = PlotDocument::from_axis(ax0)
         .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
         .annot_label((5.0, 0.35), "Hello, world!", None);
 
     let tikz = doc.render_tikz();
 
-    std::fs::write(".build/example_ipc.tex", tikz).unwrap();
+    fs::write(".build/example_ipc.tex", tikz).unwrap();
 }
 
 fn power(df: &DataFrame<Record>) {
@@ -110,9 +102,9 @@ fn power(df: &DataFrame<Record>) {
         "Actual power draw (W)")
         .build_axis();
 
-    let doc = ir::PlotDocument::from_axis(ax);
+    let doc = PlotDocument::from_axis(ax);
     let tikz = doc.render_tikz();
-    std::fs::write(".build/example_power.tex", tikz).unwrap();
+    fs::write(".build/example_power.tex", tikz).unwrap();
 }
 
 fn zplot(df: &DataFrame<Record>) {
@@ -129,16 +121,18 @@ fn zplot(df: &DataFrame<Record>) {
         .set_xmin(0.0)
         .set_ymin(0.0);
 
-    let doc = ir::PlotDocument::from_axis(ax);
+    let doc = PlotDocument::from_axis(ax);
 
     let tikz = doc.render_tikz();
 
-    std::fs::write(".build/example_zplot.tex", tikz).unwrap();
+    fs::write(".build/example_zplot.tex", tikz).unwrap();
 }
 
 fn main() {
-    std::fs::create_dir_all(".build").unwrap();
+    fs::create_dir_all(".build").unwrap();
+
     let df = DataFrame::from_csv("test_data.csv").unwrap();
+
     twin(&df);
     ipc(&df);
     power(&df);

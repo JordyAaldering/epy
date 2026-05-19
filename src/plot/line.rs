@@ -39,18 +39,30 @@ impl<T: Clone> LinePlot<T> {
 
     pub fn series(
         mut self,
-        selector: impl Fn(&T) -> f64 + 'static,
+        y_selector: impl Fn(&T) -> f64 + 'static,
         label: &str,
         color: &str,
     ) -> Self {
         let marker = MARKERS[self.series.len() % MARKERS.len()].to_string();
         self.series.push(LineSeries {
-            selector: Box::new(selector),
+            selector: Box::new(y_selector),
             label: label.into(),
             color: color.into(),
             marker,
         });
         self
+    }
+
+    pub fn grouped_series<F>(
+        mut self,
+        group_by: F,
+        y_selector: F,
+        // add fields if needed
+    ) -> Self
+    where
+        F: Fn(&T) -> f64,
+    {
+        todo!()
     }
 
     pub fn ymin(mut self, v: Option<f64>) -> Self {

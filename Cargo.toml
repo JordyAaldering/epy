@@ -4,14 +4,6 @@ version = "0.1.0"
 edition = "2024"
 description = "Energy plotting library"
 
-[lib]
-name = "epy"
-path = "src/lib.rs"
-
-[[bin]]
-name = "epy"
-path = "src/example.rs"
-
 [dependencies]
 csv = "1.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
