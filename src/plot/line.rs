@@ -8,9 +8,6 @@ pub struct LinePlot<T> {
     series: Vec<LineSeries<T>>,
     xaxis_label: String,
     yaxis_label: String,
-    ymin: Option<f64>,
-    manual_xticks: bool,
-    xtick_labels: Option<Vec<String>>,
 }
 
 struct LineSeries<T> {
@@ -30,30 +27,23 @@ enum LineSeriesKind<T> {
 }
 
 impl<T: Clone> LinePlot<T> {
-    pub fn new(
-        df: DataFrame<T>,
-        x_selector: impl Fn(&T) -> f64 + 'static,
-        xaxis_label: &str,
-        yaxis_label: &str,
-    ) -> Self {
+    pub fn new<X>(df: DataFrame<T>, x_selector: X, xaxis_label: &str, yaxis_label: &str) -> Self
+    where
+        X: Fn(&T) -> f64 + 'static,
+    {
         LinePlot {
             df,
             x_selector: Box::new(x_selector),
             series: Vec::new(),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
-            ymin: Some(0.0),
-            manual_xticks: false,
-            xtick_labels: None,
         }
     }
 
-    pub fn series(
-        mut self,
-        y_selector: impl Fn(&T) -> f64 + 'static,
-        label: &str,
-        color: &str,
-    ) -> Self {
+    pub fn series<Y>(mut self, y_selector: Y, label: &str, color: &str) -> Self
+    where
+        Y: Fn(&T) -> f64 + 'static,
+    {
         self.series.push(LineSeries {
             kind: LineSeriesKind::Plain {
                 selector: Box::new(y_selector),
@@ -64,11 +54,7 @@ impl<T: Clone> LinePlot<T> {
         self
     }
 
-    pub fn grouped_series<G, Y>(
-        mut self,
-        group_by: G,
-        y_selector: Y,
-    ) -> Self
+    pub fn grouped_series<G, Y>(mut self, group_by: G, y_selector: Y) -> Self
     where
         G: Fn(&T) -> f64 + 'static,
         Y: Fn(&T) -> f64 + 'static,
@@ -82,22 +68,6 @@ impl<T: Clone> LinePlot<T> {
         self
     }
 
-    pub fn ymin(mut self, v: Option<f64>) -> Self {
-        self.ymin = v;
-        self
-    }
-
-    pub fn manual_xticks(mut self, enabled: bool) -> Self {
-        self.manual_xticks = enabled;
-        self
-    }
-
-    pub fn xtick_labels(mut self, labels: Vec<String>) -> Self {
-        self.manual_xticks = true;
-        self.xtick_labels = Some(labels);
-        self
-    }
-
     pub fn build_axis(&self) -> Axis {
         let x_grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
         let x_keys = x_grouped.keys().to_vec();
@@ -107,24 +77,8 @@ impl<T: Clone> LinePlot<T> {
         opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
         opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
         opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
-        if let Some(v) = self.ymin {
-            opts.replace(AxisOption::YMin(Numeric::new(v)));
-        }
-
-        if self.manual_xticks {
-            let ticks: Vec<String> = x_keys.iter().map(ToString::to_string).collect();
-            opts.replace(AxisOption::XTicks(ticks));
-
-            let labels: Vec<String> = if let Some(ref lbls) = self.xtick_labels {
-                lbls.clone()
-            } else {
-                x_keys.iter().map(ToString::to_string).collect()
-            };
-            opts.replace(AxisOption::XTickLabels(labels));
-        }
 
         let mut elements = Vec::new();
-
         let mut emitted_series = 0usize;
 
         for series in &self.series {

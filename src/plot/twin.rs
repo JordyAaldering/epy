@@ -12,7 +12,6 @@ pub struct TwinPlot<Row> {
     ax0_yaxis_label: String,
     ax1_yaxis_label: String,
     xaxis_label: String,
-    xtick_labels: Option<Vec<String>>,
 }
 
 struct TwinSeries<Row> {
@@ -44,7 +43,6 @@ impl<Row: Clone> TwinPlot<Row> {
             ax0_yaxis_label: ax0_yaxis_label.into(),
             ax1_yaxis_label: ax1_yaxis_label.into(),
             xaxis_label: xaxis_label.into(),
-            xtick_labels: None,
         }
     }
 
@@ -108,11 +106,6 @@ impl<Row: Clone> TwinPlot<Row> {
         self
     }
 
-    pub fn xtick_labels(mut self, labels: Vec<impl Into<String>>) -> Self {
-        self.xtick_labels = Some(labels.into_iter().map(|l| l.into()).collect());
-        self
-    }
-
     pub fn build_axes(&self) -> (Axis, Axis) {
         let ax1 = self.build_left_axis();
         let ax2 = self.build_right_axis();
@@ -162,13 +155,7 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
         opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
         opts.replace(AxisOption::XTicks((0..n).map(|i| i.to_string()).collect()));
-        opts.replace(AxisOption::XTickLabels(
-            if let Some(ref lbls) = self.xtick_labels {
-                lbls.clone()
-            } else {
-                keys.iter().map(ToString::to_string).collect()
-            }
-        ));
+        opts.replace(AxisOption::XTickLabels(keys.iter().map(ToString::to_string).collect()));
 
         let mut elements = Vec::new();
         self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements, true);
