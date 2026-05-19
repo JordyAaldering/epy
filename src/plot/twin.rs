@@ -158,8 +158,9 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::XTickLabels(keys.iter().map(ToString::to_string).collect()));
 
         let mut elements = Vec::new();
-        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements, true);
-        self.push_legend_images_for_series(&self.ax1_series, &mut elements);
+        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements, true, 0);
+        let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
+        self.push_legend_images_for_series(&self.ax1_series, &mut elements, ax0_line_count);
 
         Axis { opts, elements }
     }
@@ -190,7 +191,8 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
 
         let mut elements = Vec::new();
-        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements, false);
+        let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
+        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements, false, ax0_line_count);
 
         Axis { opts, elements }
     }
@@ -201,8 +203,10 @@ impl<Row: Clone> TwinPlot<Row> {
         series: &[TwinSeries<Row>],
         elements: &mut Vec<AxisElement>,
         include_legend: bool,
+        line_marker_start_index: usize,
     ) {
-        for (series_i, spec) in series.iter().enumerate() {
+        let mut line_series_count = 0;
+        for spec in series {
             let (_, meds, q1s, q3s) = self.stats_for_selector(grouped, &*spec.selector);
             let color = spec.color.clone();
 
@@ -260,10 +264,11 @@ impl<Row: Clone> TwinPlot<Row> {
                     let line: Vec<Coordinate> = meds.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
+                    let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
                     let mut plot_opts = vec![
                         color,
                         "line width=1pt".into(),
-                        format!("mark={}", MARKERS[series_i % MARKERS.len()]),
+                        format!("mark={}", MARKERS[marker_index]),
                         format!("mark size={}pt", MARK_SIZE_PT),
                         format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
                     ];
@@ -278,6 +283,7 @@ impl<Row: Clone> TwinPlot<Row> {
                     if include_legend {
                         elements.push(AxisElement::LegendEntry(spec.label.clone()));
                     }
+                    line_series_count += 1;
                 }
             }
         }
@@ -287,8 +293,10 @@ impl<Row: Clone> TwinPlot<Row> {
         &self,
         series: &[TwinSeries<Row>],
         elements: &mut Vec<AxisElement>,
+        line_marker_start_index: usize,
     ) {
-        for (series_i, spec) in series.iter().enumerate() {
+        let mut line_series_count = 0;
+        for spec in series {
             match spec.kind {
                 TwinSeriesKind::Bar => {
                     elements.push(AxisElement::LegendImage(vec![
@@ -300,13 +308,15 @@ impl<Row: Clone> TwinPlot<Row> {
                     ]));
                 }
                 TwinSeriesKind::Line => {
+                    let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
                     elements.push(AxisElement::LegendImage(vec![
                         spec.color.clone(),
                         "line width=1pt".into(),
-                        format!("mark={}", MARKERS[series_i % MARKERS.len()]),
+                        format!("mark={}", MARKERS[marker_index]),
                         format!("mark size={}pt", MARK_SIZE_PT),
                         format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
                     ]));
+                    line_series_count += 1;
                 }
             }
             elements.push(AxisElement::LegendEntry(spec.label.clone()));
