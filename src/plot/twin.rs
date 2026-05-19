@@ -19,6 +19,7 @@ struct TwinSeries<Row> {
     kind: TwinSeriesKind,
     selector: Box<dyn Fn(&Row) -> f64>,
     label: String,
+    color: String,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -51,11 +52,13 @@ impl<Row: Clone> TwinPlot<Row> {
         mut self,
         selector: impl Fn(&Row) -> f64 + 'static,
         label: &str,
+        color: &str,
     ) -> Self {
         self.ax0_series.push(TwinSeries {
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
             label: label.into(),
+            color: color.into(),
         });
         self
     }
@@ -64,11 +67,13 @@ impl<Row: Clone> TwinPlot<Row> {
         mut self,
         selector: impl Fn(&Row) -> f64 + 'static,
         label: &str,
+        color: &str,
     ) -> Self {
         self.ax0_series.push(TwinSeries {
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
             label: label.into(),
+            color: color.into(),
         });
         self
     }
@@ -77,11 +82,13 @@ impl<Row: Clone> TwinPlot<Row> {
         mut self,
         selector: impl Fn(&Row) -> f64 + 'static,
         label: &str,
+        color: &str,
     ) -> Self {
         self.ax1_series.push(TwinSeries {
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
             label: label.into(),
+            color: color.into(),
         });
         self
     }
@@ -90,11 +97,13 @@ impl<Row: Clone> TwinPlot<Row> {
         mut self,
         selector: impl Fn(&Row) -> f64 + 'static,
         label: &str,
+        color: &str,
     ) -> Self {
         self.ax1_series.push(TwinSeries {
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
             label: label.into(),
+            color: color.into(),
         });
         self
     }
@@ -206,7 +215,7 @@ impl<Row: Clone> TwinPlot<Row> {
     ) {
         for (series_i, spec) in series.iter().enumerate() {
             let (_, meds, q1s, q3s) = self.stats_for_selector(grouped, &*spec.selector);
-            let color = self.series_color(series_i, spec.kind);
+            let color = spec.color.clone();
 
             match spec.kind {
                 TwinSeriesKind::Bar => {
@@ -270,17 +279,6 @@ impl<Row: Clone> TwinPlot<Row> {
                     elements.push(AxisElement::LegendEntry(spec.label.clone()));
                 }
             }
-        }
-    }
-
-    fn series_color(&self, series_i: usize, kind: TwinSeriesKind) -> String {
-        if series_i == 0 {
-            match kind {
-                TwinSeriesKind::Bar => "energycolor".into(),
-                TwinSeriesKind::Line => "runtimecolor".into(),
-            }
-        } else {
-            format!("colorblind{}", series_i)
         }
     }
 }

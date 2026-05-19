@@ -58,9 +58,9 @@ fn twin(df: &DataFrame<Record>) {
             "GFLOP/J",
             "GFLOP/s",
         )
-        .ax0_bar(|r| r.gflop_j(), "GFLOP/J")
-        .ax1_line(|r| r.gflop_s(), "GFLOP/s")
-        .ax1_line(|r| r.gflop_s() / 2.0, "half")
+        .ax0_bar(|r| r.gflop_j(), "GFLOP/J", "energycolor")
+        .ax1_line(|r| r.gflop_s(), "GFLOP/s", "runtimecolor")
+        .ax1_line(|r| r.gflop_s() / 2.0, "half", "cyan")
         .build_axes();
 
     ax0 = ax0.set_ymax(0.09)
