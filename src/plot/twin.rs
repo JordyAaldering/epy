@@ -171,7 +171,8 @@ impl<Row: Clone> TwinPlot<Row> {
         ));
 
         let mut elements = Vec::new();
-        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements);
+        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements, true);
+        self.push_legend_images_for_series(&self.ax1_series, &mut elements);
 
         Axis { opts, elements }
     }
@@ -202,7 +203,7 @@ impl<Row: Clone> TwinPlot<Row> {
         opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
 
         let mut elements = Vec::new();
-        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements);
+        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements, false);
 
         Axis { opts, elements }
     }
@@ -212,6 +213,7 @@ impl<Row: Clone> TwinPlot<Row> {
         grouped: &GroupedFrame<Row>,
         series: &[TwinSeries<Row>],
         elements: &mut Vec<AxisElement>,
+        include_legend: bool,
     ) {
         for (series_i, spec) in series.iter().enumerate() {
             let (_, meds, q1s, q3s) = self.stats_for_selector(grouped, &*spec.selector);
@@ -222,18 +224,24 @@ impl<Row: Clone> TwinPlot<Row> {
                     let bar_coords: Vec<Coordinate> = meds.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
+                    let mut plot_opts = vec![
+                        "ybar".into(),
+                        "bar width=0.7".into(),
+                        format!("fill={}", color),
+                        "draw=none".into(),
+                        "area legend".into(),
+                    ];
+                    if !include_legend {
+                        plot_opts.push("forget plot".into());
+                    }
                     elements.push(AxisElement::Plot(AddPlot {
-                        opts: vec![
-                            "ybar".into(),
-                            "bar width=0.7".into(),
-                            format!("fill={}", color),
-                            "draw=none".into(),
-                            "area legend".into(),
-                        ],
+                        opts: plot_opts,
                         coords: bar_coords,
                         closed_cycle: false,
                     }));
-                    elements.push(AxisElement::LegendEntry(spec.label.clone()));
+                    if include_legend {
+                        elements.push(AxisElement::LegendEntry(spec.label.clone()));
+                    }
 
                     for i in 0..q1s.len() {
                         elements.push(AxisElement::DrawLine {
@@ -265,20 +273,56 @@ impl<Row: Clone> TwinPlot<Row> {
                     let line: Vec<Coordinate> = meds.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
+                    let mut plot_opts = vec![
+                        color,
+                        "line width=1pt".into(),
+                        format!("mark={}", MARKERS[series_i % MARKERS.len()]),
+                        format!("mark size={}pt", MARK_SIZE_PT),
+                        format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
+                    ];
+                    if !include_legend {
+                        plot_opts.push("forget plot".into());
+                    }
                     elements.push(AxisElement::Plot(AddPlot {
-                        opts: vec![
-                            color,
-                            "line width=1pt".into(),
-                            format!("mark={}", MARKERS[series_i % MARKERS.len()]),
-                            format!("mark size={}pt", MARK_SIZE_PT),
-                            format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-                        ],
+                        opts: plot_opts,
                         coords: line,
                         closed_cycle: false,
                     }));
-                    elements.push(AxisElement::LegendEntry(spec.label.clone()));
+                    if include_legend {
+                        elements.push(AxisElement::LegendEntry(spec.label.clone()));
+                    }
                 }
             }
+        }
+    }
+
+    fn push_legend_images_for_series(
+        &self,
+        series: &[TwinSeries<Row>],
+        elements: &mut Vec<AxisElement>,
+    ) {
+        for (series_i, spec) in series.iter().enumerate() {
+            match spec.kind {
+                TwinSeriesKind::Bar => {
+                    elements.push(AxisElement::LegendImage(vec![
+                        "ybar".into(),
+                        "bar width=0.7".into(),
+                        format!("fill={}", spec.color),
+                        "draw=none".into(),
+                        "area legend".into(),
+                    ]));
+                }
+                TwinSeriesKind::Line => {
+                    elements.push(AxisElement::LegendImage(vec![
+                        spec.color.clone(),
+                        "line width=1pt".into(),
+                        format!("mark={}", MARKERS[series_i % MARKERS.len()]),
+                        format!("mark size={}pt", MARK_SIZE_PT),
+                        format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
+                    ]));
+                }
+            }
+            elements.push(AxisElement::LegendEntry(spec.label.clone()));
         }
     }
 }
