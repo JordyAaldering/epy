@@ -29,8 +29,7 @@ impl<T> DataFrame<T> {
         let mut data = Vec::new();
 
         for result in rdr.deserialize() {
-            let row: T = result?;
-            data.push(row);
+            data.push(result?);
         }
 
         Ok(DataFrame { data })
@@ -57,6 +56,14 @@ impl<T> DataFrame<T> {
         F: Fn(&mut T),
     {
         self.data.iter_mut().for_each(f);
+        self
+    }
+
+    pub fn map_i<F>(mut self, f: F) -> Self
+    where
+        F: Fn(usize, &mut T),
+    {
+        self.data.iter_mut().enumerate().for_each(|(i, row)| f(i, row));
         self
     }
 
