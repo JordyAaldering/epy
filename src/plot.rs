@@ -63,6 +63,7 @@ pub struct Quartiles {
 }
 
 pub fn median(xs: &[f64]) -> f64 {
+    assert!(!xs.is_empty());
     let n = xs.len();
     if n % 2 == 0 {
         (xs[n / 2 - 1] + xs[n / 2]) / 2.0
@@ -79,6 +80,14 @@ pub fn quartiles(xs: &[f64]) -> Quartiles {
 
     let n = xs.len();
     let m = median(&xs);
+    if n < 3 {
+        return Quartiles {
+            median: m,
+            q1: m,
+            q3: m,
+        };
+    }
+
     let q1 = median(&xs[..n / 2]);
     let q3 = median(&xs[(n + 1) / 2..]);
     Quartiles { median: m, q1, q3 }
