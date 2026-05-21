@@ -1,8 +1,10 @@
 mod line;
+mod timeseries;
 mod twin;
 mod zplot;
 
 pub use line::LinePlot;
+pub use timeseries::TimeSeries;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 

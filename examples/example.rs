@@ -131,13 +131,37 @@ fn zplot(df: &DataFrame<Record>) {
     fs::write(".build/example_zplot.tex", tikz).unwrap();
 }
 
+#[allow(dead_code)]
+#[derive(Deserialize, Clone)]
+struct TimeseriesRecord {
+    kernel: String,
+    size: usize,
+    threads: usize,
+    powercap: usize,
+    runtime: f64,
+    energy: f64,
+}
+
+fn timeseries() {
+    let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_data_timeseries.csv").unwrap();
+
+    let axis = TimeSeries::new(df, "Iteration", "Energy consumption")
+        .series(|r| r.energy, "Energy", "energycolor")
+        .series(|r| r.runtime, "Runtime", "runtimecolor")
+        .build_axis();
+
+    let doc = PlotDocument::from_axis(axis);
+    let tikz = doc.render_tikz();
+
+    fs::write(".build/example_timeseries.tex", tikz).unwrap();
+}
+
 fn main() {
     fs::create_dir_all(".build").unwrap();
-
     let df = DataFrame::from_csv("test_data.csv").unwrap();
-
     twin(&df);
     ipc(&df);
     power(&df);
     zplot(&df);
+    timeseries();
 }

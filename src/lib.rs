@@ -1,5 +1,6 @@
 mod data;
 mod ir;
+//mod tikzir;
 mod plot;
 
 pub mod prelude {

@@ -2,34 +2,30 @@ use std::collections::HashMap;
 
 use crate::{data::DataFrame, ir::*, plot::{common_axis_options, quartiles}};
 
-pub struct LinePlot<T> {
-    df: DataFrame<T>,
-    x_selector: Box<dyn Fn(&T) -> f64>,
-    series: Vec<LineSeries<T>>,
+pub struct LinePlot<Row> {
+    df: DataFrame<Row>,
+    x_selector: Box<dyn Fn(&Row) -> f64>,
+    series: Vec<LineSeriesKind<Row>>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-struct LineSeries<T> {
-    kind: LineSeriesKind<T>,
-}
-
-enum LineSeriesKind<T> {
+enum LineSeriesKind<Row> {
     Plain {
-        selector: Box<dyn Fn(&T) -> f64>,
+        selector: Box<dyn Fn(&Row) -> f64>,
         label: String,
         color: String,
     },
     Grouped {
-        group_by: Box<dyn Fn(&T) -> f64>,
-        y_selector: Box<dyn Fn(&T) -> f64>,
+        group_by: Box<dyn Fn(&Row) -> f64>,
+        y_selector: Box<dyn Fn(&Row) -> f64>,
     },
 }
 
-impl<T: Clone> LinePlot<T> {
-    pub fn new<X>(df: DataFrame<T>, x_selector: X, xaxis_label: &str, yaxis_label: &str) -> Self
+impl<Row: Clone> LinePlot<Row> {
+    pub fn new<X>(df: DataFrame<Row>, x_selector: X, xaxis_label: &str, yaxis_label: &str) -> Self
     where
-        X: Fn(&T) -> f64 + 'static,
+        X: Fn(&Row) -> f64 + 'static,
     {
         LinePlot {
             df,
@@ -42,28 +38,24 @@ impl<T: Clone> LinePlot<T> {
 
     pub fn series<Y>(mut self, y_selector: Y, label: &str, color: &str) -> Self
     where
-        Y: Fn(&T) -> f64 + 'static,
+        Y: Fn(&Row) -> f64 + 'static,
     {
-        self.series.push(LineSeries {
-            kind: LineSeriesKind::Plain {
-                selector: Box::new(y_selector),
-                label: label.into(),
-                color: color.into(),
-            },
+        self.series.push(LineSeriesKind::Plain {
+            selector: Box::new(y_selector),
+            label: label.into(),
+            color: color.into(),
         });
         self
     }
 
     pub fn grouped_series<G, Y>(mut self, group_by: G, y_selector: Y) -> Self
     where
-        G: Fn(&T) -> f64 + 'static,
-        Y: Fn(&T) -> f64 + 'static,
+        G: Fn(&Row) -> f64 + 'static,
+        Y: Fn(&Row) -> f64 + 'static,
     {
-        self.series.push(LineSeries {
-            kind: LineSeriesKind::Grouped {
-                group_by: Box::new(group_by),
-                y_selector: Box::new(y_selector),
-            },
+        self.series.push(LineSeriesKind::Grouped {
+            group_by: Box::new(group_by),
+            y_selector: Box::new(y_selector),
         });
         self
     }
@@ -82,7 +74,7 @@ impl<T: Clone> LinePlot<T> {
         let mut emitted_series = 0usize;
 
         for series in &self.series {
-            match &series.kind {
+            match &series {
                 LineSeriesKind::Plain { selector, label, color } => {
                     let mut meds = Vec::with_capacity(x_grouped.num_groups());
                     let mut q1s = Vec::with_capacity(x_grouped.num_groups());
