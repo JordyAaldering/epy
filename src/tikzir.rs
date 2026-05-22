@@ -19,6 +19,10 @@ impl Axis {
             res.push(']');
         }
 
+        for element in &self.elements {
+            res.push_str(&element.render());
+        }
+
         res.push_str("\\end{axis}");
         res
     }
@@ -26,9 +30,46 @@ impl Axis {
 
 #[derive(Clone, Debug)]
 pub enum AxisElement {
-    Plot,
-    LegendEntry,
-    LegendImage,
+    AddPlot {
+        options: AxisOptions,
+        coordinates: Vec<Coordinate>,
+        closed_cycle: bool,
+    },
+    LegendEntry(String),
+    LegendImage(Style),
+}
+
+impl AxisElement {
+    pub fn render(&self) -> String {
+        use AxisElement::*;
+        match self {
+            AddPlot { options, coordinates, closed_cycle } => {
+                let mut res = String::new();
+                res.push_str("\\addplot");
+
+                let options = options.render();
+                if !options.is_empty() {
+                    res.push('[');
+                    res.push_str(&options.join(","));
+                    res.push(']');
+                }
+                res.push_str(" coordinates {");
+                for c in coordinates {
+                    res.push_str("  ");
+                    res.push_str(&c.render());
+                    res.push('\n');
+                }
+                res.push('}');
+                if *closed_cycle {
+                    res.push_str(" \\closedcycle");
+                }
+                res.push(';');
+                res
+            }
+            LegendEntry(label) => format!("\\addlegendentry{{{}}}", label),
+            LegendImage(style) => format!("\\addlegendimage{{{}}}", style.render().join(",")),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -96,6 +137,8 @@ pub struct AxisOptions {
     pub y_minor_grids: bool,
 
     pub legend_pos: Option<LegendPos>,
+
+    pub forget_plot: bool,
 
     pub style: Style,
 
@@ -198,6 +241,10 @@ impl AxisOptions {
 
         if let Some(p) = self.legend_pos {
             options.push(format!("legend pos={}", p.render()));
+        }
+
+        if self.forget_plot {
+            options.push("forget plot".into());
         }
 
         // Style
