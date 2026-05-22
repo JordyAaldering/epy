@@ -1,26 +1,24 @@
 #[derive(Clone, Debug)]
 pub struct Axis {
     pub options: AxisOptions,
-    pub style: StyleOptions,
-    pub extra_styles: ExtraStyleOptions,
     pub elements: Vec<AxisElement>,
 }
 
 impl Axis {
+    #[allow(unused)]
     pub fn render(&self) -> String {
-        let mut axis_options = self.options.render();
-        axis_options.append(&mut self.style.render());
-        axis_options.append(&mut self.extra_styles.render());
-
         let mut res = String::new();
         res.push_str("\\begin{axis}\n");
-        if !axis_options.is_empty() {
+
+        let options = self.options.render();
+        if !options.is_empty() {
             res.push('[');
-            res.push_str(&axis_options.into_iter()
+            res.push_str(&options.into_iter()
                 .map(|s| format!("  {},\n", s))
                 .collect::<String>());
             res.push(']');
         }
+
         res.push_str("\\end{axis}");
         res
     }
@@ -85,6 +83,10 @@ pub struct AxisOptions {
     pub xtick_align: Option<TickAlign>,
     pub ytick_align: Option<TickAlign>,
 
+    /// The distance between generated tick positions.
+    pub xtick_distance: Option<f64>,
+    pub ytick_distance: Option<f64>,
+
     /// Enables/disables different grid lines. Major grid lines are placed at
     /// the normal tick positions (see [`x_major_ticks`]) while minor grid
     /// lines are placed at minor ticks (see [`x_minor_ticks`]`).
@@ -94,6 +96,12 @@ pub struct AxisOptions {
     pub y_minor_grids: bool,
 
     pub legend_pos: Option<LegendPos>,
+
+    pub style: Style,
+
+    /// An abbreviation for every extra x tick/.append style={〈key-value-list〉}.
+    pub extra_xtick_style: Option<Style>,
+    pub extra_ytick_style: Option<Style>,
 }
 
 impl AxisOptions {
@@ -168,6 +176,13 @@ impl AxisOptions {
             options.push(format!("y tick align={}", a.render()));
         }
 
+        if let Some(d) = self.xtick_distance {
+            options.push(format!("xtick distance={}", d));
+        }
+        if let Some(d) = self.ytick_distance {
+            options.push(format!("ytick distance={}", d));
+        }
+
         if self.x_major_grids {
             options.push("x major grids".into());
         }
@@ -183,50 +198,82 @@ impl AxisOptions {
 
         if let Some(p) = self.legend_pos {
             options.push(format!("legend pos={}", p.render()));
-
         }
 
-        options
-    }
-}
+        // Style
 
-#[derive(Clone, Debug)]
-pub struct StyleOptions {
-    pub opacity: Option<f64>,
-    pub text_opacity: Option<f64>,
-}
-
-impl StyleOptions {
-    pub fn render(&self) -> Vec<String> {
-        let mut options = Vec::new();
-
-        if let Some(o) = self.opacity {
-            options.push(format!("opacity={}", o));
-        }
-        if let Some(o) = self.text_opacity {
-            options.push(format!("text opacity={}", o));
-        }
-
-        options
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ExtraStyleOptions {
-    /// An abbreviation for every extra x tick/.append style={〈key-value-list〉}.
-    pub extra_xtick_style: Option<StyleOptions>,
-    pub extra_ytick_style: Option<StyleOptions>,
-}
-
-impl ExtraStyleOptions {
-    pub fn render(&self) -> Vec<String> {
-        let mut options = Vec::new();
+        options.extend(self.style.render());
 
         if let Some(s) = &self.extra_xtick_style {
             options.push(format!("extra x tick style={{{}}}", s.render().join(",")));
         }
         if let Some(s) = &self.extra_ytick_style {
             options.push(format!("extra y tick style={{{}}}", s.render().join(",")));
+        }
+
+        options
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Style {
+    pub color: Option<String>,
+    pub draw: Option<String>,
+
+    pub opacity: Option<f64>,
+    pub draw_opacity: Option<f64>,
+    pub fill_opacity: Option<f64>,
+    pub text_opacity: Option<f64>,
+
+    pub inner_sep: Option<Dimension>,
+    pub inner_xsep: Option<Dimension>,
+    pub inner_ysep: Option<Dimension>,
+    pub outer_sep: Option<Dimension>,
+    pub outer_xsep: Option<Dimension>,
+    pub outer_ysep: Option<Dimension>,
+}
+
+impl Style {
+    pub fn render(&self) -> Vec<String> {
+        let mut options = Vec::new();
+
+        if let Some(c) = &self.color {
+            options.push(format!("color={}", c));
+        }
+        if let Some(d) = &self.draw {
+            options.push(format!("draw={}", d));
+        }
+
+        if let Some(o) = self.opacity {
+            options.push(format!("opacity={}", o));
+        }
+        if let Some(o) = self.draw_opacity {
+            options.push(format!("draw opacity={}", o));
+        }
+        if let Some(o) = self.fill_opacity {
+            options.push(format!("fill opacity={}", o));
+        }
+        if let Some(o) = self.text_opacity {
+            options.push(format!("text opacity={}", o));
+        }
+
+        if let Some(s) = &self.inner_sep {
+            options.push(format!("inner sep={}", s.render()));
+        }
+        if let Some(s) = &self.inner_xsep {
+            options.push(format!("inner xsep={}", s.render()));
+        }
+        if let Some(s) = &self.inner_ysep {
+            options.push(format!("inner ysep={}", s.render()));
+        }
+        if let Some(s) = &self.outer_sep {
+            options.push(format!("outer sep={}", s.render()));
+        }
+        if let Some(s) = &self.outer_xsep {
+            options.push(format!("outer xsep={}", s.render()));
+        }
+        if let Some(s) = &self.outer_ysep {
+            options.push(format!("outer ysep={}", s.render()));
         }
 
         options
@@ -351,24 +398,45 @@ impl TickAlign {
 /// https://nwalsh.com/tex/texhelp/Plain.html#dimensions
 #[derive(Clone, Copy, Debug)]
 pub enum Dimension {
-    /// Nominal m-width.
-    Em(f64),
-    /// Nominal x-height.
-    Ex(f64),
-    /// Point.
+    /// Point
     Pt(f64),
-    /// Millimeter.
+    /// Pica (1 pc = 12 pt)
+    Pc(f64),
+    /// Inch (1 in = 72.27 pt)
+    In(f64),
+    /// Big point (72 bp = 1 inch)
+    Bp(f64),
+    /// Centimeter
+    Cm(f64),
+    /// Millimeter
     Mm(f64),
+    /// Didor point
+    Dd(f64),
+    /// Cicero (12 dd)
+    Cc(f64),
+    /// Scaled point (2^16 sp = 1 pt)
+    Sp(f64),
+    /// Nominal x-height
+    Ex(f64),
+    /// Nominal m-width
+    Em(f64),
 }
 
 impl Dimension {
     pub fn render(&self) -> String {
         use Dimension::*;
         match self {
+            Pt(v) => format!("{}pt", v),
+            Pc(v) => format!("{}pc", v),
+            In(v) => format!("{}in", v),
+            Bp(v) => format!("{}bp", v),
+            Cm(v) => format!("{}cm", v),
+            Mm(v) => format!("{}mm", v),
+            Dd(v) => format!("{}dd", v),
+            Cc(v) => format!("{}cc", v),
+            Sp(v) => format!("{}sp", v),
             Em(v) => format!("{}em", v),
             Ex(v) => format!("{}ex", v),
-            Pt(v) => format!("{}pt", v),
-            Mm(v) => format!("{}mm", v),
         }
     }
 }

@@ -1,7 +1,7 @@
 mod data;
 mod ir;
-//mod tikzir;
 mod plot;
+mod tikzir;
 
 pub mod prelude {
     pub use crate::data::*;
