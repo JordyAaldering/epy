@@ -1,6 +1,6 @@
 //! TikZ intermediate representation
 use derive_builder::Builder;
-use ordermap::OrderMap;
+use ordermap::{OrderMap, ordermap};
 
 #[derive(Clone, Debug)]
 pub struct TikzPicture {
@@ -59,6 +59,56 @@ pub struct Axis {
 }
 
 impl Axis {
+    pub fn label<S>(mut self, at: Coordinate, label: S, anchor: Option<Anchor>) -> Self
+    where
+        S: Into<String>,
+    {
+        let style = StyleBuilder::default()
+            .anchor(anchor.unwrap_or(Anchor::SouthWest))
+            .inner_xsep(Dimension::Em(0.0))
+            .inner_ysep(Dimension::Em(0.1))
+            .build()
+            .unwrap();
+        self.data.push(AxisElement::Node { style, at, label: label.into() });
+        self
+    }
+
+    pub fn line<S>(mut self, from: Coordinate, to: Coordinate, color: Option<S>) -> Self
+    where
+        S: Into<String>,
+    {
+        let style = StyleBuilder::default()
+            .draw(color.map(S::into).unwrap_or("gray".into()))
+            .dashed(true)
+            .build()
+            .unwrap();
+        self.data.push(AxisElement::Draw { style, from, to });
+        self
+    }
+
+    pub fn area<S>(mut self, bottom_left: Coordinate, top_right: Coordinate, color: S) -> Self
+    where
+        S: Clone + Into<String>,
+    {
+        let style = StyleBuilder::default()
+            .draw(color.clone())
+            .draw_opacity(0.5)
+            .style_overrides(ordermap! {
+                "postaction".into() => {
+                    StyleBuilder::default()
+                        .pattern("north east lines")
+                        .pattern_color(color)
+                        .fill_opacity(0.5)
+                        .build()
+                        .unwrap()
+                }
+            })
+            .build()
+            .unwrap();
+        self.data.push(AxisElement::Fill { style, bottom_left, top_right });
+        self
+    }
+
     pub fn render(&self) -> String {
         let mut res = String::new();
         res.push_str("\\begin{axis}");
@@ -86,13 +136,23 @@ impl Axis {
 
 #[derive(Clone, Debug)]
 pub enum AxisElement {
+    Node {
+        style: Style,
+        at: Coordinate,
+        label: String,
+    },
     Draw {
-        options: Style,
+        style: Style,
         from: Coordinate,
         to: Coordinate,
     },
+    Fill {
+        style: Style,
+        bottom_left: Coordinate,
+        top_right: Coordinate,
+    },
     AddPlot {
-        options: Style,
+        style: Style,
         coordinates: Vec<Coordinate>,
         closed_cycle: bool,
     },
@@ -104,21 +164,37 @@ impl AxisElement {
     pub fn render(&self) -> String {
         use AxisElement::*;
         match self {
-            Draw { options, from, to } => {
-                let options = options.render();
-                if !options.is_empty() {
-                    format!("\\draw[{}] {} -- {};", options.join(","), from.render(), to.render())
+            Node { style, at, label } => {
+                let style = style.render();
+                if style.is_empty() {
+                    format!("\\draw {} node {{{}}};", at.render(), label)
+                } else {
+                    format!("\\draw {} node[{}] {{{}}};", at.render(), style.join(","), label)
+                }
+            }
+            Draw { style, from, to } => {
+                let style = style.render();
+                if !style.is_empty() {
+                    format!("\\draw[{}] {} -- {};", style.join(","), from.render(), to.render())
                 } else {
                     format!("\\draw {} -- {};", from.render(), to.render())
                 }
             }
-            AddPlot { options, coordinates, closed_cycle } => {
+            Fill { style, bottom_left, top_right } => {
+                let style = style.render();
+                if !style.is_empty() {
+                    format!("\\draw[{}] {} rectangle {};", style.join(","), bottom_left.render(), top_right.render())
+                } else {
+                    format!("\\draw {} rectangle {};", bottom_left.render(), top_right.render())
+                }
+            }
+            AddPlot { style, coordinates, closed_cycle } => {
                 let mut res = String::new();
                 res.push_str("\\addplot");
-                let options = options.render();
-                if !options.is_empty() {
+                let style = style.render();
+                if !style.is_empty() {
                     res.push('[');
-                    res.push_str(&options.join(","));
+                    res.push_str(&style.join(","));
                     res.push(']');
                 }
                 res.push_str(" coordinates {");
@@ -257,6 +333,10 @@ pub struct Style {
     pub text_opacity: Option<f64>,
 
     pub line_width: Option<Dimension>,
+    // These options has much more complicated variants for patterns, but I omit those for now
+    pub dashed: bool,
+    pub pattern: Option<String>,
+    pub pattern_color: Option<String>,
 
     pub solid: bool,
     pub mark: Option<String>,
@@ -473,6 +553,15 @@ impl Style {
 
         if let Some(l) = &self.line_width {
             options.push(format!("line width={}", l.render()));
+        }
+        if self.dashed {
+            options.push("dashed".into());
+        }
+        if let Some(p) = &self.pattern {
+            options.push(format!("pattern={}", p));
+        }
+        if let Some(c) = &self.pattern_color {
+            options.push(format!("pattern color={}", c));
         }
 
         if self.solid {

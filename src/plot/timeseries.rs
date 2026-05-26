@@ -134,7 +134,7 @@ fn push_series_elements(
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: plot_options,
+        style: plot_options,
         coordinates,
         closed_cycle: false,
     });

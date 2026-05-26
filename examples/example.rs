@@ -38,7 +38,6 @@ impl Record {
     }
 }
 
-/// Return the maximum thread count present in the data.
 fn max_threads(df: &DataFrame<Record>) -> usize {
     df.rows()
         .iter()
@@ -82,15 +81,16 @@ fn ipc(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
     let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
-        .series(|r| r.ipc(), "IPC", "runtimecolor".into())
-        .build_axis();
+        .series(|r| r.ipc(), "IPC", "runtimecolor")
+        .build_axis()
+        .label(Coordinate::AxisCs(5.0, 0.35), "Hello, world!", None)
+        .area(Coordinate::AxisCs(5.5, 0.0), Coordinate::AxisCs(12.5, 1.0), "purple!30");
     let style = &mut ax0.style;
     filter_xticks_stride(style, 0, 2);
     format_xticks_precision(style, 1, false);
 
-    let doc = TikzPicture::from_axis(ax0);
     // .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
-    // .annot_label((5.0, 0.35), "Hello, world!", None);
+    let doc = TikzPicture::from_axis(ax0);
     let tikz = doc.render();
 
     fs::write(".build/example_ipc.tex", tikz).unwrap();

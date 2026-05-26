@@ -130,7 +130,7 @@ fn push_series_elements(
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: err_options,
+        style: err_options,
         coordinates: band,
         closed_cycle: true,
     });
@@ -157,7 +157,7 @@ fn push_series_elements(
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: plot_options,
+        style: plot_options,
         coordinates: line,
         closed_cycle: false,
     });

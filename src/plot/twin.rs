@@ -213,7 +213,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: plot_options,
+                        style: plot_options,
                         coordinates: bar_coords,
                         closed_cycle: false,
                     });
@@ -228,7 +228,7 @@ impl<Row: Clone> TwinPlot<Row> {
                             .build()
                             .unwrap();
                         elements.push(AxisElement::Draw {
-                            options: options,
+                            style: options,
                             from: Coordinate::AxisCs(i as f64, quartiles.q1s[i]),
                             to: Coordinate::AxisCs(i as f64, quartiles.q3s[i]),
                         });
@@ -252,7 +252,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: err_options,
+                        style: err_options,
                         coordinates: band,
                         closed_cycle: true,
                     });
@@ -279,7 +279,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: plot_options,
+                        style: plot_options,
                         coordinates: line,
                         closed_cycle: false,
                     });
