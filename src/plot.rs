@@ -4,12 +4,13 @@ mod twin;
 mod zplot;
 
 pub use line::LinePlot;
-use ordermap::ordermap;
 pub use timeseries::TimeSeries;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
 use crate::tikzir::*;
+
+use ordermap::ordermap;
 
 const GRID_COLOR: &'static str = "black!20";
 
@@ -25,6 +26,34 @@ pub(crate) const MARKERS: &[&str] = &[
     "halfsquare*",
     "halfdiamond*",
 ];
+
+pub fn filter_xticks_stride(ax: &mut Style, start: usize, stride: usize) {
+    if let TickPositions::Coordinates(ticks) = &mut ax.xticks {
+        *ticks = ticks.drain(start..).step_by(stride).collect();
+    }
+    if let Some(TickLabels::Labels(labels)) = &mut ax.xtick_labels {
+        *labels = labels.drain(start..).step_by(stride).collect();
+    }
+}
+
+pub fn format_xticks(ax: &mut Style, f: impl Fn(String) -> String) {
+    if let Some(TickLabels::Labels(labels)) = &mut ax.xtick_labels {
+        *labels = labels.drain(..).map(f).collect();
+    }
+}
+
+pub fn format_xticks_precision(ax: &mut Style, precision: usize, trim: bool) {
+    format_xticks(ax, |s| {
+        if trim {
+            format!("{:.precision$}", s.parse::<f64>().unwrap())
+                .trim_end_matches('0')
+                .trim_end_matches('.')
+                .to_string()
+        } else {
+            format!("{:.precision$}", s.parse::<f64>().unwrap())
+        }
+    });
+}
 
 pub(crate) fn common_axis_options() -> Style {
     StyleBuilder::default()

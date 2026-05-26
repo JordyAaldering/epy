@@ -66,8 +66,8 @@ fn twin(df: &DataFrame<Record>) {
     let style = &mut ax0.style;
     style.ymax = Some(0.09);
     style.legend_pos = Some(Anchor::SouthEast);
-    //.filter_xticks_stride(0, 2)
-    //.format_xticks_precision(1, false);
+    filter_xticks_stride(style, 0, 2);
+    format_xticks_precision(style, 1, false);
     let style = &mut ax1.style;
     style.ymax = Some(0.6);
 
@@ -81,11 +81,12 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
+    let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| r.ipc(), "IPC", "runtimecolor".into())
         .build_axis();
-    // .filter_xticks_stride(0, 2)
-    // .format_xticks_precision(1, false);
+    let style = &mut ax0.style;
+    filter_xticks_stride(style, 0, 2);
+    format_xticks_precision(style, 1, false);
 
     let doc = TikzPicture::from_axis(ax0);
     // .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
