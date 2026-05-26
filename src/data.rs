@@ -7,7 +7,7 @@ use crate::plot::quartiles;
 #[derive(Clone)]
 /// A typed collection of CSV rows loaded via `serde`.
 pub struct DataFrame<T> {
-    pub(crate) data: Vec<T>,
+    pub(crate) rows: Vec<T>,
 }
 
 /// A [`DataFrame`] grouped by a numeric key.
@@ -29,42 +29,47 @@ pub struct GroupedQuartiles {
 }
 
 impl<T> DataFrame<T> {
-    /// Load a CSV file into a `DataFrame`.
+    /// Load a CSV file into a [`DataFrame`].
     pub fn from_csv<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>>
     where
         T: DeserializeOwned,
     {
         let mut rdr = csv::Reader::from_path(path)?;
-        let mut data = Vec::new();
+        let mut rows = Vec::new();
 
         for result in rdr.deserialize() {
-            data.push(result?);
+            rows.push(result?);
         }
 
-        Ok(DataFrame { data })
+        Ok(DataFrame { rows })
+    }
+
+    /// Create a [`DataFrame`] from a vector of rows.
+    pub fn from_vec(rows: Vec<T>) -> Self {
+        DataFrame { rows }
     }
 
     /// Number of rows.
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.rows.len()
     }
 
     /// Borrow all rows.
     pub fn rows(&self) -> &[T] {
-        &self.data
+        &self.rows
     }
 
     /// Borrow a row by index.
     pub fn row(&self, idx: usize) -> &T {
         assert!(idx < self.len(), "row index {idx} out of bounds (len={})", self.len());
-        &self.data[idx]
+        &self.rows[idx]
     }
 
     pub fn map<F>(mut self, f: F) -> Self
     where
         F: Fn(&mut T),
     {
-        self.data.iter_mut().for_each(f);
+        self.rows.iter_mut().for_each(f);
         self
     }
 
@@ -72,7 +77,7 @@ impl<T> DataFrame<T> {
     where
         F: Fn(usize, &mut T),
     {
-        self.data.iter_mut().enumerate().for_each(|(i, row)| f(i, row));
+        self.rows.iter_mut().enumerate().for_each(|(i, row)| f(i, row));
         self
     }
 
@@ -81,7 +86,7 @@ impl<T> DataFrame<T> {
     where
         F: Fn(&T) -> bool,
     {
-        self.data.retain(|row| predicate(row));
+        self.rows.retain(|row| predicate(row));
         self
     }
 
@@ -93,7 +98,7 @@ impl<T> DataFrame<T> {
         F: Fn(&T) -> f64,
     {
         let mut seen: HashMap<u64, f64> = HashMap::new();
-        for row in &self.data {
+        for row in &self.rows {
             let k = key_selector(row);
             let bits = k.to_bits();
             seen.entry(bits).or_insert(k);
@@ -108,7 +113,7 @@ impl<T> DataFrame<T> {
             .collect();
 
         let mut groups: Vec<Vec<usize>> = vec![Vec::new(); unique.len()];
-        for (i, row) in self.data.iter().enumerate() {
+        for (i, row) in self.rows.iter().enumerate() {
             let gi = key_to_idx[&key_selector(row).to_bits()];
             groups[gi].push(i);
         }
@@ -137,7 +142,7 @@ impl<T> GroupedFrame<T> {
         for group in &self.groups {
             let vals = group
                 .iter()
-                .map(|&ri| selector(&self.df.data[ri]))
+                .map(|&ri| selector(&self.df.rows[ri]))
                 .collect::<Vec<_>>();
             let qs = quartiles(&vals);
             medians.push(qs.median);
@@ -161,22 +166,11 @@ impl<T> GroupedFrame<T> {
         T: Clone,
         F: Fn(&T) -> f64,
     {
-        let data = self.groups.get(group_index)
+        let rows = self.groups.get(group_index)
             .expect(&format!("group index {} out of bounds (len={})", group_index, self.num_groups()))
             .iter()
-            .map(|&ri| self.df.data[ri].clone())
+            .map(|&ri| self.df.rows[ri].clone())
             .collect();
-        DataFrame { data }.group_by(key_selector)
+        DataFrame { rows }.group_by(key_selector)
     }
-
-    // /// Collect values produced by `selector` for group `gi`.
-    // pub fn group_values<F>(&self, gi: usize, selector: &F) -> Vec<f64>
-    // where
-    //     F: Fn(&T) -> f64 + ?Sized,
-    // {
-    //     self.groups[gi]
-    //         .iter()
-    //         .map(|&ri| selector(&self.df.data[ri]))
-    //         .collect()
-    // }
 }
