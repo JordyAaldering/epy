@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use crate::{data::DataFrame, ir::*, plot::{common_axis_options, median}};
+use crate::{data::DataFrame, ir::*, plot::common_axis_options};
 
 pub struct ZPlot<Row> {
     df: DataFrame<Row>,
@@ -57,23 +55,17 @@ impl<Row: Clone> ZPlot<Row> {
 
         for gi in 0..grouped.num_groups() {
             let series_key = grouped.keys()[gi];
-            let mut by_hue: HashMap<u64, (f64, Vec<f64>, Vec<f64>)> = HashMap::new();
+            let subgroup = grouped.subgroup_by(gi, |row| (self.hue_selector)(row));
+            let x_quartiles = subgroup.quartiles_by_group(&self.x_selector);
+            let y_quartiles = subgroup.quartiles_by_group(&self.y_selector);
 
-            for &ri in &grouped.groups[gi] {
-                let row = grouped.df.row(ri);
-                let hue = (self.hue_selector)(row);
-                let x = (self.x_selector)(row);
-                let y = (self.y_selector)(row);
-                let entry = by_hue
-                    .entry(hue.to_bits())
-                    .or_insert_with(|| (hue, Vec::new(), Vec::new()));
-                entry.1.push(x);
-                entry.2.push(y);
-            }
-
-            let mut medians_by_hue: Vec<(f64, f64, f64)> = by_hue
-                .into_values()
-                .map(|(hue, xs, ys)| (hue, median(&xs), median(&ys)))
+            let mut medians_by_hue: Vec<(f64, f64, f64)> = x_quartiles
+                .keys
+                .iter()
+                .copied()
+                .zip(x_quartiles.medians.iter().copied())
+                .zip(y_quartiles.medians.iter().copied())
+                .map(|((hue, med_x), med_y)| (hue, med_x, med_y))
                 .filter(|(hue, med_x, med_y)| {
                     if let Some(filter) = &self.agg_filter {
                         filter(*hue, *med_x, *med_y)

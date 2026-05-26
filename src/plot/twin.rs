@@ -1,7 +1,7 @@
 use crate::{
     data::{DataFrame, GroupedFrame},
     ir::*,
-    plot::{common_axis_options, quartiles},
+    plot::common_axis_options,
 };
 
 pub struct TwinPlot<Row> {
@@ -125,29 +125,6 @@ impl<Row: Clone> TwinPlot<Row> {
         self.df.clone().group_by(|row| (self.group_selector)(row))
     }
 
-    fn stats_for_selector(
-        &self,
-        grouped: &GroupedFrame<Row>,
-        selector: &dyn Fn(&Row) -> f64,
-    ) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
-        let keys = grouped.keys().to_vec();
-        let mut meds = Vec::with_capacity(grouped.num_groups());
-        let mut q1s = Vec::with_capacity(grouped.num_groups());
-        let mut q3s = Vec::with_capacity(grouped.num_groups());
-
-        for gi in 0..grouped.num_groups() {
-            let vals = grouped.groups[gi].iter()
-                .map(|&ri| selector(&self.df.data[ri]))
-                .collect::<Vec<_>>();
-            let qs = quartiles(&vals);
-            meds.push(qs.median);
-            q1s.push(qs.q1);
-            q3s.push(qs.q3);
-        }
-
-        (keys, meds, q1s, q3s)
-    }
-
     fn build_left_axis(&self) -> Axis {
         let grouped = self.grouped();
         let keys = grouped.keys().to_vec();
@@ -218,12 +195,12 @@ impl<Row: Clone> TwinPlot<Row> {
     ) {
         let mut line_series_count = 0;
         for spec in series {
-            let (_, meds, q1s, q3s) = self.stats_for_selector(grouped, &*spec.selector);
+            let quartiles = grouped.quartiles_by_group(&spec.selector);
             let color = spec.color.clone();
 
             match spec.kind {
                 TwinSeriesKind::Bar => {
-                    let bar_coords: Vec<Coordinate> = meds.iter().enumerate()
+                    let bar_coords: Vec<Coordinate> = quartiles.medians.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
                     let mut plot_opts = vec![
@@ -245,20 +222,20 @@ impl<Row: Clone> TwinPlot<Row> {
                         elements.push(AxisElement::LegendEntry(spec.label.clone()));
                     }
 
-                    for i in 0..q1s.len() {
+                    for i in 0..quartiles.q1s.len() {
                         elements.push(AxisElement::DrawLine {
                             options: vec!["black!90".into(), "line width=0.9pt".into()],
-                            from: Coordinate::AxisCs(i as f64, q1s[i]),
-                            to: Coordinate::AxisCs(i as f64, q3s[i]),
+                            from: Coordinate::AxisCs(i as f64, quartiles.q1s[i]),
+                            to: Coordinate::AxisCs(i as f64, quartiles.q3s[i]),
                         });
                     }
                 }
                 TwinSeriesKind::Line => {
                     let mut band = Vec::new();
-                    for (i, q3) in q3s.iter().enumerate() {
+                    for (i, q3) in quartiles.q3s.iter().enumerate() {
                         band.push(Coordinate::Plain(i as f64, *q3));
                     }
-                    for (i, q1) in q1s.iter().enumerate().rev() {
+                    for (i, q1) in quartiles.q1s.iter().enumerate().rev() {
                         band.push(Coordinate::Plain(i as f64, *q1));
                     }
                     elements.push(AxisElement::Plot(AddPlot {
@@ -272,7 +249,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         closed_cycle: true,
                     }));
 
-                    let line: Vec<Coordinate> = meds.iter().enumerate()
+                    let line: Vec<Coordinate> = quartiles.medians.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
                     let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();

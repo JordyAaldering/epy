@@ -2,6 +2,8 @@ use std::{collections::HashMap, path::Path};
 
 use serde::de::DeserializeOwned;
 
+use crate::plot::quartiles;
+
 #[derive(Clone)]
 /// A typed collection of CSV rows loaded via `serde`.
 pub struct DataFrame<T> {
@@ -17,6 +19,13 @@ pub struct GroupedFrame<T> {
     pub(crate) unique_keys: Vec<f64>,
     /// `groups[i]` = row indices belonging to group `i`.
     pub(crate) groups: Vec<Vec<usize>>,
+}
+
+pub struct GroupedQuartiles {
+    pub keys: Vec<f64>,
+    pub medians: Vec<f64>,
+    pub q1s: Vec<f64>,
+    pub q3s: Vec<f64>,
 }
 
 impl<T> DataFrame<T> {
@@ -117,6 +126,47 @@ impl<T> GroupedFrame<T> {
     /// Sorted key values (x-axis values).
     pub fn keys(&self) -> &[f64] {
         &self.unique_keys
+    }
+
+    /// Compute median and IQR quartiles for each group using `selector`.
+    pub fn quartiles_by_group(&self, selector: &dyn Fn(&T) -> f64) -> GroupedQuartiles {
+        let mut medians = Vec::with_capacity(self.num_groups());
+        let mut q1s = Vec::with_capacity(self.num_groups());
+        let mut q3s = Vec::with_capacity(self.num_groups());
+
+        for group in &self.groups {
+            let vals = group
+                .iter()
+                .map(|&ri| selector(&self.df.data[ri]))
+                .collect::<Vec<_>>();
+            let qs = quartiles(&vals);
+            medians.push(qs.median);
+            q1s.push(qs.q1);
+            q3s.push(qs.q3);
+        }
+
+        GroupedQuartiles {
+            keys: self.keys().to_vec(),
+            medians,
+            q1s,
+            q3s,
+        }
+    }
+
+    /// Regroup rows from a single existing group by another numeric key.
+    ///
+    /// The returned [`GroupedFrame`] contains only rows from `group_index`.
+    pub fn subgroup_by<F>(&self, group_index: usize, key_selector: F) -> GroupedFrame<T>
+    where
+        T: Clone,
+        F: Fn(&T) -> f64,
+    {
+        let data = self.groups.get(group_index)
+            .expect(&format!("group index {} out of bounds (len={})", group_index, self.num_groups()))
+            .iter()
+            .map(|&ri| self.df.data[ri].clone())
+            .collect();
+        DataFrame { data }.group_by(key_selector)
     }
 
     // /// Collect values produced by `selector` for group `gi`.

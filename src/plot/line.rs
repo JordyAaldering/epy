@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-
-use crate::{data::DataFrame, ir::*, plot::{common_axis_options, quartiles}};
+use crate::{
+    data::{DataFrame, GroupedQuartiles},
+    ir::*,
+    plot::common_axis_options,
+};
 
 pub struct LinePlot<Row> {
     df: DataFrame<Row>,
@@ -62,7 +64,6 @@ impl<Row: Clone> LinePlot<Row> {
 
     pub fn build_axis(&self) -> Axis {
         let x_grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
-        let x_keys = x_grouped.keys().to_vec();
 
         let mut opts = common_axis_options();
         opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
@@ -76,26 +77,11 @@ impl<Row: Clone> LinePlot<Row> {
         for series in &self.series {
             match &series {
                 LineSeriesKind::Plain { selector, label, color } => {
-                    let mut meds = Vec::with_capacity(x_grouped.num_groups());
-                    let mut q1s = Vec::with_capacity(x_grouped.num_groups());
-                    let mut q3s = Vec::with_capacity(x_grouped.num_groups());
-
-                    for gi in 0..x_grouped.num_groups() {
-                        let vals = x_grouped.groups[gi].iter()
-                            .map(|&ri| selector(&self.df.data[ri]))
-                            .collect::<Vec<_>>();
-                        let qs = quartiles(&vals);
-                        meds.push(qs.median);
-                        q1s.push(qs.q1);
-                        q3s.push(qs.q3);
-                    }
+                    let stats = x_grouped.quartiles_by_group(&**selector);
 
                     push_series_elements(
                         &mut elements,
-                        &x_keys,
-                        &meds,
-                        &q1s,
-                        &q3s,
+                        &stats,
                         color.clone(),
                         MARKERS[emitted_series % MARKERS.len()].to_string(),
                         label.clone(),
@@ -106,41 +92,12 @@ impl<Row: Clone> LinePlot<Row> {
                     let grouped = self.df.clone().group_by(|row| group_by(row));
 
                     for gi in 0..grouped.num_groups() {
-                        let mut by_x: HashMap<u64, (f64, Vec<f64>)> = HashMap::new();
-                        for &ri in &grouped.groups[gi] {
-                            let row = grouped.df.row(ri);
-                            let x = (self.x_selector)(row);
-                            let y = y_selector(row);
-                            let entry = by_x.entry(x.to_bits()).or_insert_with(|| (x, Vec::new()));
-                            entry.1.push(y);
-                        }
-
-                        let mut stats_by_x: Vec<(f64, f64, f64, f64)> = by_x
-                            .into_values()
-                            .map(|(x, ys)| {
-                                let qs = quartiles(&ys);
-                                (x, qs.median, qs.q1, qs.q3)
-                            })
-                            .collect();
-                        stats_by_x.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
-
-                        let mut local_x = Vec::with_capacity(stats_by_x.len());
-                        let mut meds = Vec::with_capacity(stats_by_x.len());
-                        let mut q1s = Vec::with_capacity(stats_by_x.len());
-                        let mut q3s = Vec::with_capacity(stats_by_x.len());
-                        for (x, median, q1, q3) in stats_by_x {
-                            local_x.push(x);
-                            meds.push(median);
-                            q1s.push(q1);
-                            q3s.push(q3);
-                        }
+                        let subgroup = grouped.subgroup_by(gi, |row| (self.x_selector)(row));
+                        let stats = subgroup.quartiles_by_group(&**y_selector);
 
                         push_series_elements(
                             &mut elements,
-                            &local_x,
-                            &meds,
-                            &q1s,
-                            &q3s,
+                            &stats,
                             format!("colorblind{}", emitted_series),
                             MARKERS[emitted_series % MARKERS.len()].to_string(),
                             grouped.keys()[gi].to_string(),
@@ -157,19 +114,16 @@ impl<Row: Clone> LinePlot<Row> {
 
 fn push_series_elements(
     elements: &mut Vec<AxisElement>,
-    x_values: &[f64],
-    meds: &[f64],
-    q1s: &[f64],
-    q3s: &[f64],
+    stats: &GroupedQuartiles,
     color: String,
     marker: String,
     label: String,
 ) {
     let mut band = Vec::new();
-    for (x, q3) in x_values.iter().zip(q3s.iter()) {
+    for (x, q3) in stats.keys.iter().zip(stats.q3s.iter()) {
         band.push(Coordinate::Plain(*x, *q3));
     }
-    for (x, q1) in x_values.iter().zip(q1s.iter()).rev() {
+    for (x, q1) in stats.keys.iter().zip(stats.q1s.iter()).rev() {
         band.push(Coordinate::Plain(*x, *q1));
     }
     elements.push(AxisElement::Plot(AddPlot {
@@ -183,9 +137,9 @@ fn push_series_elements(
         closed_cycle: true,
     }));
 
-    let line: Vec<Coordinate> = x_values
+    let line: Vec<Coordinate> = stats.keys
         .iter()
-        .zip(meds.iter())
+        .zip(stats.medians.iter())
         .map(|(x, median)| Coordinate::Plain(*x, *median))
         .collect();
     elements.push(AxisElement::Plot(AddPlot {
