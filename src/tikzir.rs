@@ -1,3 +1,4 @@
+//! TikZ intermediate representation
 use derive_builder::Builder;
 use ordermap::OrderMap;
 
