@@ -128,13 +128,13 @@ fn push_series_elements(
     label: String,
 ) {
     let plot_options = StyleBuilder::default()
-        .draw(color.clone())
+        .color(color.clone())
         .line_width(Dimension::Pt(1.0))
         .build()
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: Some(plot_options),
+        options: plot_options,
         coordinates,
         closed_cycle: false,
     });

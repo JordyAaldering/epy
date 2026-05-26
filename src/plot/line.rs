@@ -122,15 +122,15 @@ fn push_series_elements(
     }
 
     let err_options = StyleBuilder::default()
+        .draw("none")
         .fill(color.clone())
         .fill_opacity(0.3)
-        .draw("none")
         .forget_plot(true)
         .build()
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: Some(err_options),
+        options: err_options,
         coordinates: band,
         closed_cycle: true,
     });
@@ -142,7 +142,7 @@ fn push_series_elements(
         .collect();
 
     let plot_options = StyleBuilder::default()
-        .draw(color.clone())
+        .color(color.clone())
         .line_width(Dimension::Pt(1.0))
         .mark(marker.clone())
         .mark_size(Dimension::Pt(MARK_SIZE_PT))
@@ -157,7 +157,7 @@ fn push_series_elements(
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: Some(plot_options),
+        options: plot_options,
         coordinates: line,
         closed_cycle: false,
     });

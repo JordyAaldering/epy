@@ -85,12 +85,12 @@ impl Axis {
 #[derive(Clone, Debug)]
 pub enum AxisElement {
     Draw {
-        options: Option<Style>,
+        options: Style,
         from: Coordinate,
         to: Coordinate,
     },
     AddPlot {
-        options: Option<Style>,
+        options: Style,
         coordinates: Vec<Coordinate>,
         closed_cycle: bool,
     },
@@ -103,8 +103,9 @@ impl AxisElement {
         use AxisElement::*;
         match self {
             Draw { options, from, to } => {
-                if let Some(options) = options {
-                    format!("\\draw[{}] {} -- {};", options.render().join(","), from.render(), to.render())
+                let options = options.render();
+                if !options.is_empty() {
+                    format!("\\draw[{}] {} -- {};", options.join(","), from.render(), to.render())
                 } else {
                     format!("\\draw {} -- {};", from.render(), to.render())
                 }
@@ -112,13 +113,11 @@ impl AxisElement {
             AddPlot { options, coordinates, closed_cycle } => {
                 let mut res = String::new();
                 res.push_str("\\addplot");
-                if let Some(options) = options {
-                    let options = options.render();
-                    if !options.is_empty() {
-                        res.push('[');
-                        res.push_str(&options.join(","));
-                        res.push(']');
-                    }
+                let options = options.render();
+                if !options.is_empty() {
+                    res.push('[');
+                    res.push_str(&options.join(","));
+                    res.push(']');
                 }
                 res.push_str(" coordinates {");
                 for c in coordinates {
@@ -161,6 +160,14 @@ pub struct Style {
     pub xlabel: Option<String>,
     pub ylabel: Option<String>,
 
+    /// Allows to factor out common exponents in tick labels for linear axes.
+    ///
+    /// Actually has more values than true/false, but I omit those for now:
+    /// `true | false | base 10:〈e〉 | real:〈num〉 | manual:{〈label〉}{〈code〉}`
+    ///
+    /// Default: true
+    pub scaled_ticks: Option<bool>,
+
     /// These options assign a list of Positions where ticks shall be placed.
     /// The argument is either the empty string (which is the initial value),
     /// the command \empty, data or a list of coordinates. The initial
@@ -173,15 +180,6 @@ pub struct Style {
     pub xticks: TickPositions,
     #[builder(default = TickPositions::Auto)]
     pub yticks: TickPositions,
-
-    /// Allows to factor out common exponents in tick labels for linear axes.
-    ///
-    /// Actually has more values than true/false, but I omit those for now:
-    /// `true | false | base 10:〈e〉 | real:〈num〉 | manual:{〈label〉}{〈code〉}`
-    ///
-    /// Default: true
-    #[builder(default = true)]
-    pub scaled_ticks: bool,
 
     /// Adds additional tick positions and tick labels to the x or y axis.
     /// ‘Additional’ tick positions do not affect the normal tick placement
@@ -245,8 +243,6 @@ pub struct Style {
     pub axis_y_line_star: Option<CellAlign>,
     pub axis_y_line: Option<CellAlign>,
 
-    pub forget_plot: bool,
-
     // Styling
 
     pub color: Option<String>,
@@ -278,6 +274,8 @@ pub struct Style {
     pub number_format: Option<NumberFormat>,
 
     pub style_overrides: OrderMap<String, Style>,
+
+    pub forget_plot: bool,
 }
 
 impl Style {
@@ -330,6 +328,10 @@ impl Style {
             options.push(format!("ylabel={{{}}}", ylabel));
         }
 
+        if let Some(false) = self.scaled_ticks {
+            options.push("scaled ticks=false".into());
+        }
+
         if !matches!(self.xticks, TickPositions::Auto) {
             options.push(format!("xtick={}", self.xticks.render()));
         }
@@ -345,16 +347,16 @@ impl Style {
         }
 
         if let Some(l) = &self.xtick_labels {
-            options.push(format!("xticklabels={{{}}}", l.render()));
+            options.push(format!("xticklabels={}", l.render()));
         }
         if let Some(l) = &self.ytick_labels {
-            options.push(format!("yticklabels={{{}}}", l.render()));
+            options.push(format!("yticklabels={}", l.render()));
         }
         if let Some(l) = &self.extra_xtick_labels {
-            options.push(format!("extra x tick labels={{{}}}", l.render()));
+            options.push(format!("extra x tick labels={}", l.render()));
         }
         if let Some(l) = &self.extra_ytick_labels {
-            options.push(format!("extra y tick labels={{{}}}", l.render()));
+            options.push(format!("extra y tick labels={}", l.render()));
         }
 
         if let Some(p) = &self.xtick_pos {
@@ -442,10 +444,6 @@ impl Style {
             options.push(format!("axis y line={}", a.render()));
         }
 
-        if self.forget_plot {
-            options.push("forget plot".into());
-        }
-
         // Style
 
         if let Some(c) = &self.color {
@@ -479,7 +477,7 @@ impl Style {
             options.push("solid".into());
         }
         if let Some(m) = &self.mark {
-            options.push(format!("mark={{{}}}", m));
+            options.push(format!("mark={}", m));
         }
         if let Some(s) = &self.mark_size {
             options.push(format!("mark size={}", s.render()));
@@ -520,6 +518,10 @@ impl Style {
 
         for (key, style) in &self.style_overrides {
             options.push(format!("{}={{{}}}", key, style.render().join(",")));
+        }
+
+        if self.forget_plot {
+            options.push("forget plot".into());
         }
 
         options

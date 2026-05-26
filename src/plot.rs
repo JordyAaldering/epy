@@ -31,11 +31,11 @@ pub(crate) fn common_axis_options() -> Style {
         .width(Dimension::Code("\\epyfigurewidth".into()))
         .height(Dimension::Code("{\\epyheightratio*\\epyfigurewidth}".into()))
         .tick_align(TickAlign::Outside)
+        .scaled_ticks(false)
         .xtick_pos(TickPos::Left)
         .ytick_pos(TickPos::Left)
         .y_major_grids(true)
         .major_tick_length(Dimension::Em(0.3))
-        .scaled_ticks(false)
         .legend_cell_align(CellAlign::Left)
         .extra_yticks(vec![Coordinate::Code("\\pgfkeysvalueof{/pgfplots/ymax}".into())])
         .extra_ytick_labels(vec!["\\vphantom{Ag}".into()])
@@ -43,6 +43,10 @@ pub(crate) fn common_axis_options() -> Style {
         //every extra x tick/.append style
         .style_overrides(ordermap! {
             "axis line style".into() => StyleBuilder::default()
+                .color(GRID_COLOR)
+                .build()
+                .unwrap(),
+            "y grid style".into() => StyleBuilder::default()
                 .color(GRID_COLOR)
                 .line_width(Dimension::Pt(0.4))
                 .build()
@@ -62,7 +66,7 @@ pub(crate) fn common_axis_options() -> Style {
                 .build()
                 .unwrap(),
             "ylabel style".into() => StyleBuilder::default()
-                .inner_sep(Dimension::Em(-0.25))
+                .outer_sep(Dimension::Em(-0.25))
                 .build()
                 .unwrap(),
             "extra y tick style".into() => StyleBuilder::default()
@@ -78,7 +82,7 @@ pub(crate) fn common_axis_options() -> Style {
                 .build()
                 .unwrap(),
             "legend style".into() => StyleBuilder::default()
-                .color(GRID_COLOR)
+                .draw(GRID_COLOR)
                 .inner_sep(Dimension::Em(0.2))
                 .fill_opacity(0.9)
                 .draw_opacity(1.0)

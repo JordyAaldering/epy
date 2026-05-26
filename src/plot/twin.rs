@@ -215,7 +215,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: Some(plot_options),
+                        options: plot_options,
                         coordinates: bar_coords,
                         closed_cycle: false,
                     });
@@ -230,7 +230,7 @@ impl<Row: Clone> TwinPlot<Row> {
                             .build()
                             .unwrap();
                         elements.push(AxisElement::Draw {
-                            options: Some(options),
+                            options: options,
                             from: Coordinate::AxisCs(i as f64, quartiles.q1s[i]),
                             to: Coordinate::AxisCs(i as f64, quartiles.q3s[i]),
                         });
@@ -246,15 +246,15 @@ impl<Row: Clone> TwinPlot<Row> {
                     }
 
                     let err_options = StyleBuilder::default()
+                        .draw("none")
                         .fill(color.clone())
                         .fill_opacity(0.3)
-                        .draw("none")
                         .forget_plot(true)
                         .build()
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: Some(err_options),
+                        options: err_options,
                         coordinates: band,
                         closed_cycle: true,
                     });
@@ -265,7 +265,7 @@ impl<Row: Clone> TwinPlot<Row> {
                     let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
 
                     let plot_options = StyleBuilder::default()
-                        .draw(color)
+                        .color(color.clone())
                         .line_width(Dimension::Pt(1.0))
                         .mark(MARKERS[marker_index].to_string())
                         .mark_size(Dimension::Pt(MARK_SIZE_PT))
@@ -281,7 +281,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: Some(plot_options),
+                        options: plot_options,
                         coordinates: line,
                         closed_cycle: false,
                     });

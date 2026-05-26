@@ -95,13 +95,13 @@ impl<Row: Clone> ZPlot<Row> {
         let mut elements = Vec::new();
         for (gi, (key, coordinates)) in series_groups.into_iter().enumerate() {
             let plot_options = StyleBuilder::default()
-                .draw(format!("colorblind{}", gi))
+                .color(format!("colorblind{}", gi))
                 .line_width(Dimension::Pt(1.0))
-                .mark(MARKERS[gi % MARKERS.len()].to_string())
+                .mark(MARKERS[gi % MARKERS.len()])
                 .mark_size(Dimension::Pt(MARK_SIZE_PT))
                 .mark_options(StyleBuilder::default()
                     .solid(true)
-                    .draw("white".to_string())
+                    .draw("white")
                     .line_width(Dimension::Pt(-MARK_OUTLINE_PT))
                     .build()
                     .unwrap()
@@ -110,7 +110,7 @@ impl<Row: Clone> ZPlot<Row> {
                 .unwrap();
 
             elements.push(AxisElement::AddPlot {
-                options: Some(plot_options),
+                options: plot_options,
                 coordinates,
                 closed_cycle: false,
             });
