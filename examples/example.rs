@@ -62,13 +62,11 @@ fn twin(df: &DataFrame<Record>) {
         .ax1_line(|r| r.gflop_s() / 2.0, "half", "cyan")
         .build_axes();
 
-    let style = &mut ax0.style;
-    style.ymax = Some(0.09);
-    style.legend_pos = Some(Anchor::SouthEast);
-    filter_xticks_stride(style, 0, 2);
-    format_xticks_precision(style, 1, false);
-    let style = &mut ax1.style;
-    style.ymax = Some(0.6);
+    ax0.style.ymax = Some(0.09);
+    ax0.style.legend_pos = Some(Anchor::SouthEast);
+    ax0.style.filter_xticks(|i| filter_every(i, 3));
+    ax0.style.format_xticks(|s| format_precision(s, 1, false));
+    ax1.style.ymax = Some(0.6);
 
     let doc = TikzPicture::from_twin(ax0, ax1);
     doc.write(".build/example_twin.tex").unwrap();
@@ -78,27 +76,25 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|r| r.threads == max_t);
 
-    let mut ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
+    let mut ax = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| r.ipc(), "IPC", "runtimecolor")
         .build_axis()
         .label(Coordinate::AxisCs(5.0, 0.35), "Hello, world!", None)
         .area(Coordinate::AxisCs(5.5, 0.0), Coordinate::AxisCs(12.5, 1.0), "purple!30");
-    let style = &mut ax0.style;
-    filter_xticks_stride(style, 0, 2);
-    format_xticks_precision(style, 1, false);
+    ax.style.filter_xticks(|i| filter_stride(i, 4, 1));
+    ax.style.format_xticks(|s| format_precision(s, 1, false));
 
-    // .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
-    let doc = TikzPicture::from_axis(ax0);
+    let doc = TikzPicture::from_axis(ax);
     doc.write(".build/example_ipc.tex").unwrap();
 }
 
 fn power(df: &DataFrame<Record>) {
     let ax = LinePlot::new(
-        df.clone(),
-        |r| r.powercap,
-        "Configured power limit (W)",
-        "Actual power draw (W)",
-    )
+            df.clone(),
+            |r| r.powercap,
+            "Configured power limit (W)",
+            "Actual power draw (W)",
+        )
         .grouped_series(|r| r.threads as f64, |r| r.rapl / r.runtime)
         .build_axis();
 
@@ -117,9 +113,8 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/J",
         )
         .build_axis();
-    let style = &mut ax.style;
-    style.xmin = Some(0.0);
-    style.ymin = Some(0.0);
+    ax.style.xmin = Some(0.0);
+    ax.style.ymin = Some(0.0);
 
     let doc = TikzPicture::from_axis(ax);
     doc.write(".build/example_zplot.tex").unwrap();
@@ -139,12 +134,12 @@ struct TimeseriesRecord {
 fn timeseries() {
     let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_data_timeseries.csv").unwrap();
 
-    let axis = TimeSeries::new(df, "Iteration", "Energy consumption")
+    let ax = TimeSeries::new(df, "Iteration", "Energy consumption")
         .series(|r| r.energy, "Energy", "energycolor")
         .series(|r| r.runtime, "Runtime", "runtimecolor")
         .build_axis();
 
-    let doc = TikzPicture::from_axis(axis);
+    let doc = TikzPicture::from_axis(ax);
     doc.write(".build/example_timeseries.tex").unwrap();
 }
 

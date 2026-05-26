@@ -27,32 +27,23 @@ pub(crate) const MARKERS: &[&str] = &[
     "halfdiamond*",
 ];
 
-pub fn filter_xticks_stride(ax: &mut Style, start: usize, stride: usize) {
-    if let TickPositions::Coordinates(ticks) = &mut ax.xticks {
-        *ticks = ticks.drain(start..).step_by(stride).collect();
-    }
-    if let Some(TickLabels::Labels(labels)) = &mut ax.xtick_labels {
-        *labels = labels.drain(start..).step_by(stride).collect();
-    }
+pub fn filter_every(i: usize, stride: usize) -> bool {
+    i % stride == 0
 }
 
-pub fn format_xticks(ax: &mut Style, f: impl Fn(String) -> String) {
-    if let Some(TickLabels::Labels(labels)) = &mut ax.xtick_labels {
-        *labels = labels.drain(..).map(f).collect();
-    }
+pub fn filter_stride(i: usize, start: usize, stride: usize) -> bool {
+    i >= start && (i - start) % stride == 0
 }
 
-pub fn format_xticks_precision(ax: &mut Style, precision: usize, trim: bool) {
-    format_xticks(ax, |s| {
-        if trim {
-            format!("{:.precision$}", s.parse::<f64>().unwrap())
-                .trim_end_matches('0')
-                .trim_end_matches('.')
-                .to_string()
-        } else {
-            format!("{:.precision$}", s.parse::<f64>().unwrap())
-        }
-    });
+pub fn format_precision(s: &str, precision: usize, trim: bool) -> String {
+    if trim {
+        format!("{:.precision$}", s.parse::<f64>().unwrap())
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
+    } else {
+        format!("{:.precision$}", s.parse::<f64>().unwrap())
+    }
 }
 
 pub(crate) fn common_axis_options() -> Style {

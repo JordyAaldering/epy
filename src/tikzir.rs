@@ -9,8 +9,8 @@ pub struct TikzPicture {
 }
 
 impl TikzPicture {
-    pub fn from_axis(ax0: Axis) -> Self {
-        Self { ax0, ax1: None }
+    pub fn from_axis(ax: Axis) -> Self {
+        Self { ax0: ax, ax1: None }
     }
 
     /// Can actually move some log from twin into here, to set specific fields
@@ -368,6 +368,52 @@ pub struct Style {
 }
 
 impl Style {
+    pub fn filter_xticks<F>(&mut self, filter: F)
+    where
+        F: Fn(usize) -> bool,
+    {
+        if let TickPositions::Coordinates(ticks) = &mut self.xticks {
+            *ticks = ticks.drain(..).enumerate().filter_map(|(i, x)|
+                filter(i).then_some(x)
+            ).collect();
+        }
+        if let Some(TickLabels::Labels(labels)) = &mut self.xtick_labels {
+            *labels = labels.drain(..).enumerate().filter_map(|(i, x)|
+                filter(i).then_some(x)
+            ).collect();
+        }
+    }
+
+    pub fn filter_yticks<F>(&mut self, filter: F)
+    where
+        F: Fn(usize) -> bool,
+    {
+        if let TickPositions::Coordinates(ticks) = &mut self.yticks {
+            *ticks = ticks.drain(..).enumerate().filter_map(|(i, x)|
+                filter(i).then_some(x)
+            ).collect();
+        }
+        if let Some(TickLabels::Labels(labels)) = &mut self.ytick_labels {
+            *labels = labels.drain(..).enumerate().filter_map(|(i, x)|
+                filter(i).then_some(x)
+            ).collect();
+        }
+    }
+
+    pub fn format_xticks<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> String,
+    {
+        self.xtick_labels.as_mut().map(|l| l.format(f));
+    }
+
+    pub fn format_yticks<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> String,
+    {
+        self.ytick_labels.as_mut().map(|l| l.format(f));
+    }
+
     pub fn render(&self) -> Vec<String> {
         let mut options = Vec::new();
 
@@ -633,6 +679,15 @@ pub enum TickLabels {
 }
 
 impl TickLabels {
+    pub fn format<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> String,
+    {
+        if let TickLabels::Labels(labels) = self {
+            labels.iter_mut().for_each(|l| *l = f(l));
+        }
+    }
+
     pub fn render(&self) -> String {
         use TickLabels::*;
         match self {
