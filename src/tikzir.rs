@@ -19,6 +19,13 @@ impl TikzPicture {
         Self { ax0, ax1: Some(ax1) }
     }
 
+    pub fn write<P>(&self, path: P) -> std::io::Result<()>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        std::fs::write(path, self.render())
+    }
+
     pub fn render(&self) -> String {
         let mut res = String::new();
         if let Some(ax1) = &self.ax1 {

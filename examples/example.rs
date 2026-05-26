@@ -71,9 +71,7 @@ fn twin(df: &DataFrame<Record>) {
     style.ymax = Some(0.6);
 
     let doc = TikzPicture::from_twin(ax0, ax1);
-    let tikz = doc.render();
-
-    fs::write(".build/example_twin.tex", tikz).unwrap();
+    doc.write(".build/example_twin.tex").unwrap();
 }
 
 fn ipc(df: &DataFrame<Record>) {
@@ -91,9 +89,7 @@ fn ipc(df: &DataFrame<Record>) {
 
     // .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
     let doc = TikzPicture::from_axis(ax0);
-    let tikz = doc.render();
-
-    fs::write(".build/example_ipc.tex", tikz).unwrap();
+    doc.write(".build/example_ipc.tex").unwrap();
 }
 
 fn power(df: &DataFrame<Record>) {
@@ -107,8 +103,7 @@ fn power(df: &DataFrame<Record>) {
         .build_axis();
 
     let doc = TikzPicture::from_axis(ax);
-    let tikz = doc.render();
-    fs::write(".build/example_power.tex", tikz).unwrap();
+    doc.write(".build/example_power.tex").unwrap();
 }
 
 fn zplot(df: &DataFrame<Record>) {
@@ -127,8 +122,7 @@ fn zplot(df: &DataFrame<Record>) {
     style.ymin = Some(0.0);
 
     let doc = TikzPicture::from_axis(ax);
-    let tikz = doc.render();
-    fs::write(".build/example_zplot.tex", tikz).unwrap();
+    doc.write(".build/example_zplot.tex").unwrap();
 }
 
 #[allow(dead_code)]
@@ -151,9 +145,7 @@ fn timeseries() {
         .build_axis();
 
     let doc = TikzPicture::from_axis(axis);
-    let tikz = doc.render();
-
-    fs::write(".build/example_timeseries.tex", tikz).unwrap();
+    doc.write(".build/example_timeseries.tex").unwrap();
 }
 
 fn main() {
