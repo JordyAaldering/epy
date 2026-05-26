@@ -13,6 +13,8 @@ impl TikzPicture {
         Self { ax0, ax1: None }
     }
 
+    /// Can actually move some log from twin into here, to set specific fields
+    /// for twin axes or remove redundant fields.
     pub fn from_twin(ax0: Axis, ax1: Axis) -> Self {
         Self { ax0, ax1: Some(ax1) }
     }
