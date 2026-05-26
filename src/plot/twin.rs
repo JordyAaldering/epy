@@ -149,7 +149,7 @@ impl<Row: Clone> TwinPlot<Row> {
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
         self.push_legend_images_for_series(&self.ax1_series, &mut elements, ax0_line_count);
 
-        Axis { options, elements }
+        Axis { style: options, data: elements }
     }
 
     fn build_right_axis(&self) -> Axis {
@@ -173,18 +173,16 @@ impl<Row: Clone> TwinPlot<Row> {
         options.xtick_labels = Some(TickLabels::Empty);
         options.ytick_pos = Some(TickPos::Right);
         options.trim_axis_left = true;
-
-        options.replace(AxisOption::AtMainAxisSouthWest);
-        options.replace(AxisOption::AnchorSouthWest);
-        options.replace(AxisOption::TrimAxisLeft);
-        options.replace(AxisOption::AxisXLineNone);
-        options.replace(AxisOption::AxisYLineRight);
+        options.axis_x_line = Some(CellAlign::None);
+        options.axis_y_line_star = Some(CellAlign::Left);
+        options.anchor = Some(Anchor::SouthWest);
+        options.at = Some("(mainaxis.south west)".into());
 
         let mut elements = Vec::new();
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
         self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements, false, ax0_line_count);
 
-        Axis { options, elements }
+        Axis { style: options, data: elements }
     }
 
     fn push_axis_series_elements(
@@ -206,18 +204,18 @@ impl<Row: Clone> TwinPlot<Row> {
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
 
-                    let options_builder = AxisOptionsBuilder::default()
+                    let plot_options = StyleBuilder::default()
                         .ybar(true)
-                        .bar_width(Dimension::Code("0.7".into()))
+                        .bar_width(0.7)
                         .fill(color.clone())
-                        .draw("none".into())
-                        .area_legend(true);
-                    if !include_in_legend {
-                        options_builder.forget_plot(true);
-                    }
+                        .draw("none")
+                        .area_legend(true)
+                        .forget_plot(!include_in_legend)
+                        .build()
+                        .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: options_builder.build().unwrap(),
+                        options: Some(plot_options),
                         coordinates: bar_coords,
                         closed_cycle: false,
                     });
@@ -226,8 +224,13 @@ impl<Row: Clone> TwinPlot<Row> {
                     }
 
                     for i in 0..quartiles.q1s.len() {
-                        elements.push(AxisElement::DrawLine {
-                            options: vec!["black!90".into(), "line width=0.9pt".into()],
+                        let options = StyleBuilder::default()
+                            .color("black!90")
+                            .line_width(Dimension::Pt(0.9))
+                            .build()
+                            .unwrap();
+                        elements.push(AxisElement::Draw {
+                            options: Some(options),
                             from: Coordinate::AxisCs(i as f64, quartiles.q1s[i]),
                             to: Coordinate::AxisCs(i as f64, quartiles.q3s[i]),
                         });
@@ -251,7 +254,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: err_options,
+                        options: Some(err_options),
                         coordinates: band,
                         closed_cycle: true,
                     });
@@ -278,7 +281,7 @@ impl<Row: Clone> TwinPlot<Row> {
                         .unwrap();
 
                     elements.push(AxisElement::AddPlot {
-                        options: plot_options,
+                        options: Some(plot_options),
                         coordinates: line,
                         closed_cycle: false,
                     });
@@ -305,9 +308,9 @@ impl<Row: Clone> TwinPlot<Row> {
                 TwinSeriesKind::Bar => {
                     let legend_style = StyleBuilder::default()
                         .ybar(true)
-                        .bar_width(Dimension::Code("0.7".into()))
+                        .bar_width(0.7)
                         .fill(spec.color.clone())
-                        .draw("none".into())
+                        .draw("none")
                         .area_legend(true)
                         .build()
                         .unwrap();

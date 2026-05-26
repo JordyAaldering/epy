@@ -63,15 +63,16 @@ fn twin(df: &DataFrame<Record>) {
         .ax1_line(|r| r.gflop_s() / 2.0, "half", "cyan")
         .build_axes();
 
-    ax0 = ax0.set_ymax(0.09)
-        .set_legend_pos("south east")
-        .filter_xticks_stride(0, 2)
-        .format_xticks_precision(1, false);
-    ax1 = ax1.set_ymax(0.6);
+    let style = &mut ax0.style;
+    style.ymax = Some(0.09);
+    style.legend_pos = Some(Anchor::SouthEast);
+    //.filter_xticks_stride(0, 2)
+    //.format_xticks_precision(1, false);
+    let style = &mut ax1.style;
+    style.ymax = Some(0.6);
 
-    let doc = PlotDocument::from_twin_axes(ax0, ax1);
-
-    let tikz = doc.render_tikz();
+    let doc = TikzPicture::from_twin(ax0, ax1);
+    let tikz = doc.render();
 
     fs::write(".build/example_twin.tex", tikz).unwrap();
 }
@@ -82,15 +83,14 @@ fn ipc(df: &DataFrame<Record>) {
 
     let ax0 = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| r.ipc(), "IPC", "runtimecolor".into())
-        .build_axis()
-        .filter_xticks_stride(0, 2)
-        .format_xticks_precision(1, false);
+        .build_axis();
+    // .filter_xticks_stride(0, 2)
+    // .format_xticks_precision(1, false);
 
-    let doc = PlotDocument::from_axis(ax0)
-        .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
-        .annot_label((5.0, 0.35), "Hello, world!", None);
-
-    let tikz = doc.render_tikz();
+    let doc = TikzPicture::from_axis(ax0);
+    // .annot_area((5.5, 0.0), (12.5, 1.0), "black!30".into())
+    // .annot_label((5.0, 0.35), "Hello, world!", None);
+    let tikz = doc.render();
 
     fs::write(".build/example_ipc.tex", tikz).unwrap();
 }
@@ -105,13 +105,13 @@ fn power(df: &DataFrame<Record>) {
         .grouped_series(|r| r.threads as f64, |r| r.rapl / r.runtime)
         .build_axis();
 
-    let doc = PlotDocument::from_axis(ax);
-    let tikz = doc.render_tikz();
+    let doc = TikzPicture::from_axis(ax);
+    let tikz = doc.render();
     fs::write(".build/example_power.tex", tikz).unwrap();
 }
 
 fn zplot(df: &DataFrame<Record>) {
-    let ax = ZPlot::new(
+    let mut ax = ZPlot::new(
             df.clone(),
             |r| r.threads as f64,
             |r| r.powercap,
@@ -120,14 +120,13 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/s",
             "GFLOP/J",
         )
-        .build_axis()
-        .set_xmin(0.0)
-        .set_ymin(0.0);
+        .build_axis();
+    let style = &mut ax.style;
+    style.xmin = Some(0.0);
+    style.ymin = Some(0.0);
 
-    let doc = PlotDocument::from_axis(ax);
-
-    let tikz = doc.render_tikz();
-
+    let doc = TikzPicture::from_axis(ax);
+    let tikz = doc.render();
     fs::write(".build/example_zplot.tex", tikz).unwrap();
 }
 
@@ -150,8 +149,8 @@ fn timeseries() {
         .series(|r| r.runtime, "Runtime", "runtimecolor")
         .build_axis();
 
-    let doc = PlotDocument::from_axis(axis);
-    let tikz = doc.render_tikz();
+    let doc = TikzPicture::from_axis(axis);
+    let tikz = doc.render();
 
     fs::write(".build/example_timeseries.tex", tikz).unwrap();
 }

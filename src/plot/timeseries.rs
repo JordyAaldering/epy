@@ -117,7 +117,7 @@ impl<Row: Clone> TimeSeries<Row> {
             }
         }
 
-        Axis { options, elements }
+        Axis { style: options, data: elements }
     }
 }
 
@@ -134,7 +134,7 @@ fn push_series_elements(
         .unwrap();
 
     elements.push(AxisElement::AddPlot {
-        options: plot_options,
+        options: Some(plot_options),
         coordinates,
         closed_cycle: false,
     });

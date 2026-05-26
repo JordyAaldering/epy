@@ -88,8 +88,9 @@ impl<Row: Clone> ZPlot<Row> {
         options.ylabel = Some(self.yaxis_label.clone());
         options.x_major_grids = true;
         options.ymin = Some(0.0);
-        let x_grid_style = options.x_grid_style.get_or_insert_default();
-        x_grid_style.color = Some(GRID_COLOR.into());
+
+        let xgrid_style = options.style_overrides.entry("x grid style".into());
+        xgrid_style.or_default().color = Some(GRID_COLOR.into());
 
         let mut elements = Vec::new();
         for (gi, (key, coordinates)) in series_groups.into_iter().enumerate() {
@@ -109,13 +110,13 @@ impl<Row: Clone> ZPlot<Row> {
                 .unwrap();
 
             elements.push(AxisElement::AddPlot {
-                options: plot_options,
+                options: Some(plot_options),
                 coordinates,
                 closed_cycle: false,
             });
             elements.push(AxisElement::LegendEntry(key.to_string()));
         }
 
-        Axis { options, elements }
+        Axis { style: options, data: elements }
     }
 }

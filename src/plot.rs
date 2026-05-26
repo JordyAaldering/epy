@@ -4,6 +4,7 @@ mod twin;
 mod zplot;
 
 pub use line::LinePlot;
+use ordermap::ordermap;
 pub use timeseries::TimeSeries;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
@@ -25,8 +26,8 @@ pub(crate) const MARKERS: &[&str] = &[
     "halfdiamond*",
 ];
 
-pub(crate) fn common_axis_options() -> AxisOptions {
-    AxisOptionsBuilder::default()
+pub(crate) fn common_axis_options() -> Style {
+    StyleBuilder::default()
         .width(Dimension::Code("\\epyfigurewidth".into()))
         .height(Dimension::Code("{\\epyheightratio*\\epyfigurewidth}".into()))
         .tick_align(TickAlign::Outside)
@@ -34,62 +35,57 @@ pub(crate) fn common_axis_options() -> AxisOptions {
         .ytick_pos(TickPos::Left)
         .y_major_grids(true)
         .major_tick_length(Dimension::Em(0.3))
-        .axis_line_style(StyleBuilder::default()
-            .color(GRID_COLOR)
-            .line_width(Dimension::Pt(0.4))
-            .build()
-            .unwrap()
-        )
         .scaled_ticks(false)
-        .xtick_style(StyleBuilder::default()
-            .color(GRID_COLOR)
-            .line_width(Dimension::Pt(0.4))
-            .build()
-            .unwrap()
-        )
-        .ytick_style(StyleBuilder::default()
-            .color(GRID_COLOR)
-            .line_width(Dimension::Pt(0.4))
-            .build()
-            .unwrap()
-        )
-        .tick_label_style(StyleBuilder::default()
-            .inner_sep(Dimension::Em(0.15))
-            .build()
-            .unwrap()
-        )
-        .y_label_style(StyleBuilder::default()
-            .inner_sep(Dimension::Em(-0.25))
-            .build()
-            .unwrap()
-        )
-        // TODO!!!!!!
-        // extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}
-        // extra y tick labels={\\vphantom{Ag}}
-        // extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt,grid=none}
+        .legend_cell_align(CellAlign::Left)
         .extra_yticks(vec![Coordinate::Code("\\pgfkeysvalueof{/pgfplots/ymax}".into())])
         .extra_ytick_labels(vec!["\\vphantom{Ag}".into()])
-        .extra_ytick_style(StyleBuilder::default()
-            .major_tick_length(Dimension::Pt(0.0))
-            //.grid(GridLines::None)
-            .build()
-            .unwrap()
-        )
-        .legend_cell_align(CellAlign::Left)
-        .legend_style(StyleBuilder::default()
-            .color(GRID_COLOR)
-            .inner_sep(Dimension::Em(0.2))
-            .fill_opacity(0.9)
-            .draw_opacity(1.0)
-            .text_opacity(1.0)
-            .build()
-            .unwrap()
-        )
-        .style(StyleBuilder::default()
-            .number_format(NumberFormat::Fixed(false))
-            .build()
-            .unwrap()
-        )
+        .number_format(NumberFormat::Fixed(false))
+        //every extra x tick/.append style
+        .style_overrides(ordermap! {
+            "axis line style".into() => StyleBuilder::default()
+                .color(GRID_COLOR)
+                .line_width(Dimension::Pt(0.4))
+                .build()
+                .unwrap(),
+            "xtick style".into() => StyleBuilder::default()
+                .color(GRID_COLOR)
+                .line_width(Dimension::Pt(0.4))
+                .build()
+                .unwrap(),
+            "ytick style".into() => StyleBuilder::default()
+                .color(GRID_COLOR)
+                .line_width(Dimension::Pt(0.4))
+                .build()
+                .unwrap(),
+            "tick label style".into() => StyleBuilder::default()
+                .inner_sep(Dimension::Em(0.15))
+                .build()
+                .unwrap(),
+            "ylabel style".into() => StyleBuilder::default()
+                .inner_sep(Dimension::Em(-0.25))
+                .build()
+                .unwrap(),
+            "extra y tick style".into() => StyleBuilder::default()
+                .major_tick_length(Dimension::Pt(0.0))
+                .grid(GridLines::None)
+                .style_overrides(ordermap! {
+                    "yticklabel style".into() => StyleBuilder::default()
+                        .opacity(0.0)
+                        .text_opacity(0.0)
+                        .build()
+                        .unwrap(),
+                })
+                .build()
+                .unwrap(),
+            "legend style".into() => StyleBuilder::default()
+                .color(GRID_COLOR)
+                .inner_sep(Dimension::Em(0.2))
+                .fill_opacity(0.9)
+                .draw_opacity(1.0)
+                .text_opacity(1.0)
+                .build()
+                .unwrap(),
+        })
         .build()
         .unwrap()
 }
