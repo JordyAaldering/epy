@@ -8,54 +8,90 @@ pub use timeseries::TimeSeries;
 pub use twin::TwinPlot;
 pub use zplot::ZPlot;
 
-use crate::ir::*;
+use crate::tikzir::*;
 
-use std::collections::HashSet;
+const GRID_COLOR: &'static str = "black!20";
 
-pub(crate) fn common_axis_options() -> HashSet<AxisOption> {
-    HashSet::from([
-        AxisOption::AxisLineColor(GRID_COLOR.into()),
-        AxisOption::YGridStyle(
-            Style::new()
-                .with_color(GRID_COLOR.into())
-                .with_line_width_pt(0.4),
-        ),
-        AxisOption::TickAlignOutside,
-        AxisOption::XTickPosLeft,
-        AxisOption::YTickPosLeft,
-        AxisOption::YMajorGrids(true),
-        AxisOption::MajorTickLength(Numeric::new(MAJOR_TICK_LENGTH_EM)),
-        AxisOption::XTickStyle(
-            Style::new()
-                .with_color(GRID_COLOR.into())
-                .with_line_width_pt(0.4),
-        ),
-        AxisOption::YTickStyle(
-            Style::new()
-                .with_color(GRID_COLOR.into())
-                .with_line_width_pt(0.4),
-        ),
-        AxisOption::TickLabelStyle(Style::new()
-            .with_inner_sep_em(TICK_LABEL_INNER_SEP_EM)
-        ),
-        AxisOption::YLabelStyle(Style::new()
-            .with_outer_sep_em(TICK_LABEL_OUTER_SEP_EM)
-        ),
-        AxisOption::LegendStyle(
-            Style::new()
-                .with_inner_sep_em(0.2)
-                .with_draw(GRID_COLOR.into())
-                .with_fill_opacity(0.9)
-                .with_draw_opacity(1.0)
-                .with_text_opacity(1.0),
-        ),
-        AxisOption::LegendCellAlignLeft,
-        AxisOption::EnsureAxisHeightExtraYTick,
-        AxisOption::EnsureAxisHeightExtraYTickLabels,
-        AxisOption::EnsureAxisHeightExtraYTickStyle,
-        AxisOption::ScaledTicksFalse,
-        AxisOption::TickNumberFormatFixed,
-    ])
+pub(crate) const MARK_SIZE_PT: f64 = 2.0;
+pub(crate) const MARK_OUTLINE_PT: f64 = MARK_SIZE_PT / 5.0;
+pub(crate) const MARKERS: &[&str] = &[
+    "*",
+    "square*",
+    "pentagon*",
+    "diamond*",
+    "triangle*",
+    "halfcircle*",
+    "halfsquare*",
+    "halfdiamond*",
+];
+
+pub(crate) fn common_axis_options() -> AxisOptions {
+    AxisOptionsBuilder::default()
+        .width(Dimension::Code("\\epyfigurewidth".into()))
+        .height(Dimension::Code("{\\epyheightratio*\\epyfigurewidth}".into()))
+        .tick_align(TickAlign::Outside)
+        .xtick_pos(TickPos::Left)
+        .ytick_pos(TickPos::Left)
+        .y_major_grids(true)
+        .major_tick_length(Dimension::Em(0.3))
+        .axis_line_style(StyleBuilder::default()
+            .color(GRID_COLOR)
+            .line_width(Dimension::Pt(0.4))
+            .build()
+            .unwrap()
+        )
+        .scaled_ticks(false)
+        .xtick_style(StyleBuilder::default()
+            .color(GRID_COLOR)
+            .line_width(Dimension::Pt(0.4))
+            .build()
+            .unwrap()
+        )
+        .ytick_style(StyleBuilder::default()
+            .color(GRID_COLOR)
+            .line_width(Dimension::Pt(0.4))
+            .build()
+            .unwrap()
+        )
+        .tick_label_style(StyleBuilder::default()
+            .inner_sep(Dimension::Em(0.15))
+            .build()
+            .unwrap()
+        )
+        .y_label_style(StyleBuilder::default()
+            .inner_sep(Dimension::Em(-0.25))
+            .build()
+            .unwrap()
+        )
+        // TODO!!!!!!
+        // extra y ticks={\\pgfkeysvalueof{/pgfplots/ymax}}
+        // extra y tick labels={\\vphantom{Ag}}
+        // extra y tick style={yticklabel style={opacity=0,text opacity=0},major tick length=0pt,grid=none}
+        .extra_yticks(vec![Coordinate::Code("\\pgfkeysvalueof{/pgfplots/ymax}".into())])
+        .extra_ytick_labels(vec!["\\vphantom{Ag}".into()])
+        .extra_ytick_style(StyleBuilder::default()
+            .major_tick_length(Dimension::Pt(0.0))
+            //.grid(GridLines::None)
+            .build()
+            .unwrap()
+        )
+        .legend_cell_align(CellAlign::Left)
+        .legend_style(StyleBuilder::default()
+            .color(GRID_COLOR)
+            .inner_sep(Dimension::Em(0.2))
+            .fill_opacity(0.9)
+            .draw_opacity(1.0)
+            .text_opacity(1.0)
+            .build()
+            .unwrap()
+        )
+        .style(StyleBuilder::default()
+            .number_format(NumberFormat::Fixed(false))
+            .build()
+            .unwrap()
+        )
+        .build()
+        .unwrap()
 }
 
 pub struct Quartiles {

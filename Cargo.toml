@@ -6,4 +6,5 @@ description = "Energy plotting library"
 
 [dependencies]
 csv = "1.4.0"
+derive_builder = "0.20.2"
 serde = { version = "1.0.228", features = ["derive"] }

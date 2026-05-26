@@ -1,4 +1,4 @@
-use crate::{data::DataFrame, ir::*, plot::common_axis_options};
+use crate::{data::*, plot::*, tikzir::*};
 
 pub struct ZPlot<Row> {
     df: DataFrame<Row>,
@@ -76,40 +76,46 @@ impl<Row: Clone> ZPlot<Row> {
                 .collect();
             medians_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
 
-            let coords = medians_by_hue
+            let coordinates = medians_by_hue
                 .into_iter()
                 .map(|(_, x, y)| Coordinate::Plain(x, y))
                 .collect();
-            series_groups.push((series_key, coords));
+            series_groups.push((series_key, coordinates));
         }
 
-        let mut opts = common_axis_options();
-        opts.replace(AxisOption::SetXGridColor);
-        opts.replace(AxisOption::XMajorGrids(true));
-        opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
-        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
-        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
-        opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
-        opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+        let mut options = common_axis_options();
+        options.xlabel = Some(self.xaxis_label.clone());
+        options.ylabel = Some(self.yaxis_label.clone());
+        options.x_major_grids = true;
+        options.ymin = Some(0.0);
+        let x_grid_style = options.x_grid_style.get_or_insert_default();
+        x_grid_style.color = Some(GRID_COLOR.into());
 
         let mut elements = Vec::new();
-        for (gi, (key, coords)) in series_groups.into_iter().enumerate() {
-            let cn = format!("colorblind{}", gi);
-            let marker = MARKERS[gi % MARKERS.len()];
-            elements.push(AxisElement::Plot(AddPlot {
-                opts: vec![
-                    cn.into(),
-                    "line width=1pt".into(),
-                    format!("mark={}", marker),
-                    format!("mark size={}pt", MARK_SIZE_PT),
-                    format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-                ],
-                coords,
+        for (gi, (key, coordinates)) in series_groups.into_iter().enumerate() {
+            let plot_options = StyleBuilder::default()
+                .draw(format!("colorblind{}", gi))
+                .line_width(Dimension::Pt(1.0))
+                .mark(MARKERS[gi % MARKERS.len()].to_string())
+                .mark_size(Dimension::Pt(MARK_SIZE_PT))
+                .mark_options(StyleBuilder::default()
+                    .solid(true)
+                    .draw("white".to_string())
+                    .line_width(Dimension::Pt(-MARK_OUTLINE_PT))
+                    .build()
+                    .unwrap()
+                )
+                .build()
+                .unwrap();
+
+            elements.push(AxisElement::AddPlot {
+                options: plot_options,
+                coordinates,
                 closed_cycle: false,
-            }));
+            });
             elements.push(AxisElement::LegendEntry(key.to_string()));
         }
 
-        Axis { opts, elements }
+        Axis { options, elements }
     }
 }

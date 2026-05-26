@@ -1,8 +1,4 @@
-use crate::{
-    data::{DataFrame, GroupedFrame},
-    ir::*,
-    plot::common_axis_options,
-};
+use crate::{data::*, plot::*, tikzir::*};
 
 pub struct TwinPlot<Row> {
     df: DataFrame<Row>,
@@ -130,59 +126,65 @@ impl<Row: Clone> TwinPlot<Row> {
         let keys = grouped.keys().to_vec();
         let n = keys.len();
 
-        let mut opts = common_axis_options();
-        opts.replace(AxisOption::Name("mainaxis".into()));
-        opts.replace(AxisOption::TrimAxisRight);
-        opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
-        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
-        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
-        opts.replace(AxisOption::YLabel(self.ax0_yaxis_label.clone()));
+        let mut options = common_axis_options();
+        options.name = Some("mainaxis".into());
+        options.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
+        options.height = Some(Dimension::Code("{\\epyheightratio*\\epyfigurewidth}".into()));
+
+        options.xlabel = Some(self.xaxis_label.clone());
+        options.ylabel = Some(self.ax0_yaxis_label.clone());
+
+        options.xmin = Some(-0.5);
+        options.xmax = Some(n as f64 - 0.5);
         if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
-            opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+            options.ymin = Some(0.0);
         }
-        opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
-        opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
-        opts.replace(AxisOption::XTicks((0..n).map(|i| i.to_string()).collect()));
-        opts.replace(AxisOption::XTickLabels(keys.iter().map(ToString::to_string).collect()));
+
+        options.xticks = (0..n).collect::<Vec<_>>().into();
+        options.xtick_labels = Some(keys.iter().map(ToString::to_string).collect::<Vec<_>>().into());
+        options.trim_axis_right = true;
 
         let mut elements = Vec::new();
         self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements, true, 0);
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
         self.push_legend_images_for_series(&self.ax1_series, &mut elements, ax0_line_count);
 
-        Axis { opts, elements }
+        Axis { options, elements }
     }
 
     fn build_right_axis(&self) -> Axis {
         let grouped = self.grouped();
         let n = grouped.num_groups();
 
-        let mut opts = common_axis_options();
-        opts.replace(AxisOption::AtMainAxisSouthWest);
-        opts.replace(AxisOption::AnchorSouthWest);
-        opts.replace(AxisOption::TrimAxisLeft);
-        opts.replace(AxisOption::AxisXLineNone);
-        opts.replace(AxisOption::XMajorGrids(false));
-        opts.replace(AxisOption::YMajorGrids(false));
-        opts.replace(AxisOption::EmptyXTicks);
-        opts.replace(AxisOption::EmptyXTickLabels);
-        opts.replace(AxisOption::AxisYLineRight);
-        opts.remove(&AxisOption::YTickPosLeft);
-        opts.replace(AxisOption::YTickPosRight);
-        opts.replace(AxisOption::YLabel(self.ax1_yaxis_label.clone()));
+        let mut options = common_axis_options();
+        options.width = None;
+        options.height = None;
+
+        options.xmin = Some(-0.5);
+        options.xmax = Some(n as f64 - 0.5);
         if self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
-            opts.replace(AxisOption::YMin(Numeric::new(0.0)));
+            options.ymin = Some(0.0);
         }
-        opts.replace(AxisOption::Width("{\\epyfigurewidth-\\epyrpad}".into()));
-        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
-        opts.replace(AxisOption::XMin(Numeric::new(-0.5)));
-        opts.replace(AxisOption::XMax(Numeric::new(n as f64 - 0.5)));
+
+        options.ylabel = Some(self.ax1_yaxis_label.clone());
+        options.x_major_grids = false;
+        options.y_major_grids = false;
+        options.xticks = TickPositions::Empty;
+        options.xtick_labels = Some(TickLabels::Empty);
+        options.ytick_pos = Some(TickPos::Right);
+        options.trim_axis_left = true;
+
+        options.replace(AxisOption::AtMainAxisSouthWest);
+        options.replace(AxisOption::AnchorSouthWest);
+        options.replace(AxisOption::TrimAxisLeft);
+        options.replace(AxisOption::AxisXLineNone);
+        options.replace(AxisOption::AxisYLineRight);
 
         let mut elements = Vec::new();
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
         self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements, false, ax0_line_count);
 
-        Axis { opts, elements }
+        Axis { options, elements }
     }
 
     fn push_axis_series_elements(
@@ -190,7 +192,7 @@ impl<Row: Clone> TwinPlot<Row> {
         grouped: &GroupedFrame<Row>,
         series: &Vec<TwinSeries<Row>>,
         elements: &mut Vec<AxisElement>,
-        include_legend: bool,
+        include_in_legend: bool,
         line_marker_start_index: usize,
     ) {
         let mut line_series_count = 0;
@@ -203,22 +205,23 @@ impl<Row: Clone> TwinPlot<Row> {
                     let bar_coords: Vec<Coordinate> = quartiles.medians.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
-                    let mut plot_opts = vec![
-                        "ybar".into(),
-                        "bar width=0.7".into(),
-                        format!("fill={}", color),
-                        "draw=none".into(),
-                        "area legend".into(),
-                    ];
-                    if !include_legend {
-                        plot_opts.push("forget plot".into());
+
+                    let options_builder = AxisOptionsBuilder::default()
+                        .ybar(true)
+                        .bar_width(Dimension::Code("0.7".into()))
+                        .fill(color.clone())
+                        .draw("none".into())
+                        .area_legend(true);
+                    if !include_in_legend {
+                        options_builder.forget_plot(true);
                     }
-                    elements.push(AxisElement::Plot(AddPlot {
-                        opts: plot_opts,
-                        coords: bar_coords,
+
+                    elements.push(AxisElement::AddPlot {
+                        options: options_builder.build().unwrap(),
+                        coordinates: bar_coords,
                         closed_cycle: false,
-                    }));
-                    if include_legend {
+                    });
+                    if include_in_legend {
                         elements.push(AxisElement::LegendEntry(spec.label.clone()));
                     }
 
@@ -238,39 +241,52 @@ impl<Row: Clone> TwinPlot<Row> {
                     for (i, q1) in quartiles.q1s.iter().enumerate().rev() {
                         band.push(Coordinate::Plain(i as f64, *q1));
                     }
-                    elements.push(AxisElement::Plot(AddPlot {
-                        opts: vec![
-                            format!("fill={}", color),
-                            "fill opacity=0.3".into(),
-                            "draw=none".into(),
-                            "forget plot".into(),
-                        ],
-                        coords: band,
+
+                    let err_options = StyleBuilder::default()
+                        .fill(color.clone())
+                        .fill_opacity(0.3)
+                        .draw("none")
+                        .forget_plot(true)
+                        .build()
+                        .unwrap();
+
+                    elements.push(AxisElement::AddPlot {
+                        options: err_options,
+                        coordinates: band,
                         closed_cycle: true,
-                    }));
+                    });
 
                     let line: Vec<Coordinate> = quartiles.medians.iter().enumerate()
                         .map(|(i, median)| Coordinate::Plain(i as f64, *median))
                         .collect();
                     let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
-                    let mut plot_opts = vec![
-                        color,
-                        "line width=1pt".into(),
-                        format!("mark={}", MARKERS[marker_index]),
-                        format!("mark size={}pt", MARK_SIZE_PT),
-                        format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-                    ];
-                    if !include_legend {
-                        plot_opts.push("forget plot".into());
-                    }
-                    elements.push(AxisElement::Plot(AddPlot {
-                        opts: plot_opts,
-                        coords: line,
+
+                    let plot_options = StyleBuilder::default()
+                        .draw(color)
+                        .line_width(Dimension::Pt(1.0))
+                        .mark(MARKERS[marker_index].to_string())
+                        .mark_size(Dimension::Pt(MARK_SIZE_PT))
+                        .mark_options(StyleBuilder::default()
+                            .solid(true)
+                            .draw("white".to_string())
+                            .line_width(Dimension::Pt(-MARK_OUTLINE_PT))
+                            .build()
+                            .unwrap()
+                        )
+                        .forget_plot(!include_in_legend)
+                        .build()
+                        .unwrap();
+
+                    elements.push(AxisElement::AddPlot {
+                        options: plot_options,
+                        coordinates: line,
                         closed_cycle: false,
-                    }));
-                    if include_legend {
+                    });
+
+                    if include_in_legend {
                         elements.push(AxisElement::LegendEntry(spec.label.clone()));
                     }
+
                     line_series_count += 1;
                 }
             }
@@ -287,23 +303,33 @@ impl<Row: Clone> TwinPlot<Row> {
         for spec in series {
             match spec.kind {
                 TwinSeriesKind::Bar => {
-                    elements.push(AxisElement::LegendImage(vec![
-                        "ybar".into(),
-                        "bar width=0.7".into(),
-                        format!("fill={}", spec.color),
-                        "draw=none".into(),
-                        "area legend".into(),
-                    ]));
+                    let legend_style = StyleBuilder::default()
+                        .ybar(true)
+                        .bar_width(Dimension::Code("0.7".into()))
+                        .fill(spec.color.clone())
+                        .draw("none".into())
+                        .area_legend(true)
+                        .build()
+                        .unwrap();
+                    elements.push(AxisElement::LegendImage(legend_style));
                 }
                 TwinSeriesKind::Line => {
                     let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
-                    elements.push(AxisElement::LegendImage(vec![
-                        spec.color.clone(),
-                        "line width=1pt".into(),
-                        format!("mark={}", MARKERS[marker_index]),
-                        format!("mark size={}pt", MARK_SIZE_PT),
-                        format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-                    ]));
+                    let legend_style = StyleBuilder::default()
+                        .fill(spec.color.clone())
+                        .line_width(Dimension::Pt(1.0))
+                        .mark(MARKERS[marker_index].to_string())
+                        .mark_size(Dimension::Pt(MARK_SIZE_PT))
+                        .mark_options(StyleBuilder::default()
+                            .solid(true)
+                            .draw("white".to_string())
+                            .line_width(Dimension::Pt(-MARK_OUTLINE_PT))
+                            .build()
+                            .unwrap()
+                        )
+                        .build()
+                        .unwrap();
+                    elements.push(AxisElement::LegendImage(legend_style));
                     line_series_count += 1;
                 }
             }

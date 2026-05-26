@@ -1,8 +1,4 @@
-use crate::{
-    data::DataFrame,
-    ir::*,
-    plot::common_axis_options,
-};
+use crate::{data::*, plot::*, tikzir::*};
 
 pub struct TimeSeries<Row> {
     df: DataFrame<Row>,
@@ -62,11 +58,9 @@ impl<Row: Clone> TimeSeries<Row> {
     }
 
     pub fn build_axis(&self) -> Axis {
-        let mut opts = common_axis_options();
-        opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
-        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
-        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
-        opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
+        let mut options = common_axis_options();
+        options.xlabel = Some(self.xaxis_label.clone());
+        options.ylabel = Some(self.yaxis_label.clone());
 
         let mut elements = Vec::new();
         let mut emitted_series = 0usize;
@@ -123,26 +117,27 @@ impl<Row: Clone> TimeSeries<Row> {
             }
         }
 
-        if emitted_series > 0 {
-            opts.replace(AxisOption::XMin(Numeric::new(0.0)));
-            opts.replace(AxisOption::XMax(Numeric::new(max_index as f64)));
-        }
-
-        Axis { opts, elements }
+        Axis { options, elements }
     }
 }
 
 fn push_series_elements(
     elements: &mut Vec<AxisElement>,
-    coords: Vec<Coordinate>,
+    coordinates: Vec<Coordinate>,
     color: String,
     label: String,
 ) {
-    elements.push(AxisElement::Plot(AddPlot {
-        opts: vec![color, "line width=1pt".into()],
-        coords,
+    let plot_options = StyleBuilder::default()
+        .draw(color.clone())
+        .line_width(Dimension::Pt(1.0))
+        .build()
+        .unwrap();
+
+    elements.push(AxisElement::AddPlot {
+        options: plot_options,
+        coordinates,
         closed_cycle: false,
-    }));
+    });
 
     elements.push(AxisElement::LegendEntry(label));
 }

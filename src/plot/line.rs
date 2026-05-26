@@ -1,8 +1,4 @@
-use crate::{
-    data::{DataFrame, GroupedQuartiles},
-    ir::*,
-    plot::common_axis_options,
-};
+use crate::{data::*, plot::*, tikzir::*};
 
 pub struct LinePlot<Row> {
     df: DataFrame<Row>,
@@ -65,11 +61,9 @@ impl<Row: Clone> LinePlot<Row> {
     pub fn build_axis(&self) -> Axis {
         let x_grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
 
-        let mut opts = common_axis_options();
-        opts.replace(AxisOption::Width("\\epyfigurewidth".into()));
-        opts.replace(AxisOption::Height("{\\epyheightratio*\\epyfigurewidth}".into()));
-        opts.replace(AxisOption::XLabel(self.xaxis_label.clone()));
-        opts.replace(AxisOption::YLabel(self.yaxis_label.clone()));
+        let mut options = common_axis_options();
+        options.xlabel = Some(self.xaxis_label.clone());
+        options.ylabel = Some(self.yaxis_label.clone());
 
         let mut elements = Vec::new();
         let mut emitted_series = 0usize;
@@ -108,7 +102,7 @@ impl<Row: Clone> LinePlot<Row> {
             }
         }
 
-        Axis { opts, elements }
+        Axis { options, elements }
     }
 }
 
@@ -126,33 +120,47 @@ fn push_series_elements(
     for (x, q1) in stats.keys.iter().zip(stats.q1s.iter()).rev() {
         band.push(Coordinate::Plain(*x, *q1));
     }
-    elements.push(AxisElement::Plot(AddPlot {
-        opts: vec![
-            format!("fill={}", color),
-            "fill opacity=0.3".into(),
-            "draw=none".into(),
-            "forget plot".into(),
-        ],
-        coords: band,
+
+    let err_options = StyleBuilder::default()
+        .fill(color.clone())
+        .fill_opacity(0.3)
+        .draw("none")
+        .forget_plot(true)
+        .build()
+        .unwrap();
+
+    elements.push(AxisElement::AddPlot {
+        options: err_options,
+        coordinates: band,
         closed_cycle: true,
-    }));
+    });
 
     let line: Vec<Coordinate> = stats.keys
         .iter()
         .zip(stats.medians.iter())
         .map(|(x, median)| Coordinate::Plain(*x, *median))
         .collect();
-    elements.push(AxisElement::Plot(AddPlot {
-        opts: vec![
-            color,
-            "line width=1pt".into(),
-            format!("mark={}", marker),
-            format!("mark size={}pt", MARK_SIZE_PT),
-            format!("mark options={{solid,draw=white,line width=-{}pt}}", MARK_OUTLINE_PT),
-        ],
-        coords: line,
+
+    let plot_options = StyleBuilder::default()
+        .draw(color.clone())
+        .line_width(Dimension::Pt(1.0))
+        .mark(marker.clone())
+        .mark_size(Dimension::Pt(MARK_SIZE_PT))
+        .mark_options(StyleBuilder::default()
+            .solid(true)
+            .draw("white".to_string())
+            .line_width(Dimension::Pt(-MARK_OUTLINE_PT))
+            .build()
+            .unwrap()
+        )
+        .build()
+        .unwrap();
+
+    elements.push(AxisElement::AddPlot {
+        options: plot_options,
+        coordinates: line,
         closed_cycle: false,
-    }));
+    });
 
     elements.push(AxisElement::LegendEntry(label));
 }
