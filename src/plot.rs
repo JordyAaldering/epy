@@ -40,7 +40,6 @@ pub(crate) fn common_axis_options() -> Style {
         .extra_yticks(vec![Coordinate::Code("\\pgfkeysvalueof{/pgfplots/ymax}".into())])
         .extra_ytick_labels(vec!["\\vphantom{Ag}".into()])
         .number_format(NumberFormat::Fixed(false))
-        //every extra x tick/.append style
         .style_overrides(ordermap! {
             "axis line style".into() => StyleBuilder::default()
                 .color(GRID_COLOR)

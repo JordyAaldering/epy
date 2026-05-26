@@ -1,3 +1,5 @@
+use serde::de::Unexpected::Option;
+
 use crate::{data::*, plot::*, tikzir::*};
 
 pub struct TwinPlot<Row> {
@@ -157,8 +159,7 @@ impl<Row: Clone> TwinPlot<Row> {
         let n = grouped.num_groups();
 
         let mut options = common_axis_options();
-        options.width = None;
-        options.height = None;
+        options.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
 
         options.xmin = Some(-0.5);
         options.xmax = Some(n as f64 - 0.5);
@@ -167,14 +168,13 @@ impl<Row: Clone> TwinPlot<Row> {
         }
 
         options.ylabel = Some(self.ax1_yaxis_label.clone());
-        options.x_major_grids = false;
-        options.y_major_grids = false;
+        options.grid = Some(GridLines::None);
         options.xticks = TickPositions::Empty;
         options.xtick_labels = Some(TickLabels::Empty);
         options.ytick_pos = Some(TickPos::Right);
         options.trim_axis_left = true;
         options.axis_x_line = Some(CellAlign::None);
-        options.axis_y_line_star = Some(CellAlign::Left);
+        options.axis_y_line_star = Some(CellAlign::Right);
         options.anchor = Some(Anchor::SouthWest);
         options.at = Some("(mainaxis.south west)".into());
 
