@@ -81,7 +81,9 @@ impl<Row: Clone> LinePlot<Row> {
                     let mut q3s = Vec::with_capacity(x_grouped.num_groups());
 
                     for gi in 0..x_grouped.num_groups() {
-                        let vals = x_grouped.group_values(gi, &**selector);
+                        let vals = x_grouped.groups[gi].iter()
+                            .map(|&ri| selector(&self.df.data[ri]))
+                            .collect::<Vec<_>>();
                         let qs = quartiles(&vals);
                         meds.push(qs.median);
                         q1s.push(qs.q1);

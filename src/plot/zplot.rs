@@ -18,15 +18,21 @@ impl<Row: Clone> ZPlot<Row> {
     /// Create a scatter plot where each unique value of `series_selector` becomes a
     /// separate series in the legend. Within each series, rows are grouped by
     /// `hue_selector` and the mean `(x_selector, y_selector)` is plotted per group.
-    pub fn new(
+    pub fn new<G, H, X, Y>(
         df: DataFrame<Row>,
-        series_selector: impl Fn(&Row) -> f64 + 'static,
-        hue_selector: impl Fn(&Row) -> f64 + 'static,
-        x_selector: impl Fn(&Row) -> f64 + 'static,
-        y_selector: impl Fn(&Row) -> f64 + 'static,
+        series_selector: G,
+        hue_selector: H,
+        x_selector: X,
+        y_selector: Y,
         xaxis_label: &str,
         yaxis_label: &str,
-    ) -> Self {
+    ) -> Self
+    where
+        G: Fn(&Row) -> f64 + 'static,
+        H: Fn(&Row) -> f64 + 'static,
+        X: Fn(&Row) -> f64 + 'static,
+        Y: Fn(&Row) -> f64 + 'static,
+    {
         ZPlot {
             df,
             series_selector: Box::new(series_selector),

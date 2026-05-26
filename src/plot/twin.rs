@@ -28,13 +28,16 @@ enum TwinSeriesKind {
 }
 
 impl<Row: Clone> TwinPlot<Row> {
-    pub fn new(
+    pub fn new<G>(
         df: DataFrame<Row>,
-        group_selector: impl Fn(&Row) -> f64 + 'static,
+        group_selector: G,
         xaxis_label: &str,
         ax0_yaxis_label: &str,
         ax1_yaxis_label: &str,
-    ) -> Self {
+    ) -> Self
+    where
+        G: Fn(&Row) -> f64 + 'static,
+    {
         TwinPlot {
             df,
             group_selector: Box::new(group_selector),
@@ -76,12 +79,15 @@ impl<Row: Clone> TwinPlot<Row> {
         self
     }
 
-    pub fn ax1_bar(
+    pub fn ax1_bar<Y>(
         mut self,
-        selector: impl Fn(&Row) -> f64 + 'static,
+        selector: Y,
         label: &str,
         color: &str,
-    ) -> Self {
+    ) -> Self
+    where
+        Y: Fn(&Row) -> f64 + 'static,
+    {
         self.ax1_series.push(TwinSeries {
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
@@ -91,12 +97,15 @@ impl<Row: Clone> TwinPlot<Row> {
         self
     }
 
-    pub fn ax1_line(
+    pub fn ax1_line<Y>(
         mut self,
-        selector: impl Fn(&Row) -> f64 + 'static,
+        selector: Y,
         label: &str,
         color: &str,
-    ) -> Self {
+    ) -> Self
+    where
+        Y: Fn(&Row) -> f64 + 'static,
+    {
         self.ax1_series.push(TwinSeries {
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
@@ -127,7 +136,9 @@ impl<Row: Clone> TwinPlot<Row> {
         let mut q3s = Vec::with_capacity(grouped.num_groups());
 
         for gi in 0..grouped.num_groups() {
-            let vals = grouped.group_values(gi, selector);
+            let vals = grouped.groups[gi].iter()
+                .map(|&ri| selector(&self.df.data[ri]))
+                .collect::<Vec<_>>();
             let qs = quartiles(&vals);
             meds.push(qs.median);
             q1s.push(qs.q1);
@@ -200,7 +211,7 @@ impl<Row: Clone> TwinPlot<Row> {
     fn push_axis_series_elements(
         &self,
         grouped: &GroupedFrame<Row>,
-        series: &[TwinSeries<Row>],
+        series: &Vec<TwinSeries<Row>>,
         elements: &mut Vec<AxisElement>,
         include_legend: bool,
         line_marker_start_index: usize,

@@ -5,7 +5,7 @@ use serde::de::DeserializeOwned;
 #[derive(Clone)]
 /// A typed collection of CSV rows loaded via `serde`.
 pub struct DataFrame<T> {
-    data: Vec<T>,
+    pub(crate) data: Vec<T>,
 }
 
 /// A [`DataFrame`] grouped by a numeric key.
@@ -119,14 +119,14 @@ impl<T> GroupedFrame<T> {
         &self.unique_keys
     }
 
-    /// Collect values produced by `selector` for group `gi`.
-    pub fn group_values<F>(&self, gi: usize, selector: &F) -> Vec<f64>
-    where
-        F: Fn(&T) -> f64 + ?Sized,
-    {
-        self.groups[gi]
-            .iter()
-            .map(|&ri| selector(&self.df.data[ri]))
-            .collect()
-    }
+    // /// Collect values produced by `selector` for group `gi`.
+    // pub fn group_values<F>(&self, gi: usize, selector: &F) -> Vec<f64>
+    // where
+    //     F: Fn(&T) -> f64 + ?Sized,
+    // {
+    //     self.groups[gi]
+    //         .iter()
+    //         .map(|&ri| selector(&self.df.data[ri]))
+    //         .collect()
+    // }
 }
