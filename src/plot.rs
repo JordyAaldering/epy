@@ -57,7 +57,7 @@ pub(crate) fn common_axis_options() -> Style {
         .y_major_grids(true)
         .major_tick_length(Dimension::Em(0.3))
         .legend_cell_align(CellAlign::Left)
-        .extra_yticks(vec![Coordinate::Code("\\pgfkeysvalueof{/pgfplots/ymax}".into())])
+        .extra_yticks(vec![Cs::Code("\\pgfkeysvalueof{/pgfplots/ymax}".into())])
         .extra_ytick_labels(vec!["\\vphantom{Ag}".into()])
         .number_format(NumberFormat::Fixed(false))
         .style_overrides(ordermap! {

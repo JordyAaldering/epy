@@ -73,11 +73,11 @@ impl<Row: Clone> TimeSeries<Row> {
                     label,
                     color,
                 } => {
-                    let line: Vec<Coordinate> = self.df
+                    let line: Vec<Cs> = self.df
                         .rows()
                         .iter()
                         .enumerate()
-                        .map(|(i, row)| Coordinate::Plain(i as f64, selector(row)))
+                        .map(|(i, row)| Cs::Plain(i as f64, selector(row)))
                         .collect();
 
                     if !line.is_empty() {
@@ -93,12 +93,12 @@ impl<Row: Clone> TimeSeries<Row> {
                     let grouped = self.df.clone().group_by(|row| group_by(row));
 
                     for gi in 0..grouped.num_groups() {
-                        let line: Vec<Coordinate> = grouped.groups[gi]
+                        let line: Vec<Cs> = grouped.groups[gi]
                             .iter()
                             .enumerate()
                             .map(|(i, &ri)| {
                                 let row = grouped.df.row(ri);
-                                Coordinate::Plain(i as f64, y_selector(row))
+                                Cs::Plain(i as f64, y_selector(row))
                             })
                             .collect();
 
@@ -123,7 +123,7 @@ impl<Row: Clone> TimeSeries<Row> {
 
 fn push_series_elements(
     elements: &mut Vec<AxisElement>,
-    coordinates: Vec<Coordinate>,
+    coordinates: Vec<Cs>,
     color: String,
     label: String,
 ) {

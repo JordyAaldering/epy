@@ -167,7 +167,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
         options.ylabel = Some(self.ax1_yaxis_label.clone());
         options.grid = Some(GridLines::None);
-        options.xticks = TickPositions::Empty;
+        options.xticks = TickCs::Empty;
         options.xtick_labels = Some(TickLabels::Empty);
         options.ytick_pos = Some(TickPos::Right);
         options.trim_axis_left = true;
@@ -198,8 +198,8 @@ impl<Row: Clone> TwinPlot<Row> {
 
             match spec.kind {
                 TwinSeriesKind::Bar => {
-                    let bar_coords: Vec<Coordinate> = quartiles.medians.iter().enumerate()
-                        .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+                    let bar_coords: Vec<Cs> = quartiles.medians.iter().enumerate()
+                        .map(|(i, median)| Cs::Plain(i as f64, *median))
                         .collect();
 
                     let plot_options = StyleBuilder::default()
@@ -229,18 +229,18 @@ impl<Row: Clone> TwinPlot<Row> {
                             .unwrap();
                         elements.push(AxisElement::Draw {
                             style: options,
-                            from: Coordinate::AxisCs(i as f64, quartiles.q1s[i]),
-                            to: Coordinate::AxisCs(i as f64, quartiles.q3s[i]),
+                            from: Cs::Axis(i as f64, quartiles.q1s[i]),
+                            to: Cs::Axis(i as f64, quartiles.q3s[i]),
                         });
                     }
                 }
                 TwinSeriesKind::Line => {
                     let mut band = Vec::new();
                     for (i, q3) in quartiles.q3s.iter().enumerate() {
-                        band.push(Coordinate::Plain(i as f64, *q3));
+                        band.push(Cs::Plain(i as f64, *q3));
                     }
                     for (i, q1) in quartiles.q1s.iter().enumerate().rev() {
-                        band.push(Coordinate::Plain(i as f64, *q1));
+                        band.push(Cs::Plain(i as f64, *q1));
                     }
 
                     let err_options = StyleBuilder::default()
@@ -257,8 +257,8 @@ impl<Row: Clone> TwinPlot<Row> {
                         closed_cycle: true,
                     });
 
-                    let line: Vec<Coordinate> = quartiles.medians.iter().enumerate()
-                        .map(|(i, median)| Coordinate::Plain(i as f64, *median))
+                    let line: Vec<Cs> = quartiles.medians.iter().enumerate()
+                        .map(|(i, median)| Cs::Plain(i as f64, *median))
                         .collect();
                     let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
 

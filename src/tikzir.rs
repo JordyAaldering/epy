@@ -66,7 +66,7 @@ pub struct Axis {
 }
 
 impl Axis {
-    pub fn label<S>(mut self, at: Coordinate, label: S, anchor: Option<Anchor>) -> Self
+    pub fn label<S>(mut self, at: Cs, label: S, anchor: Option<Anchor>) -> Self
     where
         S: Into<String>,
     {
@@ -80,7 +80,7 @@ impl Axis {
         self
     }
 
-    pub fn line<S>(mut self, from: Coordinate, to: Coordinate, color: Option<S>) -> Self
+    pub fn line<S>(mut self, from: Cs, to: Cs, color: Option<S>) -> Self
     where
         S: Into<String>,
     {
@@ -93,7 +93,7 @@ impl Axis {
         self
     }
 
-    pub fn area<S>(mut self, bottom_left: Coordinate, top_right: Coordinate, color: S) -> Self
+    pub fn area<S>(mut self, bottom_left: Cs, top_right: Cs, color: S) -> Self
     where
         S: Clone + Into<String>,
     {
@@ -145,22 +145,22 @@ impl Axis {
 pub enum AxisElement {
     Node {
         style: Style,
-        at: Coordinate,
+        at: Cs,
         label: String,
     },
     Draw {
         style: Style,
-        from: Coordinate,
-        to: Coordinate,
+        from: Cs,
+        to: Cs,
     },
     Fill {
         style: Style,
-        bottom_left: Coordinate,
-        top_right: Coordinate,
+        bottom_left: Cs,
+        top_right: Cs,
     },
     AddPlot {
         style: Style,
-        coordinates: Vec<Coordinate>,
+        coordinates: Vec<Cs>,
         closed_cycle: bool,
     },
     LegendEntry(String),
@@ -261,10 +261,10 @@ pub struct Style {
     /// The special value data will produce tick marks at every coordinate of
     /// the first plot. Otherwise, tick marks will be placed at every
     /// coordinate in {〈coordinate list〉}.
-    #[builder(default = TickPositions::Auto)]
-    pub xticks: TickPositions,
-    #[builder(default = TickPositions::Auto)]
-    pub yticks: TickPositions,
+    #[builder(default = TickCs::Auto)]
+    pub xticks: TickCs,
+    #[builder(default = TickCs::Auto)]
+    pub yticks: TickCs,
 
     /// Adds additional tick positions and tick labels to the x or y axis.
     /// ‘Additional’ tick positions do not affect the normal tick placement
@@ -272,8 +272,8 @@ pub struct Style {
     /// benefits: first, you can add single, important tick positions without
     /// disabling the default tick label generation and second, you can draw
     /// tick labels ‘on top’ of others, possibly using different style flags.
-    pub extra_xticks: Option<Coordinates>,
-    pub extra_yticks: Option<Coordinates>,
+    pub extra_xticks: Option<Vec<Cs>>,
+    pub extra_yticks: Option<Vec<Cs>>,
 
     /// Assigns a list of tick labels to each tick position.
     /// Tick positions are assigned using the xtick and ytick-options.
@@ -372,7 +372,7 @@ impl Style {
     where
         F: Fn(usize) -> bool,
     {
-        if let TickPositions::Coordinates(ticks) = &mut self.xticks {
+        if let TickCs::Coordinates(ticks) = &mut self.xticks {
             *ticks = ticks.drain(..).enumerate().filter_map(|(i, x)|
                 filter(i).then_some(x)
             ).collect();
@@ -388,7 +388,7 @@ impl Style {
     where
         F: Fn(usize) -> bool,
     {
-        if let TickPositions::Coordinates(ticks) = &mut self.yticks {
+        if let TickCs::Coordinates(ticks) = &mut self.yticks {
             *ticks = ticks.drain(..).enumerate().filter_map(|(i, x)|
                 filter(i).then_some(x)
             ).collect();
@@ -467,18 +467,24 @@ impl Style {
             options.push("scaled ticks=false".into());
         }
 
-        if !matches!(self.xticks, TickPositions::Auto) {
+        if !matches!(self.xticks, TickCs::Auto) {
             options.push(format!("xtick={}", self.xticks.render()));
         }
-        if !matches!(self.yticks, TickPositions::Auto) {
+        if !matches!(self.yticks, TickCs::Auto) {
             options.push(format!("ytick={}", self.yticks.render()));
         }
 
         if let Some(c) = &self.extra_xticks {
-            options.push(format!("extra x ticks={}", c.render()));
+            options.push(format!("extra x ticks={{{}}}", c.iter()
+                .map(Cs::render)
+                .collect::<Vec<_>>()
+                .join(",")));
         }
         if let Some(c) = &self.extra_yticks {
-            options.push(format!("extra y ticks={}", c.render()));
+            options.push(format!("extra y ticks={{{}}}", c.iter()
+                .map(Cs::render)
+                .collect::<Vec<_>>()
+                .join(",")));
         }
 
         if let Some(l) = &self.xtick_labels {
@@ -704,7 +710,7 @@ impl Into<TickLabels> for Vec<String> {
 }
 
 #[derive(Clone, Debug, Default)]
-pub enum TickPositions {
+pub enum TickCs {
     #[default]
     Auto,
     Data,
@@ -712,9 +718,9 @@ pub enum TickPositions {
     Coordinates(Vec<f64>),
 }
 
-impl TickPositions {
+impl TickCs {
     pub fn render(&self) -> String {
-        use TickPositions::*;
+        use TickCs::*;
         match self {
             Auto => "".into(),
             Data => "data".into(),
@@ -730,39 +736,21 @@ impl TickPositions {
     }
 }
 
-impl From<Vec<f64>> for TickPositions {
+impl From<Vec<f64>> for TickCs {
     fn from(c: Vec<f64>) -> Self {
-        TickPositions::Coordinates(c)
+        TickCs::Coordinates(c)
     }
 }
 
-impl From<Vec<usize>> for TickPositions {
+impl From<Vec<usize>> for TickCs {
     fn from(c: Vec<usize>) -> Self {
-        TickPositions::Coordinates(c.into_iter().map(|x| x as f64).collect())
+        TickCs::Coordinates(c.into_iter().map(|x| x as f64).collect())
     }
 }
 
+/// Coordinate system for specifying positions.
 #[derive(Clone, Debug)]
-pub struct Coordinates(Vec<Coordinate>);
-
-impl Coordinates {
-    pub fn render(&self) -> String {
-        format!("{{{}}}", self.0.iter()
-            .map(Coordinate::render)
-            .collect::<Vec<_>>()
-            .join(",")
-        )
-    }
-}
-
-impl Into<Coordinates> for Vec<Coordinate> {
-    fn into(self) -> Coordinates {
-        Coordinates(self)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Coordinate {
+pub enum Cs {
     /// Plain Coordinates
     ///
     /// Absolute coordinates in the plotting area.
@@ -770,23 +758,23 @@ pub enum Coordinate {
     /// Axis CS (Axis Coordinate System)
     ///
     /// Coordinates based on the axis limits.
-    AxisCs(f64, f64),
+    Axis(f64, f64),
     /// Rel Axis CS (Relative Axis Coordinate System)
     ///
     /// Relative coordinates where (0,0) corresponds to the lower left
     /// corner of the axis and (1,1) to the upper right corner.
-    RelAxisCs(f64, f64),
+    RelAxis(f64, f64),
     /// LaTeX code for computing coordinates.
     Code(String),
 }
 
-impl Coordinate {
+impl Cs {
     pub fn render(&self) -> String {
-        use Coordinate::*;
+        use Cs::*;
         match self {
             Plain(x, y) => format!("({},{})", x, y),
-            AxisCs(x, y) => format!("(axis cs:{},{})", x, y),
-            RelAxisCs(x, y) => format!("(rel axis cs:{},{})", x, y),
+            Axis(x, y) => format!("(axis cs:{},{})", x, y),
+            RelAxis(x, y) => format!("(rel axis cs:{},{})", x, y),
             Code(c) => c.clone(),
         }
     }

@@ -51,7 +51,7 @@ impl<Row: Clone> ZPlot<Row> {
 
     pub fn build_axis(&self) -> Axis {
         let grouped = self.df.clone().group_by(|row| (self.series_selector)(row));
-        let mut series_groups: Vec<(f64, Vec<Coordinate>)> = Vec::new();
+        let mut series_groups: Vec<(f64, Vec<Cs>)> = Vec::new();
 
         for gi in 0..grouped.num_groups() {
             let series_key = grouped.keys()[gi];
@@ -78,7 +78,7 @@ impl<Row: Clone> ZPlot<Row> {
 
             let coordinates = medians_by_hue
                 .into_iter()
-                .map(|(_, x, y)| Coordinate::Plain(x, y))
+                .map(|(_, x, y)| Cs::Plain(x, y))
                 .collect();
             series_groups.push((series_key, coordinates));
         }

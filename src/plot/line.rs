@@ -115,10 +115,10 @@ fn push_series_elements(
 ) {
     let mut band = Vec::new();
     for (x, q3) in stats.keys.iter().zip(stats.q3s.iter()) {
-        band.push(Coordinate::Plain(*x, *q3));
+        band.push(Cs::Plain(*x, *q3));
     }
     for (x, q1) in stats.keys.iter().zip(stats.q1s.iter()).rev() {
-        band.push(Coordinate::Plain(*x, *q1));
+        band.push(Cs::Plain(*x, *q1));
     }
 
     let err_options = StyleBuilder::default()
@@ -135,10 +135,10 @@ fn push_series_elements(
         closed_cycle: true,
     });
 
-    let line: Vec<Coordinate> = stats.keys
+    let line: Vec<Cs> = stats.keys
         .iter()
         .zip(stats.medians.iter())
-        .map(|(x, median)| Coordinate::Plain(*x, *median))
+        .map(|(x, median)| Cs::Plain(*x, *median))
         .collect();
 
     let plot_options = StyleBuilder::default()
