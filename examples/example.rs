@@ -48,7 +48,7 @@ fn max_threads(df: &DataFrame<Record>) -> usize {
 
 fn twin(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
-    let filtered = df.clone().filter(|r| r.threads == max_t);
+    let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
     let (mut ax0, mut ax1) = TwinPlot::new(
             filtered,
@@ -74,7 +74,7 @@ fn twin(df: &DataFrame<Record>) {
 
 fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
-    let filtered = df.clone().filter(|r| r.threads == max_t);
+    let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
     let mut ax = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
         .series(|r| r.ipc(), "IPC", "runtimecolor")

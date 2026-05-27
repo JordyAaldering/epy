@@ -69,16 +69,24 @@ impl<T> DataFrame<T> {
     where
         F: Fn(usize, &mut T),
     {
-        self.rows.iter_mut().enumerate().for_each(|(i, row)| f(i, row));
+        self.rows.iter_mut()
+            .enumerate()
+            .for_each(|(i, row)|
+                f(i, row)
+            );
         self
     }
 
-    /// Keep only rows that satisfy `predicate`.
-    pub fn filter<F>(mut self, predicate: F) -> Self
+    pub fn filter<F>(mut self, f: F) -> Self
     where
-        F: Fn(&T) -> bool,
+        F: Fn(usize, &T) -> bool,
     {
-        self.rows.retain(|row| predicate(row));
+        self.rows = self.rows.drain(..)
+            .enumerate()
+            .filter_map(|(i, x)|
+                f(i, &x).then_some(x)
+            )
+            .collect();
         self
     }
 
