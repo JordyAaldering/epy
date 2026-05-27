@@ -67,14 +67,6 @@ impl<T> DataFrame<T> {
 
     pub fn map<F>(mut self, f: F) -> Self
     where
-        F: Fn(&mut T),
-    {
-        self.rows.iter_mut().for_each(f);
-        self
-    }
-
-    pub fn map_i<F>(mut self, f: F) -> Self
-    where
         F: Fn(usize, &mut T),
     {
         self.rows.iter_mut().enumerate().for_each(|(i, row)| f(i, row));
