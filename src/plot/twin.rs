@@ -126,61 +126,43 @@ impl<Row: Clone> TwinPlot<Row> {
         let keys = grouped.keys().to_vec();
         let n = keys.len();
 
-        let mut options = common_axis_options();
-        options.name = Some("mainaxis".into());
-        options.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
-        options.height = Some(Dimension::Code("{\\epyheightratio*\\epyfigurewidth}".into()));
-
-        options.xlabel = Some(self.xaxis_label.clone());
-        options.ylabel = Some(self.ax0_yaxis_label.clone());
-
-        options.xmin = Some(-0.5);
-        options.xmax = Some(n as f64 - 0.5);
+        let mut style = common_axis_options();
+        style.xlabel = Some(self.xaxis_label.clone());
+        style.ylabel = Some(self.ax0_yaxis_label.clone());
+        style.xmin = Some(-0.5);
+        style.xmax = Some(n as f64 - 0.5);
         if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
-            options.ymin = Some(0.0);
+            style.ymin = Some(0.0);
         }
 
-        options.xticks = (0..n).collect::<Vec<_>>().into();
-        options.xtick_labels = Some(keys.iter().map(ToString::to_string).collect::<Vec<_>>().into());
-        options.trim_axis_right = true;
+        style.xticks = (0..n).collect::<Vec<_>>().into();
+        style.xtick_labels = Some(keys.iter().map(ToString::to_string).collect::<Vec<_>>().into());
 
-        let mut elements = Vec::new();
-        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut elements, true, 0);
+        let mut data = Vec::new();
+        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut data, true, 0);
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
-        self.push_legend_images_for_series(&self.ax1_series, &mut elements, ax0_line_count);
+        self.push_legend_images_for_series(&self.ax1_series, &mut data, ax0_line_count);
 
-        Axis { style: options, data: elements }
+        Axis { style, data }
     }
 
     fn build_right_axis(&self) -> Axis {
         let grouped = self.grouped();
         let n = grouped.num_groups();
 
-        let mut options = common_axis_options();
-        options.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
-
-        options.xmin = Some(-0.5);
-        options.xmax = Some(n as f64 - 0.5);
+        let mut style = common_axis_options();
+        style.ylabel = Some(self.ax1_yaxis_label.clone());
+        style.xmin = Some(-0.5);
+        style.xmax = Some(n as f64 - 0.5);
         if self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
-            options.ymin = Some(0.0);
+            style.ymin = Some(0.0);
         }
 
-        options.ylabel = Some(self.ax1_yaxis_label.clone());
-        options.grid = Some(GridLines::None);
-        options.xticks = TickCs::Empty;
-        options.xtick_labels = Some(TickLabels::Empty);
-        options.ytick_pos = Some(TickPos::Right);
-        options.trim_axis_left = true;
-        options.axis_x_line = Some(CellAlign::None);
-        options.axis_y_line_star = Some(CellAlign::Right);
-        options.anchor = Some(Anchor::SouthWest);
-        options.at = Some("(mainaxis.south west)".into());
-
-        let mut elements = Vec::new();
+        let mut data = Vec::new();
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
-        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut elements, false, ax0_line_count);
+        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut data, false, ax0_line_count);
 
-        Axis { style: options, data: elements }
+        Axis { style, data }
     }
 
     fn push_axis_series_elements(

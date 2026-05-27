@@ -4,8 +4,8 @@ use ordermap::{OrderMap, ordermap};
 
 #[derive(Clone, Debug)]
 pub struct TikzPicture {
-    pub ax0: Axis,
-    pub ax1: Option<Axis>,
+    ax0: Axis,
+    ax1: Option<Axis>,
 }
 
 impl TikzPicture {
@@ -13,9 +13,30 @@ impl TikzPicture {
         Self { ax0: ax, ax1: None }
     }
 
-    /// Can actually move some log from twin into here, to set specific fields
-    /// for twin axes or remove redundant fields.
-    pub fn from_twin(ax0: Axis, ax1: Axis) -> Self {
+    /// Create a twin-axis plot, and adjust the styling of the axes where
+    /// necessary to make them fit in the bounding box, and to mirror the
+    /// ticks of the second axis on the right side of the plot.
+    pub fn from_twin(mut ax0: Axis, mut ax1: Axis) -> Self {
+        // Shrink figure width to reserve space for right axis ticks and labels
+        ax0.style.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
+        ax1.style.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
+        // Add ax0 tag for positioning ax1
+        ax0.style.name = Some("mainaxis".into());
+        // Anchor ax1 to bottom right of ax0
+        ax1.style.anchor = Some(Anchor::SouthWest);
+        ax1.style.at = Some("(mainaxis.south west)".into());
+        // Adjust ax1 ticks
+        ax1.style.xticks = TickCs::Empty;
+        ax1.style.xtick_labels = Some(TickLabels::Empty);
+        ax1.style.ytick_pos = Some(TickPos::Right);
+        ax1.style.axis_x_line = Some(CellAlign::None);
+        ax1.style.axis_y_line_star = Some(CellAlign::Right);
+        ax1.style.grid = Some(GridLines::None);
+        ax1.style.xlabel = None;
+        // I don't think these are needed
+        // ax0.style.trim_axis_right = true;
+        // ax1.style.trim_axis_left = true;
+
         Self { ax0, ax1: Some(ax1) }
     }
 
@@ -31,9 +52,10 @@ impl TikzPicture {
         if let Some(ax1) = &self.ax1 {
             res.push_str(&self.size_calculation(ax1));
         }
-        // Add bounding box for debugging
-        //out.push_str("\\begin{tikzpicture}[show background rectangle]\n");
-        res.push_str("\\begin{tikzpicture}\n");
+        res.push_str("\\begin{tikzpicture}");
+        #[cfg(feature = "debug_rect")]
+        out.push_str("[show background rectangle]");
+        res.push('\n');
         res.push_str(&self.ax0.render());
         res.push('\n');
         if let Some(ax1) = &self.ax1 {

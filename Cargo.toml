@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 description = "Energy plotting library"
 
+[features]
+debug_rect = []
+
 [dependencies]
 csv = "1.4.0"
 derive_builder = "0.20.2"
