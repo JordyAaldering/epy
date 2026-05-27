@@ -102,12 +102,10 @@ impl Axis {
         self
     }
 
-    pub fn line<S>(mut self, from: Cs, to: Cs, color: Option<S>) -> Self
-    where
-        S: Into<String>,
+    pub fn line(mut self, from: Cs, to: Cs, color: Option<&str>) -> Self
     {
         let style = StyleBuilder::default()
-            .draw(color.map(S::into).unwrap_or("gray".into()))
+            .draw(color.unwrap_or("gray"))
             .dashed(true)
             .build()
             .unwrap();
