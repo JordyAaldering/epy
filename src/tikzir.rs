@@ -102,8 +102,7 @@ impl Axis {
         self
     }
 
-    pub fn line(mut self, from: Cs, to: Cs, color: Option<&str>) -> Self
-    {
+    pub fn line(mut self, from: Cs, to: Cs, color: Option<&str>) -> Self {
         let style = StyleBuilder::default()
             .draw(color.unwrap_or("gray"))
             .dashed(true)
@@ -113,18 +112,15 @@ impl Axis {
         self
     }
 
-    pub fn area<S>(mut self, bottom_left: Cs, top_right: Cs, color: S) -> Self
-    where
-        S: Clone + Into<String>,
-    {
+    pub fn area(mut self, bottom_left: Cs, top_right: Cs, color: Option<&str>) -> Self {
         let style = StyleBuilder::default()
-            .draw(color.clone())
+            .draw(color.unwrap_or("gray"))
             .draw_opacity(0.5)
             .style_overrides(ordermap! {
                 "postaction".into() => {
                     StyleBuilder::default()
                         .pattern("north east lines")
-                        .pattern_color(color)
+                        .pattern_color(color.unwrap_or("gray"))
                         .fill_opacity(0.5)
                         .build()
                         .unwrap()

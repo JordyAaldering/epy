@@ -80,7 +80,7 @@ fn ipc(df: &DataFrame<Record>) {
         .series(|r| r.ipc(), "IPC", "runtimecolor")
         .build_axis()
         .label(Cs::Axis(5.0, 0.35), "Hello, world!", None)
-        .area(Cs::Axis(5.5, 0.0), Cs::Axis(12.5, 1.0), "purple!30");
+        .area(Cs::Axis(5.5, 0.0), Cs::Axis(12.5, 1.0), Some("purple!30"));
     ax.style.filter_xticks(|i| filter_stride(i, 4, 1));
     ax.style.format_xticks(|s| format_precision(s, 1, false));
 
