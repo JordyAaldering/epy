@@ -798,6 +798,10 @@ impl Cs {
 
 #[derive(Clone, Copy, Debug)]
 pub enum Anchor {
+    North,
+    East,
+    South,
+    West,
     NorthEast,
     NorthWest,
     SouthEast,
@@ -812,6 +816,10 @@ impl Anchor {
     pub fn render(&self) -> String {
         use Anchor::*;
         match self {
+            North => "north".into(),
+            East => "east".into(),
+            South => "south".into(),
+            West => "west".into(),
             NorthEast => "north east".into(),
             NorthWest => "north west".into(),
             SouthEast => "south east".into(),
