@@ -90,6 +90,16 @@ impl<T> DataFrame<T> {
         self
     }
 
+    pub fn fold<F, U>(&self, init: U, f: F) -> U
+    where
+        F: Fn(U, &T) -> U,
+    {
+        self.rows.iter()
+            .fold(init, |acc, row|
+                f(acc, row)
+            )
+    }
+
     /// Group rows by the unique sorted values produced by `key_selector`.
     ///
     /// Returns a [`GroupedFrame`] where groups are sorted by their key value.
