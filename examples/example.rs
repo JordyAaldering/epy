@@ -66,7 +66,7 @@ fn twin(df: &DataFrame<Record>) {
     ax0.style.legend_pos = Some(Anchor::SouthEast);
     ax0.style.filter_xticks(|i| filter_every(i, 3));
     ax0.style.format_xticks(|s| format_precision(s, 1, false));
-    ax1.style.ymax = Some(0.6);
+    ax1.style.ymax = Some(0.62);
 
     let doc = TikzPicture::from_twin(ax0, ax1);
     doc.write(".build/example_twin.tex").unwrap();

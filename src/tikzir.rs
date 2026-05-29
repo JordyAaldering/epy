@@ -26,16 +26,16 @@ impl TikzPicture {
         ax1.style.anchor = Some(Anchor::SouthWest);
         ax1.style.at = Some("(mainaxis.south west)".into());
         // Adjust ax1 ticks
+        ax1.style.xlabel = None;
         ax1.style.xticks = TickCs::Empty;
         ax1.style.xtick_labels = Some(TickLabels::Empty);
         ax1.style.ytick_pos = Some(TickPos::Right);
         ax1.style.axis_x_line = Some(CellAlign::None);
         ax1.style.axis_y_line_star = Some(CellAlign::Right);
+        // Adjust ax1 grid
+        ax1.style.style_overrides.remove("y grid style");
         ax1.style.grid = Some(GridLines::None);
-        ax1.style.xlabel = None;
-        // I don't think these are needed
-        // ax0.style.trim_axis_right = true;
-        // ax1.style.trim_axis_left = true;
+        ax1.style.y_major_grids = false;
 
         Self { ax0, ax1: Some(ax1) }
     }
@@ -516,11 +516,18 @@ impl Style {
             options.push(format!("extra y tick labels={}", l.render()));
         }
 
-        if let Some(p) = &self.xtick_pos {
-            options.push(format!("xtick pos={}", p.render()));
-        }
-        if let Some(p) = &self.ytick_pos {
-            options.push(format!("ytick pos={}", p.render()));
+        if self.xtick_pos == self.ytick_pos {
+            // If both are none, we don't need to do anything
+            if let Some(p) = &self.xtick_pos {
+                options.push(format!("tick pos={}", p.render()));
+            }
+        } else {
+            if let Some(p) = &self.xtick_pos {
+                options.push(format!("xtick pos={}", p.render()));
+            }
+            if let Some(p) = &self.ytick_pos {
+                options.push(format!("ytick pos={}", p.render()));
+            }
         }
 
         if let Some(a) = &self.tick_align {
@@ -796,7 +803,7 @@ impl Cs {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Anchor {
     North,
     East,
@@ -832,7 +839,7 @@ impl Anchor {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GridLines {
     Major,
     Minor,
@@ -852,7 +859,7 @@ impl GridLines {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TickPos {
     Left,
     Right,
@@ -870,7 +877,7 @@ impl TickPos {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TickAlign {
     Inside,
     Center,
@@ -888,7 +895,7 @@ impl TickAlign {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum CellAlign {
     Left,
     Right,
