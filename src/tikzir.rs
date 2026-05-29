@@ -72,11 +72,10 @@ impl TikzPicture {
         let mut res = String::new();
         res.push_str("\\ifx\\epyrpad\\undefined\\newlength{\\epyrpad}\\fi%\n".into());
         res.push_str(&format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}%\n"));
-        // Representative glyph sample used to estimate tick-label ascent/height when
-        // reserving right-axis padding. "Ag" provides a stable height across fonts.
+        // "Ag" provides a stable height across fonts to estimate label height
         res.push_str("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup%\n".into());
-        // An axis label is always assumed to present.
-        res.push_str("\\addtolength{\\epyrpad}{1em}%\n".into());
+        // Optionally add user-provided padding
+        res.push_str("\\ifdefined\\extrarpad\\addtolength{\\epyrpad}{\\extrarpad}\\fi%\n".into());
         res
     }
 }
