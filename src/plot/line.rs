@@ -2,7 +2,6 @@ use crate::{data::*, plot::*, tikzir::*};
 
 pub struct LinePlot<'a, Row> {
     x_selector: Box<dyn Fn(&Row) -> f64>,
-    aggregation: AggregationMode,
     series: Vec<LineSeriesKind<'a, Row>>,
     xaxis_label: String,
     yaxis_label: String,
@@ -12,6 +11,7 @@ enum LineSeriesKind<'a, Row> {
     Plain {
         df: &'a DataFrame<Row>,
         selector: Box<dyn Fn(&Row) -> f64>,
+        aggregation: AggregationMode,
         label: String,
         color: String,
     },
@@ -19,6 +19,7 @@ enum LineSeriesKind<'a, Row> {
         df: &'a DataFrame<Row>,
         group_by: Box<dyn Fn(&Row) -> f64>,
         y_selector: Box<dyn Fn(&Row) -> f64>,
+        aggregation: AggregationMode,
     },
 }
 
@@ -29,32 +30,27 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
     {
         LinePlot {
             x_selector: Box::new(x_selector),
-            aggregation: AggregationMode::Quartiles,
             series: Vec::new(),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
     }
 
-    pub fn aggregation_mode(mut self, mode: AggregationMode) -> Self {
-        self.aggregation = mode;
-        self
-    }
-
-    pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, label: &str, color: &str) -> Self
+    pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, aggregation: AggregationMode, label: &str, color: &str) -> Self
     where
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(LineSeriesKind::Plain {
             df,
             selector: Box::new(y_selector),
+            aggregation,
             label: label.into(),
             color: color.into(),
         });
         self
     }
 
-    pub fn grouped_series<G, Y>(mut self, df: &'a DataFrame<Row>, group_by: G, y_selector: Y) -> Self
+    pub fn grouped_series<G, Y>(mut self, df: &'a DataFrame<Row>, group_by: G, y_selector: Y, aggregation: AggregationMode) -> Self
     where
         G: Fn(&Row) -> f64 + 'static,
         Y: Fn(&Row) -> f64 + 'static,
@@ -63,6 +59,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
             df,
             group_by: Box::new(group_by),
             y_selector: Box::new(y_selector),
+            aggregation,
         });
         self
     }
@@ -77,9 +74,9 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
 
         for series in &self.series {
             match &series {
-                LineSeriesKind::Plain { df, selector, label, color } => {
+                LineSeriesKind::Plain { df, selector, aggregation, label, color } => {
                     let x_grouped = (*df).clone().group_by(|row| (self.x_selector)(row));
-                    let stats = x_grouped.summarize_by_group(&**selector, self.aggregation);
+                    let stats = x_grouped.summarize_by_group(&**selector, *aggregation);
 
                     push_series_elements(
                         &mut elements,
@@ -90,12 +87,12 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
                     );
                     emitted_series += 1;
                 }
-                LineSeriesKind::Grouped { df, group_by, y_selector } => {
+                LineSeriesKind::Grouped { df, group_by, y_selector, aggregation } => {
                     let grouped = (*df).clone().group_by(|row| group_by(row));
 
                     for gi in 0..grouped.num_groups() {
                         let subgroup = grouped.subgroup_by(gi, |row| (self.x_selector)(row));
-                        let stats = subgroup.summarize_by_group(&**y_selector, self.aggregation);
+                        let stats = subgroup.summarize_by_group(&**y_selector, *aggregation);
 
                         push_series_elements(
                             &mut elements,

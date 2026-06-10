@@ -6,7 +6,6 @@ pub struct ZPlot<Row> {
     x_selector: Box<dyn Fn(&Row) -> f64>,
     y_selector: Box<dyn Fn(&Row) -> f64>,
     aggregation: AggregationMode,
-    /// Filter elements after aggregation.
     agg_filter: Option<Box<dyn Fn(f64, f64, f64) -> bool>>,
     xaxis_label: String,
     yaxis_label: String,
@@ -21,6 +20,7 @@ impl<Row: Clone> ZPlot<Row> {
         hue_selector: H,
         x_selector: X,
         y_selector: Y,
+        aggregation: AggregationMode,
         xaxis_label: &str,
         yaxis_label: &str,
     ) -> Self
@@ -35,16 +35,11 @@ impl<Row: Clone> ZPlot<Row> {
             hue_selector: Box::new(hue_selector),
             x_selector: Box::new(x_selector),
             y_selector: Box::new(y_selector),
-            aggregation: AggregationMode::Quartiles,
+            aggregation,
             agg_filter: None,
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
-    }
-
-    pub fn aggregation_mode(mut self, mode: AggregationMode) -> Self {
-        self.aggregation = mode;
-        self
     }
 
     /// Filter elements after aggregation.

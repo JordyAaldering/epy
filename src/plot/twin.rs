@@ -2,7 +2,6 @@ use crate::{data::*, plot::*, tikzir::*};
 
 pub struct TwinPlot<'a, Row> {
     group_selector: Box<dyn Fn(&Row) -> f64>,
-    aggregation: AggregationMode,
     ax0_series: Vec<TwinSeries<'a, Row>>,
     ax1_series: Vec<TwinSeries<'a, Row>>,
     ax0_yaxis_label: String,
@@ -14,6 +13,7 @@ struct TwinSeries<'a, Row> {
     df: &'a DataFrame<Row>,
     kind: TwinSeriesKind,
     selector: Box<dyn Fn(&Row) -> f64>,
+    aggregation: AggregationMode,
     label: String,
     color: String,
 }
@@ -36,7 +36,6 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
     {
         TwinPlot {
             group_selector: Box::new(group_selector),
-            aggregation: AggregationMode::Quartiles,
             ax0_series: Vec::new(),
             ax1_series: Vec::new(),
             ax0_yaxis_label: ax0_yaxis_label.into(),
@@ -45,15 +44,11 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         }
     }
 
-    pub fn aggregation_mode(mut self, mode: AggregationMode) -> Self {
-        self.aggregation = mode;
-        self
-    }
-
     pub fn ax0_bar(
         mut self,
         df: &'a DataFrame<Row>,
         selector: impl Fn(&Row) -> f64 + 'static,
+        aggregation: AggregationMode,
         label: &str,
         color: &str,
     ) -> Self {
@@ -61,6 +56,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
             df,
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
+            aggregation,
             label: label.into(),
             color: color.into(),
         });
@@ -71,6 +67,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         mut self,
         df: &'a DataFrame<Row>,
         selector: impl Fn(&Row) -> f64 + 'static,
+        aggregation: AggregationMode,
         label: &str,
         color: &str,
     ) -> Self {
@@ -78,6 +75,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
             df,
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
+            aggregation,
             label: label.into(),
             color: color.into(),
         });
@@ -88,6 +86,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         mut self,
         df: &'a DataFrame<Row>,
         selector: Y,
+        aggregation: AggregationMode,
         label: &str,
         color: &str,
     ) -> Self
@@ -98,6 +97,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
             df,
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
+            aggregation,
             label: label.into(),
             color: color.into(),
         });
@@ -108,6 +108,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         mut self,
         df: &'a DataFrame<Row>,
         selector: Y,
+        aggregation: AggregationMode,
         label: &str,
         color: &str,
     ) -> Self
@@ -118,6 +119,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
             df,
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
+            aggregation,
             label: label.into(),
             color: color.into(),
         });
@@ -188,7 +190,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         let mut line_series_count = 0;
         for spec in series {
             let grouped = spec.df.clone().group_by(|row| (self.group_selector)(row));
-            let summary = grouped.summarize_by_group(&spec.selector, self.aggregation);
+            let summary = grouped.summarize_by_group(&spec.selector, spec.aggregation);
             let color = spec.color.clone();
 
             match spec.kind {

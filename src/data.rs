@@ -36,6 +36,12 @@ pub enum AggregationMode {
     },
 }
 
+impl AggregationMode {
+    pub fn meanstd() -> Self {
+        AggregationMode::MeanStd { scale: 1.0 }
+    }
+}
+
 #[derive(Clone, Copy)]
 struct BandStats {
     center: f64,

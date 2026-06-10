@@ -56,9 +56,9 @@ fn twin(df: &DataFrame<Record>) {
             "GFLOP/J",
             "GFLOP/s",
         )
-        .ax0_bar(&filtered, |r| r.gflop_j(), "GFLOP/J", "energycolor")
-        .ax1_line(&filtered, |r| r.gflop_s(), "GFLOP/s", "runtimecolor")
-        .ax1_line(&filtered, |r| r.gflop_s() / 2.0, "half", "cyan")
+        .ax0_bar(&filtered, |r| r.gflop_j(), AggregationMode::Quartiles, "GFLOP/J", "energycolor")
+        .ax1_line(&filtered, |r| r.gflop_s(), AggregationMode::Quartiles, "GFLOP/s", "runtimecolor")
+        .ax1_line(&filtered, |r| r.gflop_s() / 2.0, AggregationMode::Quartiles, "half", "cyan")
         .build_axes();
 
     ax0.style.ymax = Some(0.09);
@@ -76,8 +76,7 @@ fn ipc(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
     let mut ax = LinePlot::new(|r: &Record| r.powercap, "Power limit (W)", "IPC")
-        .aggregation_mode(AggregationMode::MeanStd { scale: 1.0 })
-        .series(&filtered, |r| r.ipc(), "IPC", "runtimecolor")
+        .series(&filtered, |r| r.ipc(), AggregationMode::meanstd(), "IPC", "runtimecolor")
         .build_axis()
         .label(Cs::Axis(5.0, 0.35), "Hello, world!", None)
         .area(Cs::Axis(5.5, 0.0), Cs::Axis(12.5, 1.0), Some("purple!30"));
@@ -94,7 +93,7 @@ fn power(df: &DataFrame<Record>) {
             "Configured power limit (W)",
             "Actual power draw (W)",
         )
-        .grouped_series(df, |r| r.threads as f64, |r| r.rapl / r.runtime)
+        .grouped_series(df, |r| r.threads as f64, |r| r.rapl / r.runtime, AggregationMode::Quartiles)
         .build_axis();
 
     let doc = TikzPicture::from_axis(ax);
@@ -107,6 +106,7 @@ fn zplot(df: &DataFrame<Record>) {
             |r| r.powercap,
             |r| r.gflop_s(),
             |r| r.gflop_j(),
+            AggregationMode::Quartiles,
             "GFLOP/s",
             "GFLOP/J",
         )
