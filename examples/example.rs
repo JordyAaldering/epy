@@ -76,8 +76,8 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
-    let mut ax = LinePlot::new(filtered, |r| r.powercap, "Power limit (W)", "IPC")
-        .series(|r| r.ipc(), "IPC", "runtimecolor")
+    let mut ax = LinePlot::new(|r: &Record| r.powercap, "Power limit (W)", "IPC")
+        .series(&filtered, |r| r.ipc(), "IPC", "runtimecolor")
         .build_axis()
         .label(Cs::Axis(5.0, 0.35), "Hello, world!", None)
         .area(Cs::Axis(5.5, 0.0), Cs::Axis(12.5, 1.0), Some("purple!30"));
@@ -90,12 +90,11 @@ fn ipc(df: &DataFrame<Record>) {
 
 fn power(df: &DataFrame<Record>) {
     let ax = LinePlot::new(
-            df.clone(),
-            |r| r.powercap,
+            |r: &Record| r.powercap,
             "Configured power limit (W)",
             "Actual power draw (W)",
         )
-        .grouped_series(|r| r.threads as f64, |r| r.rapl / r.runtime)
+        .grouped_series(df, |r| r.threads as f64, |r| r.rapl / r.runtime)
         .build_axis();
 
     let doc = TikzPicture::from_axis(ax);

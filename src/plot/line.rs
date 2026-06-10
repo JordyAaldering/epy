@@ -1,32 +1,32 @@
 use crate::{data::*, plot::*, tikzir::*};
 
-pub struct LinePlot<Row> {
-    df: DataFrame<Row>,
+pub struct LinePlot<'a, Row> {
     x_selector: Box<dyn Fn(&Row) -> f64>,
-    series: Vec<LineSeriesKind<Row>>,
+    series: Vec<LineSeriesKind<'a, Row>>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-enum LineSeriesKind<Row> {
+enum LineSeriesKind<'a, Row> {
     Plain {
+        df: &'a DataFrame<Row>,
         selector: Box<dyn Fn(&Row) -> f64>,
         label: String,
         color: String,
     },
     Grouped {
+        df: &'a DataFrame<Row>,
         group_by: Box<dyn Fn(&Row) -> f64>,
         y_selector: Box<dyn Fn(&Row) -> f64>,
     },
 }
 
-impl<Row: Clone> LinePlot<Row> {
-    pub fn new<X>(df: DataFrame<Row>, x_selector: X, xaxis_label: &str, yaxis_label: &str) -> Self
+impl<'a, Row: Clone> LinePlot<'a, Row> {
+    pub fn new<X>(x_selector: X, xaxis_label: &str, yaxis_label: &str) -> Self
     where
         X: Fn(&Row) -> f64 + 'static,
     {
         LinePlot {
-            df,
             x_selector: Box::new(x_selector),
             series: Vec::new(),
             xaxis_label: xaxis_label.into(),
@@ -34,11 +34,12 @@ impl<Row: Clone> LinePlot<Row> {
         }
     }
 
-    pub fn series<Y>(mut self, y_selector: Y, label: &str, color: &str) -> Self
+    pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, label: &str, color: &str) -> Self
     where
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(LineSeriesKind::Plain {
+            df,
             selector: Box::new(y_selector),
             label: label.into(),
             color: color.into(),
@@ -46,12 +47,13 @@ impl<Row: Clone> LinePlot<Row> {
         self
     }
 
-    pub fn grouped_series<G, Y>(mut self, group_by: G, y_selector: Y) -> Self
+    pub fn grouped_series<G, Y>(mut self, df: &'a DataFrame<Row>, group_by: G, y_selector: Y) -> Self
     where
         G: Fn(&Row) -> f64 + 'static,
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(LineSeriesKind::Grouped {
+            df,
             group_by: Box::new(group_by),
             y_selector: Box::new(y_selector),
         });
@@ -59,8 +61,6 @@ impl<Row: Clone> LinePlot<Row> {
     }
 
     pub fn build_axis(&self) -> Axis {
-        let x_grouped = self.df.clone().group_by(|row| (self.x_selector)(row));
-
         let mut options = common_axis_options();
         options.xlabel = Some(self.xaxis_label.clone());
         options.ylabel = Some(self.yaxis_label.clone());
@@ -70,7 +70,8 @@ impl<Row: Clone> LinePlot<Row> {
 
         for series in &self.series {
             match &series {
-                LineSeriesKind::Plain { selector, label, color } => {
+                LineSeriesKind::Plain { df, selector, label, color } => {
+                    let x_grouped = (*df).clone().group_by(|row| (self.x_selector)(row));
                     let stats = x_grouped.quartiles_by_group(&**selector);
 
                     push_series_elements(
@@ -82,8 +83,8 @@ impl<Row: Clone> LinePlot<Row> {
                     );
                     emitted_series += 1;
                 }
-                LineSeriesKind::Grouped { group_by, y_selector } => {
-                    let grouped = self.df.clone().group_by(|row| group_by(row));
+                LineSeriesKind::Grouped { df, group_by, y_selector } => {
+                    let grouped = (*df).clone().group_by(|row| group_by(row));
 
                     for gi in 0..grouped.num_groups() {
                         let subgroup = grouped.subgroup_by(gi, |row| (self.x_selector)(row));
