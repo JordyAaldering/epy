@@ -1,16 +1,16 @@
 use crate::{data::*, plot::*, tikzir::*};
 
-pub struct TwinPlot<Row> {
-    df: DataFrame<Row>,
+pub struct TwinPlot<'a, Row> {
     group_selector: Box<dyn Fn(&Row) -> f64>,
-    ax0_series: Vec<TwinSeries<Row>>,
-    ax1_series: Vec<TwinSeries<Row>>,
+    ax0_series: Vec<TwinSeries<'a, Row>>,
+    ax1_series: Vec<TwinSeries<'a, Row>>,
     ax0_yaxis_label: String,
     ax1_yaxis_label: String,
     xaxis_label: String,
 }
 
-struct TwinSeries<Row> {
+struct TwinSeries<'a, Row> {
+    df: &'a DataFrame<Row>,
     kind: TwinSeriesKind,
     selector: Box<dyn Fn(&Row) -> f64>,
     label: String,
@@ -23,9 +23,8 @@ enum TwinSeriesKind {
     Line,
 }
 
-impl<Row: Clone> TwinPlot<Row> {
+impl<'a, Row: Clone> TwinPlot<'a, Row> {
     pub fn new<G>(
-        df: DataFrame<Row>,
         group_selector: G,
         xaxis_label: &str,
         ax0_yaxis_label: &str,
@@ -35,7 +34,6 @@ impl<Row: Clone> TwinPlot<Row> {
         G: Fn(&Row) -> f64 + 'static,
     {
         TwinPlot {
-            df,
             group_selector: Box::new(group_selector),
             ax0_series: Vec::new(),
             ax1_series: Vec::new(),
@@ -47,11 +45,13 @@ impl<Row: Clone> TwinPlot<Row> {
 
     pub fn ax0_bar(
         mut self,
+        df: &'a DataFrame<Row>,
         selector: impl Fn(&Row) -> f64 + 'static,
         label: &str,
         color: &str,
     ) -> Self {
         self.ax0_series.push(TwinSeries {
+            df,
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
             label: label.into(),
@@ -62,11 +62,13 @@ impl<Row: Clone> TwinPlot<Row> {
 
     pub fn ax0_line(
         mut self,
+        df: &'a DataFrame<Row>,
         selector: impl Fn(&Row) -> f64 + 'static,
         label: &str,
         color: &str,
     ) -> Self {
         self.ax0_series.push(TwinSeries {
+            df,
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
             label: label.into(),
@@ -77,6 +79,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
     pub fn ax1_bar<Y>(
         mut self,
+        df: &'a DataFrame<Row>,
         selector: Y,
         label: &str,
         color: &str,
@@ -85,6 +88,7 @@ impl<Row: Clone> TwinPlot<Row> {
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.ax1_series.push(TwinSeries {
+            df,
             kind: TwinSeriesKind::Bar,
             selector: Box::new(selector),
             label: label.into(),
@@ -95,6 +99,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
     pub fn ax1_line<Y>(
         mut self,
+        df: &'a DataFrame<Row>,
         selector: Y,
         label: &str,
         color: &str,
@@ -103,6 +108,7 @@ impl<Row: Clone> TwinPlot<Row> {
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.ax1_series.push(TwinSeries {
+            df,
             kind: TwinSeriesKind::Line,
             selector: Box::new(selector),
             label: label.into(),
@@ -117,13 +123,8 @@ impl<Row: Clone> TwinPlot<Row> {
         (ax1, ax2)
     }
 
-    fn grouped(&self) -> GroupedFrame<Row> {
-        self.df.clone().group_by(|row| (self.group_selector)(row))
-    }
-
     fn build_left_axis(&self) -> Axis {
-        let grouped = self.grouped();
-        let keys = grouped.keys().to_vec();
+        let keys = self.reference_keys();
         let n = keys.len();
 
         let mut style = common_axis_options();
@@ -139,7 +140,7 @@ impl<Row: Clone> TwinPlot<Row> {
         style.xtick_labels = Some(keys.iter().map(ToString::to_string).collect::<Vec<_>>().into());
 
         let mut data = Vec::new();
-        self.push_axis_series_elements(&grouped, &self.ax0_series, &mut data, true, 0);
+        self.push_axis_series_elements(&self.ax0_series, &mut data, true, 0);
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
         self.push_legend_images_for_series(&self.ax1_series, &mut data, ax0_line_count);
 
@@ -147,8 +148,7 @@ impl<Row: Clone> TwinPlot<Row> {
     }
 
     fn build_right_axis(&self) -> Axis {
-        let grouped = self.grouped();
-        let n = grouped.num_groups();
+        let n = self.reference_keys().len();
 
         let mut style = common_axis_options();
         style.ylabel = Some(self.ax1_yaxis_label.clone());
@@ -160,21 +160,27 @@ impl<Row: Clone> TwinPlot<Row> {
 
         let mut data = Vec::new();
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
-        self.push_axis_series_elements(&grouped, &self.ax1_series, &mut data, false, ax0_line_count);
+        self.push_axis_series_elements(&self.ax1_series, &mut data, false, ax0_line_count);
 
         Axis { style, data }
     }
 
+    fn reference_keys(&self) -> Vec<f64> {
+        let spec = self.ax0_series.first().or_else(|| self.ax1_series.first())
+            .expect("At least one series must be added to the twin plot");
+        spec.df.clone().group_by(|row| (self.group_selector)(row)).keys().to_vec()
+    }
+
     fn push_axis_series_elements(
         &self,
-        grouped: &GroupedFrame<Row>,
-        series: &Vec<TwinSeries<Row>>,
+        series: &[TwinSeries<'a, Row>],
         elements: &mut Vec<AxisElement>,
         include_in_legend: bool,
         line_marker_start_index: usize,
     ) {
         let mut line_series_count = 0;
         for spec in series {
+            let grouped = spec.df.clone().group_by(|row| (self.group_selector)(row));
             let quartiles = grouped.quartiles_by_group(&spec.selector);
             let color = spec.color.clone();
 
@@ -278,7 +284,7 @@ impl<Row: Clone> TwinPlot<Row> {
 
     fn push_legend_images_for_series(
         &self,
-        series: &[TwinSeries<Row>],
+        series: &[TwinSeries<'a, Row>],
         elements: &mut Vec<AxisElement>,
         line_marker_start_index: usize,
     ) {

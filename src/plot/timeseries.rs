@@ -1,39 +1,40 @@
 use crate::{data::*, plot::*, tikzir::*};
 
-pub struct TimeSeries<Row> {
-    df: DataFrame<Row>,
-    series: Vec<TimeSeriesKind<Row>>,
+pub struct TimeSeries<'a, Row> {
+    series: Vec<TimeSeriesKind<'a, Row>>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-enum TimeSeriesKind<Row> {
+enum TimeSeriesKind<'a, Row> {
     Plain {
+        df: &'a DataFrame<Row>,
         selector: Box<dyn Fn(&Row) -> f64>,
         label: String,
         color: String,
     },
     Grouped {
+        df: &'a DataFrame<Row>,
         group_by: Box<dyn Fn(&Row) -> f64>,
         y_selector: Box<dyn Fn(&Row) -> f64>,
     },
 }
 
-impl<Row: Clone> TimeSeries<Row> {
-    pub fn new(df: DataFrame<Row>, xaxis_label: &str, yaxis_label: &str) -> Self {
+impl<'a, Row: Clone> TimeSeries<'a, Row> {
+    pub fn new(xaxis_label: &str, yaxis_label: &str) -> Self {
         TimeSeries {
-            df,
             series: Vec::new(),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
     }
 
-    pub fn series<Y>(mut self, y_selector: Y, label: &str, color: &str) -> Self
+    pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, label: &str, color: &str) -> Self
     where
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(TimeSeriesKind::Plain {
+            df,
             selector: Box::new(y_selector),
             label: label.into(),
             color: color.into(),
@@ -43,6 +44,7 @@ impl<Row: Clone> TimeSeries<Row> {
 
     pub fn grouped_series<G, Y>(
         mut self,
+        df: &'a DataFrame<Row>,
         group_by: G,
         y_selector: Y,
     ) -> Self
@@ -51,6 +53,7 @@ impl<Row: Clone> TimeSeries<Row> {
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(TimeSeriesKind::Grouped {
+            df,
             group_by: Box::new(group_by),
             y_selector: Box::new(y_selector),
         });
@@ -69,11 +72,12 @@ impl<Row: Clone> TimeSeries<Row> {
         for series in &self.series {
             match &series {
                 TimeSeriesKind::Plain {
+                    df,
                     selector,
                     label,
                     color,
                 } => {
-                    let line: Vec<Cs> = self.df
+                    let line: Vec<Cs> = df
                         .rows()
                         .iter()
                         .enumerate()
@@ -87,10 +91,11 @@ impl<Row: Clone> TimeSeries<Row> {
                     }
                 }
                 TimeSeriesKind::Grouped {
+                    df,
                     group_by,
                     y_selector,
                 } => {
-                    let grouped = self.df.clone().group_by(|row| group_by(row));
+                    let grouped = (*df).clone().group_by(|row| group_by(row));
 
                     for gi in 0..grouped.num_groups() {
                         let line: Vec<Cs> = grouped.groups[gi]

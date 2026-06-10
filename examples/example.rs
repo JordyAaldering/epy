@@ -51,15 +51,14 @@ fn twin(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
     let (mut ax0, mut ax1) = TwinPlot::new(
-            filtered,
-            |r| r.powercap,
+            |r: &Record| r.powercap,
             "Power limit (W)",
             "GFLOP/J",
             "GFLOP/s",
         )
-        .ax0_bar(|r| r.gflop_j(), "GFLOP/J", "energycolor")
-        .ax1_line(|r| r.gflop_s(), "GFLOP/s", "runtimecolor")
-        .ax1_line(|r| r.gflop_s() / 2.0, "half", "cyan")
+        .ax0_bar(&filtered, |r| r.gflop_j(), "GFLOP/J", "energycolor")
+        .ax1_line(&filtered, |r| r.gflop_s(), "GFLOP/s", "runtimecolor")
+        .ax1_line(&filtered, |r| r.gflop_s() / 2.0, "half", "cyan")
         .build_axes();
 
     ax0.style.ymax = Some(0.09);
@@ -103,15 +102,14 @@ fn power(df: &DataFrame<Record>) {
 
 fn zplot(df: &DataFrame<Record>) {
     let mut ax = ZPlot::new(
-            df.clone(),
-            |r| r.threads as f64,
+            |r: &Record| r.threads as f64,
             |r| r.powercap,
             |r| r.gflop_s(),
             |r| r.gflop_j(),
             "GFLOP/s",
             "GFLOP/J",
         )
-        .build_axis();
+        .build_axis(df);
     ax.style.xmin = Some(0.0);
     ax.style.ymin = Some(0.0);
 
@@ -133,9 +131,9 @@ struct TimeseriesRecord {
 fn timeseries() {
     let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_data_timeseries.csv").unwrap();
 
-    let ax = TimeSeries::new(df, "Iteration", "Energy consumption")
-        .series(|r| r.energy, "Energy", "energycolor")
-        .series(|r| r.runtime, "Runtime", "runtimecolor")
+    let ax = TimeSeries::new("Iteration", "Energy consumption")
+        .series(&df, |r| r.energy, "Energy", "energycolor")
+        .series(&df, |r| r.runtime, "Runtime", "runtimecolor")
         .build_axis();
 
     let doc = TikzPicture::from_axis(ax);

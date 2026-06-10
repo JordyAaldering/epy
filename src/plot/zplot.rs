@@ -1,7 +1,6 @@
 use crate::{data::*, plot::*, tikzir::*};
 
 pub struct ZPlot<Row> {
-    df: DataFrame<Row>,
     series_selector: Box<dyn Fn(&Row) -> f64>,
     hue_selector: Box<dyn Fn(&Row) -> f64>,
     x_selector: Box<dyn Fn(&Row) -> f64>,
@@ -17,7 +16,6 @@ impl<Row: Clone> ZPlot<Row> {
     /// separate series in the legend. Within each series, rows are grouped by
     /// `hue_selector` and the mean `(x_selector, y_selector)` is plotted per group.
     pub fn new<G, H, X, Y>(
-        df: DataFrame<Row>,
         series_selector: G,
         hue_selector: H,
         x_selector: X,
@@ -32,7 +30,6 @@ impl<Row: Clone> ZPlot<Row> {
         Y: Fn(&Row) -> f64 + 'static,
     {
         ZPlot {
-            df,
             series_selector: Box::new(series_selector),
             hue_selector: Box::new(hue_selector),
             x_selector: Box::new(x_selector),
@@ -49,8 +46,8 @@ impl<Row: Clone> ZPlot<Row> {
         self
     }
 
-    pub fn build_axis(&self) -> Axis {
-        let grouped = self.df.clone().group_by(|row| (self.series_selector)(row));
+    pub fn build_axis(&self, df: &DataFrame<Row>) -> Axis {
+        let grouped = df.clone().group_by(|row| (self.series_selector)(row));
         let mut series_groups: Vec<(f64, Vec<Cs>)> = Vec::new();
 
         for gi in 0..grouped.num_groups() {
