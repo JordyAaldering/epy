@@ -12,3 +12,4 @@ csv = "1.4.0"
 derive_builder = "0.20.2"
 ordermap = "1.2.0"
 serde = { version = "1.0.228", features = ["derive"] }
+statrs = "0.18.0"

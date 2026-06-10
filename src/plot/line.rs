@@ -2,6 +2,7 @@ use crate::{data::*, plot::*, tikzir::*};
 
 pub struct LinePlot<'a, Row> {
     x_selector: Box<dyn Fn(&Row) -> f64>,
+    aggregation: AggregationMode,
     series: Vec<LineSeriesKind<'a, Row>>,
     xaxis_label: String,
     yaxis_label: String,
@@ -28,10 +29,16 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
     {
         LinePlot {
             x_selector: Box::new(x_selector),
+            aggregation: AggregationMode::Quartiles,
             series: Vec::new(),
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
+    }
+
+    pub fn aggregation_mode(mut self, mode: AggregationMode) -> Self {
+        self.aggregation = mode;
+        self
     }
 
     pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, label: &str, color: &str) -> Self
@@ -72,7 +79,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
             match &series {
                 LineSeriesKind::Plain { df, selector, label, color } => {
                     let x_grouped = (*df).clone().group_by(|row| (self.x_selector)(row));
-                    let stats = x_grouped.quartiles_by_group(&**selector);
+                    let stats = x_grouped.summarize_by_group(&**selector, self.aggregation);
 
                     push_series_elements(
                         &mut elements,
@@ -88,7 +95,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
 
                     for gi in 0..grouped.num_groups() {
                         let subgroup = grouped.subgroup_by(gi, |row| (self.x_selector)(row));
-                        let stats = subgroup.quartiles_by_group(&**y_selector);
+                        let stats = subgroup.summarize_by_group(&**y_selector, self.aggregation);
 
                         push_series_elements(
                             &mut elements,
@@ -109,17 +116,17 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
 
 fn push_series_elements(
     elements: &mut Vec<AxisElement>,
-    stats: &GroupedQuartiles,
+    stats: &GroupedSummaryBand,
     color: String,
     marker: String,
     label: String,
 ) {
     let mut band = Vec::new();
-    for (x, q3) in stats.keys.iter().zip(stats.q3s.iter()) {
-        band.push(Cs::Plain(*x, *q3));
+    for (x, upper) in stats.keys.iter().zip(stats.uppers.iter()) {
+        band.push(Cs::Plain(*x, *upper));
     }
-    for (x, q1) in stats.keys.iter().zip(stats.q1s.iter()).rev() {
-        band.push(Cs::Plain(*x, *q1));
+    for (x, lower) in stats.keys.iter().zip(stats.lowers.iter()).rev() {
+        band.push(Cs::Plain(*x, *lower));
     }
 
     let err_options = StyleBuilder::default()
@@ -138,8 +145,8 @@ fn push_series_elements(
 
     let line: Vec<Cs> = stats.keys
         .iter()
-        .zip(stats.medians.iter())
-        .map(|(x, median)| Cs::Plain(*x, *median))
+        .zip(stats.centers.iter())
+        .map(|(x, center)| Cs::Plain(*x, *center))
         .collect();
 
     let plot_options = StyleBuilder::default()

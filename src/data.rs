@@ -1,8 +1,7 @@
 use std::{collections::HashMap, path::Path};
 
 use serde::de::DeserializeOwned;
-
-use crate::plot::quartiles;
+use statrs::statistics::{Data, OrderStatistics, Statistics};
 
 #[derive(Clone)]
 /// A typed collection of CSV rows loaded via `serde`.
@@ -21,11 +20,54 @@ pub struct GroupedFrame<T> {
     pub(crate) groups: Vec<Vec<usize>>,
 }
 
-pub struct GroupedQuartiles {
+pub struct GroupedSummaryBand {
     pub keys: Vec<f64>,
-    pub medians: Vec<f64>,
-    pub q1s: Vec<f64>,
-    pub q3s: Vec<f64>,
+    pub centers: Vec<f64>,
+    pub lowers: Vec<f64>,
+    pub uppers: Vec<f64>,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum AggregationMode {
+    #[default]
+    Quartiles,
+    MeanStd {
+        scale: f64
+    },
+}
+
+#[derive(Clone, Copy)]
+struct BandStats {
+    center: f64,
+    lower: f64,
+    upper: f64,
+}
+
+fn summarize_band(values: &[f64], mode: AggregationMode) -> BandStats {
+    assert!(!values.is_empty());
+    match mode {
+        AggregationMode::Quartiles => {
+            let mut data = Data::new(values.to_vec());
+            let center = data.median();
+            let lower = data.lower_quartile();
+            let upper = data.upper_quartile();
+            BandStats { center, lower, upper }
+        }
+        AggregationMode::MeanStd { scale } => {
+            let center = values.mean();
+            let stddev = if values.len() > 1 {
+                values.std_dev()
+            } else {
+                0.0
+            };
+            let spread = scale * stddev;
+            BandStats {
+                center,
+                lower: center - spread,
+                upper: center + spread,
+            }
+        }
+    }
 }
 
 impl<T> DataFrame<T> {
@@ -143,28 +185,32 @@ impl<T> GroupedFrame<T> {
         &self.unique_keys
     }
 
-    /// Compute median and IQR quartiles for each group using `selector`.
-    pub fn quartiles_by_group(&self, selector: &dyn Fn(&T) -> f64) -> GroupedQuartiles {
-        let mut medians = Vec::with_capacity(self.num_groups());
-        let mut q1s = Vec::with_capacity(self.num_groups());
-        let mut q3s = Vec::with_capacity(self.num_groups());
+    /// Compute center and lower/upper bands for each group using `selector`.
+    pub fn summarize_by_group(
+        &self,
+        selector: &dyn Fn(&T) -> f64,
+        mode: AggregationMode,
+    ) -> GroupedSummaryBand {
+        let mut centers = Vec::with_capacity(self.num_groups());
+        let mut lowers = Vec::with_capacity(self.num_groups());
+        let mut uppers = Vec::with_capacity(self.num_groups());
 
         for group in &self.groups {
             let vals = group
                 .iter()
                 .map(|&ri| selector(&self.df.rows[ri]))
                 .collect::<Vec<_>>();
-            let qs = quartiles(&vals);
-            medians.push(qs.median);
-            q1s.push(qs.q1);
-            q3s.push(qs.q3);
+            let stats = summarize_band(&vals, mode);
+            centers.push(stats.center);
+            lowers.push(stats.lower);
+            uppers.push(stats.upper);
         }
 
-        GroupedQuartiles {
+        GroupedSummaryBand {
             keys: self.keys().to_vec(),
-            medians,
-            q1s,
-            q3s,
+            centers,
+            lowers,
+            uppers,
         }
     }
 

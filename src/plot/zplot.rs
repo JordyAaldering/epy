@@ -5,7 +5,8 @@ pub struct ZPlot<Row> {
     hue_selector: Box<dyn Fn(&Row) -> f64>,
     x_selector: Box<dyn Fn(&Row) -> f64>,
     y_selector: Box<dyn Fn(&Row) -> f64>,
-    /// Filter elements after median aggregation
+    aggregation: AggregationMode,
+    /// Filter elements after aggregation.
     agg_filter: Option<Box<dyn Fn(f64, f64, f64) -> bool>>,
     xaxis_label: String,
     yaxis_label: String,
@@ -14,7 +15,7 @@ pub struct ZPlot<Row> {
 impl<Row: Clone> ZPlot<Row> {
     /// Create a scatter plot where each unique value of `series_selector` becomes a
     /// separate series in the legend. Within each series, rows are grouped by
-    /// `hue_selector` and the mean `(x_selector, y_selector)` is plotted per group.
+    /// `hue_selector` and the aggregated `(x_selector, y_selector)` point is plotted per group.
     pub fn new<G, H, X, Y>(
         series_selector: G,
         hue_selector: H,
@@ -34,13 +35,19 @@ impl<Row: Clone> ZPlot<Row> {
             hue_selector: Box::new(hue_selector),
             x_selector: Box::new(x_selector),
             y_selector: Box::new(y_selector),
+            aggregation: AggregationMode::Quartiles,
             agg_filter: None,
             xaxis_label: xaxis_label.into(),
             yaxis_label: yaxis_label.into(),
         }
     }
 
-    /// Filter elements after median aggregation
+    pub fn aggregation_mode(mut self, mode: AggregationMode) -> Self {
+        self.aggregation = mode;
+        self
+    }
+
+    /// Filter elements after aggregation.
     pub fn with_filter(mut self, filter: impl Fn(f64, f64, f64) -> bool + 'static) -> Self {
         self.agg_filter = Some(Box::new(filter));
         self
@@ -53,27 +60,27 @@ impl<Row: Clone> ZPlot<Row> {
         for gi in 0..grouped.num_groups() {
             let series_key = grouped.keys()[gi];
             let subgroup = grouped.subgroup_by(gi, |row| (self.hue_selector)(row));
-            let x_quartiles = subgroup.quartiles_by_group(&self.x_selector);
-            let y_quartiles = subgroup.quartiles_by_group(&self.y_selector);
+            let x_summary = subgroup.summarize_by_group(&self.x_selector, self.aggregation);
+            let y_summary = subgroup.summarize_by_group(&self.y_selector, self.aggregation);
 
-            let mut medians_by_hue: Vec<(f64, f64, f64)> = x_quartiles
+            let mut points_by_hue: Vec<(f64, f64, f64)> = x_summary
                 .keys
                 .iter()
                 .copied()
-                .zip(x_quartiles.medians.iter().copied())
-                .zip(y_quartiles.medians.iter().copied())
-                .map(|((hue, med_x), med_y)| (hue, med_x, med_y))
-                .filter(|(hue, med_x, med_y)| {
+                .zip(x_summary.centers.iter().copied())
+                .zip(y_summary.centers.iter().copied())
+                .map(|((hue, x), y)| (hue, x, y))
+                .filter(|(hue, x, y)| {
                     if let Some(filter) = &self.agg_filter {
-                        filter(*hue, *med_x, *med_y)
+                        filter(*hue, *x, *y)
                     } else {
                         true
                     }
                 })
                 .collect();
-            medians_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
+            points_by_hue.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
 
-            let coordinates = medians_by_hue
+            let coordinates = points_by_hue
                 .into_iter()
                 .map(|(_, x, y)| Cs::Plain(x, y))
                 .collect();

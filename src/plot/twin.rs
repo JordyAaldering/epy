@@ -2,6 +2,7 @@ use crate::{data::*, plot::*, tikzir::*};
 
 pub struct TwinPlot<'a, Row> {
     group_selector: Box<dyn Fn(&Row) -> f64>,
+    aggregation: AggregationMode,
     ax0_series: Vec<TwinSeries<'a, Row>>,
     ax1_series: Vec<TwinSeries<'a, Row>>,
     ax0_yaxis_label: String,
@@ -35,12 +36,18 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
     {
         TwinPlot {
             group_selector: Box::new(group_selector),
+            aggregation: AggregationMode::Quartiles,
             ax0_series: Vec::new(),
             ax1_series: Vec::new(),
             ax0_yaxis_label: ax0_yaxis_label.into(),
             ax1_yaxis_label: ax1_yaxis_label.into(),
             xaxis_label: xaxis_label.into(),
         }
+    }
+
+    pub fn aggregation_mode(mut self, mode: AggregationMode) -> Self {
+        self.aggregation = mode;
+        self
     }
 
     pub fn ax0_bar(
@@ -181,13 +188,13 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         let mut line_series_count = 0;
         for spec in series {
             let grouped = spec.df.clone().group_by(|row| (self.group_selector)(row));
-            let quartiles = grouped.quartiles_by_group(&spec.selector);
+            let summary = grouped.summarize_by_group(&spec.selector, self.aggregation);
             let color = spec.color.clone();
 
             match spec.kind {
                 TwinSeriesKind::Bar => {
-                    let bar_coords: Vec<Cs> = quartiles.medians.iter().enumerate()
-                        .map(|(i, median)| Cs::Plain(i as f64, *median))
+                    let bar_coords: Vec<Cs> = summary.centers.iter().enumerate()
+                        .map(|(i, center)| Cs::Plain(i as f64, *center))
                         .collect();
 
                     let plot_options = StyleBuilder::default()
@@ -209,7 +216,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
                         elements.push(AxisElement::LegendEntry(spec.label.clone()));
                     }
 
-                    for i in 0..quartiles.q1s.len() {
+                    for i in 0..summary.lowers.len() {
                         let options = StyleBuilder::default()
                             .color("black!90")
                             .line_width(Dimension::Pt(0.9))
@@ -217,18 +224,18 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
                             .unwrap();
                         elements.push(AxisElement::Draw {
                             style: options,
-                            from: Cs::Axis(i as f64, quartiles.q1s[i]),
-                            to: Cs::Axis(i as f64, quartiles.q3s[i]),
+                            from: Cs::Axis(i as f64, summary.lowers[i]),
+                            to: Cs::Axis(i as f64, summary.uppers[i]),
                         });
                     }
                 }
                 TwinSeriesKind::Line => {
                     let mut band = Vec::new();
-                    for (i, q3) in quartiles.q3s.iter().enumerate() {
-                        band.push(Cs::Plain(i as f64, *q3));
+                    for (i, upper) in summary.uppers.iter().enumerate() {
+                        band.push(Cs::Plain(i as f64, *upper));
                     }
-                    for (i, q1) in quartiles.q1s.iter().enumerate().rev() {
-                        band.push(Cs::Plain(i as f64, *q1));
+                    for (i, lower) in summary.lowers.iter().enumerate().rev() {
+                        band.push(Cs::Plain(i as f64, *lower));
                     }
 
                     let err_options = StyleBuilder::default()
@@ -245,8 +252,8 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
                         closed_cycle: true,
                     });
 
-                    let line: Vec<Cs> = quartiles.medians.iter().enumerate()
-                        .map(|(i, median)| Cs::Plain(i as f64, *median))
+                    let line: Vec<Cs> = summary.centers.iter().enumerate()
+                        .map(|(i, center)| Cs::Plain(i as f64, *center))
                         .collect();
                     let marker_index = (line_marker_start_index + line_series_count) % MARKERS.len();
 

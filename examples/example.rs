@@ -76,6 +76,7 @@ fn ipc(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
     let mut ax = LinePlot::new(|r: &Record| r.powercap, "Power limit (W)", "IPC")
+        .aggregation_mode(AggregationMode::MeanStd { scale: 1.0 })
         .series(&filtered, |r| r.ipc(), "IPC", "runtimecolor")
         .build_axis()
         .label(Cs::Axis(5.0, 0.35), "Hello, world!", None)
