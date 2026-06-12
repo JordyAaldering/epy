@@ -260,6 +260,11 @@ pub struct Style {
     pub xlabel: Option<String>,
     pub ylabel: Option<String>,
 
+    pub xmode: Scaling,
+    pub ymode: Scaling,
+    pub x_rev: bool,
+    pub y_rev: bool,
+
     /// Allows to factor out common exponents in tick labels for linear axes.
     ///
     /// Actually has more values than true/false, but I omit those for now:
@@ -476,6 +481,19 @@ impl Style {
         }
         if let Some(ylabel) = &self.ylabel {
             options.push(format!("ylabel={{{}}}", ylabel));
+        }
+
+        if self.xmode != Scaling::default() {
+            options.push(format!("xmode={}", self.xmode.render()));
+        }
+        if self.ymode != Scaling::default() {
+            options.push(format!("ymode={}", self.ymode.render()));
+        }
+        if self.x_rev {
+            options.push("x dir=reverse".into());
+        }
+        if self.y_rev {
+            options.push("y dir=reverse".into());
         }
 
         if let Some(false) = self.scaled_ticks {
@@ -798,6 +816,25 @@ impl Cs {
             Axis(x, y) => format!("(axis cs:{},{})", x, y),
             RelAxis(x, y) => format!("(rel axis cs:{},{})", x, y),
             Code(c) => c.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Scaling {
+    #[default]
+    Normal,
+    Linear,
+    Log,
+}
+
+impl Scaling {
+    pub fn render(&self) -> String {
+        use Scaling::*;
+        match self {
+            Normal => "normal".into(),
+            Linear => "linear".into(),
+            Log => "log".into(),
         }
     }
 }
