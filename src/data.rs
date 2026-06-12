@@ -50,7 +50,7 @@ struct BandStats {
 }
 
 fn summarize_band(values: &[f64], mode: AggregationMode) -> BandStats {
-    assert!(!values.is_empty());
+    assert!(!values.is_empty(), "No values given");
     match mode {
         AggregationMode::Quartiles => {
             let mut data = Data::new(values.to_vec());
@@ -60,7 +60,11 @@ fn summarize_band(values: &[f64], mode: AggregationMode) -> BandStats {
             BandStats { center, lower, upper }
         }
         AggregationMode::MeanStd { scale } => {
-            let center = values.mean();
+            // Remove NaN entries
+            let mut values = values.to_vec();
+            values.retain(|x| !x.is_nan());
+            assert!(!values.is_empty(), "All values are NaN");
+            let center = (&values).mean();
             let stddev = if values.len() > 1 {
                 values.std_dev()
             } else {
