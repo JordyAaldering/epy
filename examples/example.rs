@@ -111,6 +111,7 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/J",
         )
         .build_axis(df);
+    ax.style.title = Some("ZPlot example".to_string());
     ax.style.xmin = Some(0.0);
     ax.style.ymin = Some(0.0);
 

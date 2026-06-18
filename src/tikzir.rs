@@ -243,6 +243,8 @@ impl AxisElement {
 pub struct Style {
     pub name: Option<String>,
 
+    pub title: Option<String>,
+
     pub width: Option<Dimension>,
     pub height: Option<Dimension>,
 
@@ -439,6 +441,10 @@ impl Style {
 
         if let Some(name) = &self.name {
             options.push(format!("name={}", name));
+        }
+
+        if let Some(title) = &self.title {
+            options.push(format!("title={{{}}}", title));
         }
 
         if let Some(width) = &self.width {
