@@ -136,13 +136,27 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         let keys = self.reference_keys();
         let n = keys.len();
 
-        let mut style = common_axis_options();
+        let mut style = common_axis_style();
+
         style.xlabel = Some(self.xaxis_label.clone());
         style.ylabel = Some(self.ax0_yaxis_label.clone());
         style.xmin = Some(-0.5);
         style.xmax = Some(n as f64 - 0.5);
+
         if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
             style.ymin = Some(0.0);
+        }
+
+        // The first axis handles the legend of both axes, so check both
+        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar)
+            || self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar)
+        {
+            bar_legend_modifier(&mut style);
+        }
+        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Line)
+            || self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Line)
+        {
+            line_legend_modifier(&mut style);
         }
 
         style.xticks = (0..n).collect::<Vec<_>>().into();
@@ -159,10 +173,11 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
     fn build_right_axis(&self) -> Axis {
         let n = self.reference_keys().len();
 
-        let mut style = common_axis_options();
+        let mut style = common_axis_style();
         style.ylabel = Some(self.ax1_yaxis_label.clone());
         style.xmin = Some(-0.5);
         style.xmax = Some(n as f64 - 0.5);
+
         if self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar) {
             style.ymin = Some(0.0);
         }

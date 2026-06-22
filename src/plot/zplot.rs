@@ -82,13 +82,14 @@ impl<Row: Clone> ZPlot<Row> {
             series_groups.push((series_key, coordinates));
         }
 
-        let mut options = common_axis_options();
-        options.xlabel = Some(self.xaxis_label.clone());
-        options.ylabel = Some(self.yaxis_label.clone());
-        options.x_major_grids = true;
-        options.ymin = Some(0.0);
+        let mut style = common_axis_style();
+        style.xlabel = Some(self.xaxis_label.clone());
+        style.ylabel = Some(self.yaxis_label.clone());
+        line_legend_modifier(&mut style);
+        style.x_major_grids = true;
+        style.ymin = Some(0.0);
 
-        let xgrid_style = options.style_overrides.entry("x grid style".into());
+        let xgrid_style = style.style_overrides.entry("x grid style".into());
         xgrid_style.or_default().color = Some(GRID_COLOR.into());
 
         let mut elements = Vec::new();
@@ -116,6 +117,6 @@ impl<Row: Clone> ZPlot<Row> {
             elements.push(AxisElement::LegendEntry(key.to_string()));
         }
 
-        Axis { style: options, data: elements }
+        Axis { style, data: elements }
     }
 }

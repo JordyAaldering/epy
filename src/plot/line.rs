@@ -65,9 +65,10 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
     }
 
     pub fn build_axis(&self) -> Axis {
-        let mut options = common_axis_options();
-        options.xlabel = Some(self.xaxis_label.clone());
-        options.ylabel = Some(self.yaxis_label.clone());
+        let mut style = common_axis_style();
+        style.xlabel = Some(self.xaxis_label.clone());
+        style.ylabel = Some(self.yaxis_label.clone());
+        line_legend_modifier(&mut style);
 
         let mut elements = Vec::new();
         let mut emitted_series = 0usize;
@@ -107,7 +108,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
             }
         }
 
-        Axis { style: options, data: elements }
+        Axis { style, data: elements }
     }
 }
 

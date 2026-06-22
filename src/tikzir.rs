@@ -386,6 +386,8 @@ pub struct Style {
 
     pub style_overrides: OrderMap<String, Style>,
 
+    pub code_overrides: OrderMap<String, String>,
+
     pub forget_plot: bool,
 }
 
@@ -714,6 +716,10 @@ impl Style {
 
         for (key, style) in &self.style_overrides {
             options.push(format!("{}={{{}}}", key, style.render().join(",")));
+        }
+
+        for (key, element) in &self.code_overrides {
+            options.push(format!("{}={{{}}}", key, element));
         }
 
         if self.forget_plot {

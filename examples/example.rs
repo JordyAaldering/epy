@@ -131,7 +131,7 @@ struct TimeseriesRecord {
 }
 
 fn timeseries() {
-    let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_data_timeseries.csv").unwrap();
+    let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_series.csv").unwrap();
 
     let ax = TimeSeries::new("Iteration", "Energy consumption")
         .series(&df, |r| r.energy, "Energy", "energycolor")
