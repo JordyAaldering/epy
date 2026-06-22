@@ -49,7 +49,7 @@ pub fn format_precision(s: &str, precision: usize, trim: bool) -> String {
 pub(crate) fn line_legend_modifier(style: &mut Style) {
     style.code_overrides.insert(
         "legend image code/.code".into(),
-        "\\path[#1] (0em,0pt) -- (1.5em,0pt) plot coordinates {(0.75em,0pt)};".into(),
+        "\\path[#1] (0em,0pt) -- (1.4em,0pt) plot coordinates {(0.7em,0pt)};".into(),
     );
 }
 
@@ -58,7 +58,7 @@ pub(crate) fn bar_legend_modifier(style: &mut Style) {
         "area legend/.append style".into(),
         StyleBuilder::default()
             .code_overrides(ordermap! {
-                "legend image code/.code".into() => "\\draw[#1,draw=none] (0em,-0.5ex) rectangle (1.5em,0.5ex);".into(),
+                "legend image code/.code".into() => "\\draw[#1,draw=none] (0em,-0.5ex) rectangle (1.4em,0.5ex);".into(),
             })
             .build()
             .unwrap(),
