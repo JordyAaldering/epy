@@ -181,6 +181,14 @@ impl<T> DataFrame<T> {
 
         GroupedFrame { df: self, unique_keys: unique, groups }
     }
+
+    pub fn split_by<F>(self, key_selector: F) -> Vec<DataFrame<T>>
+    where
+        T: Clone,
+        F: Fn(&T) -> f64,
+    {
+        self.group_by(key_selector).split()
+    }
 }
 
 impl<T> GroupedFrame<T> {
@@ -195,11 +203,7 @@ impl<T> GroupedFrame<T> {
     }
 
     /// Compute center and lower/upper bands for each group using `selector`.
-    pub fn summarize_by_group(
-        &self,
-        selector: &dyn Fn(&T) -> f64,
-        mode: AggregationMode,
-    ) -> GroupedSummaryBand {
+    pub fn summarize_by_group(&self, selector: &dyn Fn(&T) -> f64, mode: AggregationMode) -> GroupedSummaryBand {
         let mut centers = Vec::with_capacity(self.num_groups());
         let mut lowers = Vec::with_capacity(self.num_groups());
         let mut uppers = Vec::with_capacity(self.num_groups());
@@ -237,5 +241,20 @@ impl<T> GroupedFrame<T> {
             .map(|&ri| self.df.rows[ri].clone())
             .collect();
         DataFrame { rows }.group_by(key_selector)
+    }
+
+    /// Split the grouped frame into a vector of data frames, one for each group.
+    pub fn split(self) -> Vec<DataFrame<T>>
+    where
+        T: Clone,
+    {
+        self.groups.into_iter()
+            .map(|group| {
+                let rows = group.into_iter()
+                    .map(|ri| self.df.rows[ri].clone())
+                    .collect();
+                DataFrame { rows }
+            })
+            .collect()
     }
 }
