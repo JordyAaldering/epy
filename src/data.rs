@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::{HashMap, HashSet}, hash::Hash, path::Path};
 
 use serde::de::DeserializeOwned;
 use statrs::statistics::{Data, OrderStatistics, Statistics};
@@ -114,6 +114,20 @@ impl<T> DataFrame<T> {
     pub fn row(&self, idx: usize) -> &T {
         assert!(idx < self.len(), "row index {idx} out of bounds (len={})", self.len());
         &self.rows[idx]
+    }
+
+    /// Get unique row values produced by `f`, retaining the original order.
+    pub fn unique<F, U>(&self, f: F) -> Vec<U>
+    where
+        F: Fn(&T) -> U,
+        U: Clone + Eq + Hash,
+    {
+        let mut seen = HashSet::new();
+        self.rows
+            .iter()
+            .map(f)
+            .filter(|x| seen.insert(x.clone()))
+            .collect()
     }
 
     pub fn map<F>(mut self, f: F) -> Self
