@@ -54,7 +54,7 @@ impl TikzPicture {
         }
         res.push_str("\\begin{tikzpicture}");
         #[cfg(feature = "debug_rect")]
-        out.push_str("[show background rectangle]");
+        res.push_str("[show background rectangle]");
         res.push('\n');
         res.push_str(&self.ax0.render());
         res.push('\n');
