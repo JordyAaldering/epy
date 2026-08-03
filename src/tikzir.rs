@@ -62,7 +62,7 @@ impl TikzPicture {
             res.push_str(&ax1.render());
             res.push('\n');
         }
-        res.push_str("\\end{tikzpicture}");
+        res.push_str("\\end{tikzpicture}%");
         res
     }
 
@@ -151,7 +151,7 @@ impl Axis {
             res.push('\n');
         }
 
-        res.push_str("\\end{axis}");
+        res.push_str("\\end{axis}%");
         res
     }
 }
