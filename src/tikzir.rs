@@ -68,7 +68,7 @@ impl TikzPicture {
 
     fn size_calculation(&self, ax1: &Axis) -> String {
         let tick_estimate = ax1.style.ymax
-            .map_or("00".to_string(), |v| v.to_string());
+            .map_or("0".to_string(), |v| v.to_string());
         let mut res = String::new();
         res.push_str("\\ifx\\epyrpad\\undefined\\newlength{\\epyrpad}\\fi%\n".into());
         res.push_str(&format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}%\n"));
