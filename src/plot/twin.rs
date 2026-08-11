@@ -1,7 +1,9 @@
+use std::hash::Hash;
+
 use crate::{data::*, plot::*, tikzir::*};
 
-pub struct TwinPlot<'a, Row> {
-    group_selector: Box<dyn Fn(&Row) -> f64>,
+pub struct TwinPlot<'a, Row, K> {
+    group_selector: Box<dyn Fn(&Row) -> K>,
     ax0_series: Vec<TwinSeries<'a, Row>>,
     ax1_series: Vec<TwinSeries<'a, Row>>,
     ax0_yaxis_label: String,
@@ -24,7 +26,11 @@ enum TwinSeriesKind {
     Line,
 }
 
-impl<'a, Row: Clone> TwinPlot<'a, Row> {
+impl<'a, Row, K> TwinPlot<'a, Row, K>
+where
+    Row: Clone,
+    K: Clone + Eq + Hash + PartialOrd + ToString,
+{
     pub fn new<G>(
         group_selector: G,
         xaxis_label: &str,
@@ -32,7 +38,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         ax1_yaxis_label: &str,
     ) -> Self
     where
-        G: Fn(&Row) -> f64 + 'static,
+        G: Fn(&Row) -> K + 'static,
     {
         TwinPlot {
             group_selector: Box::new(group_selector),
@@ -189,7 +195,7 @@ impl<'a, Row: Clone> TwinPlot<'a, Row> {
         Axis { style, data }
     }
 
-    fn reference_keys(&self) -> Vec<f64> {
+    fn reference_keys(&self) -> Vec<K> {
         let spec = self.ax0_series.first().or_else(|| self.ax1_series.first())
             .expect("At least one series must be added to the twin plot");
         spec.df.clone().group_by(|row| (self.group_selector)(row)).keys().to_vec()

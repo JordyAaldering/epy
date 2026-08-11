@@ -1,12 +1,13 @@
 use std::fs;
 
 use epy::prelude::*;
+use ordered_float::OrderedFloat;
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
 struct Record {
     #[serde(skip)]
-    _i_also_use_name_columns_sometimes: String,
+    _name: String,
     threads: usize,
     #[serde(deserialize_with = "from_micro")]
     powercap: f64,
@@ -39,11 +40,7 @@ impl Record {
 }
 
 fn max_threads(df: &DataFrame<Record>) -> usize {
-    df.rows()
-        .iter()
-        .map(|r| r.threads)
-        .max()
-        .unwrap()
+    df.fold(0, |a, b| a.max(b.threads))
 }
 
 fn twin(df: &DataFrame<Record>) {
@@ -51,14 +48,29 @@ fn twin(df: &DataFrame<Record>) {
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
     let (mut ax0, mut ax1) = TwinPlot::new(
-            |r: &Record| r.powercap,
+            |r: &Record| OrderedFloat(r.powercap),
             "Power limit (W)",
             "GFLOP/J",
             "GFLOP/s",
         )
-        .ax0_bar(&filtered, |r| r.gflop_j(), AggregationMode::Quartiles, "GFLOP/J", "energycolor")
-        .ax1_line(&filtered, |r| r.gflop_s(), AggregationMode::Quartiles, "GFLOP/s", "runtimecolor")
-        .ax1_line(&filtered, |r| r.gflop_s() / 2.0, AggregationMode::Quartiles, "half", "cyan")
+        .ax0_bar(&filtered,
+            |r| r.gflop_j(),
+            AggregationMode::Quartiles,
+            "GFLOP/J",
+            "energycolor",
+        )
+        .ax1_line(&filtered,
+            |r| r.gflop_s(),
+            AggregationMode::Quartiles,
+            "GFLOP/s",
+            "runtimecolor",
+        )
+        .ax1_line(&filtered,
+            |r| r.gflop_s() / 2.0,
+            AggregationMode::Quartiles,
+            "half",
+            "cyan",
+        )
         .build_axes();
 
     ax0.style.ymax = Some(0.09);
@@ -75,11 +87,22 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
-    let mut ax = LinePlot::new(|r: &Record| r.powercap, "Power limit (W)", "IPC")
-        .series(&filtered, |r| r.ipc(), AggregationMode::meanstd(), "IPC", "runtimecolor")
+    let mut ax = LinePlot::new(
+            |r: &Record| r.powercap,
+            "Power limit (W)",
+            "IPC",
+        )
+        .series(
+            &filtered,
+            |r| r.ipc(),
+            AggregationMode::meanstd(),
+            "IPC",
+            "runtimecolor",
+        )
         .build_axis()
         .label(Cs::Axis(5.0, 0.35), "Hello, world!", None)
         .area(Cs::Axis(5.5, 0.0), Cs::Axis(12.5, 1.0), Some("purple!30"));
+
     ax.style.filter_xticks(|i| filter_stride(i, 4, 1));
     ax.style.format_xticks(|s| format_precision(s, 1, false));
 
@@ -93,7 +116,11 @@ fn power(df: &DataFrame<Record>) {
             "Configured power limit (W)",
             "Actual power draw (W)",
         )
-        .grouped_series(df, |r| r.threads as f64, |r| r.rapl / r.runtime, AggregationMode::Quartiles)
+        .grouped_series(df,
+            |r| r.threads,
+            |r| r.rapl / r.runtime,
+            AggregationMode::Quartiles,
+        )
         .build_axis();
 
     let doc = TikzPicture::from_axis(ax);
@@ -102,8 +129,8 @@ fn power(df: &DataFrame<Record>) {
 
 fn zplot(df: &DataFrame<Record>) {
     let mut ax = ZPlot::new(
-            |r: &Record| r.threads as f64,
-            |r| r.powercap,
+            |r: &Record| r.threads,
+            |r| OrderedFloat(r.powercap),
             |r| r.gflop_s(),
             |r| r.gflop_j(),
             AggregationMode::Quartiles,
@@ -111,6 +138,7 @@ fn zplot(df: &DataFrame<Record>) {
             "GFLOP/J",
         )
         .build_axis(df);
+
     ax.style.title = Some("ZPlot example".to_string());
     ax.style.xmin = Some(0.0);
     ax.style.ymin = Some(0.0);
@@ -133,9 +161,20 @@ struct TimeseriesRecord {
 fn timeseries() {
     let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_series.csv").unwrap();
 
-    let ax = TimeSeries::new("Iteration", "Energy consumption")
-        .series(&df, |r| r.energy, "Energy", "energycolor")
-        .series(&df, |r| r.runtime, "Runtime", "runtimecolor")
+    let ax = TimeSeries::new(
+            "Iteration",
+            "Energy consumption",
+        )
+        .series(&df,
+            |r| r.energy,
+            "Energy",
+            "energycolor",
+        )
+        .series(&df,
+            |r| r.runtime,
+            "Runtime",
+            "runtimecolor",
+        )
         .build_axis();
 
     let doc = TikzPicture::from_axis(ax);

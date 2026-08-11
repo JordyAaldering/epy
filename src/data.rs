@@ -12,16 +12,16 @@ pub struct DataFrame<T> {
 /// A [`DataFrame`] grouped by a numeric key.
 ///
 /// Groups are sorted by key value (ascending).
-pub struct GroupedFrame<T> {
+pub struct GroupedFrame<T, K> {
     pub(crate) df: DataFrame<T>,
     /// Sorted unique key values.
-    pub(crate) unique_keys: Vec<f64>,
+    pub(crate) unique_keys: Vec<K>,
     /// `groups[i]` = row indices belonging to group `i`.
     pub(crate) groups: Vec<Vec<usize>>,
 }
 
-pub struct GroupedSummaryBand {
-    pub keys: Vec<f64>,
+pub struct GroupedSummaryBand<K> {
+    pub keys: Vec<K>,
     pub centers: Vec<f64>,
     pub lowers: Vec<f64>,
     pub uppers: Vec<f64>,
@@ -168,56 +168,63 @@ impl<T> DataFrame<T> {
     /// Group rows by the unique sorted values produced by `key_selector`.
     ///
     /// Returns a [`GroupedFrame`] where groups are sorted by their key value.
-    pub fn group_by<F>(self, key_selector: F) -> GroupedFrame<T>
+    pub fn group_by<F, K>(self, key_selector: F) -> GroupedFrame<T, K>
     where
-        F: Fn(&T) -> f64,
+        F: Fn(&T) -> K,
+        K: Clone + Eq + Hash + PartialOrd,
     {
-        let mut seen: HashMap<u64, f64> = HashMap::new();
-        for row in &self.rows {
-            let k = key_selector(row);
-            let bits = k.to_bits();
-            seen.entry(bits).or_insert(k);
-        }
-        let mut unique: Vec<f64> = seen.into_values().collect();
-        unique.sort_by(f64::total_cmp);
+        let mut seen: HashSet<K> = HashSet::new();
 
-        let key_to_idx: HashMap<u64, usize> = unique
+        for row in &self.rows {
+            let key = key_selector(row);
+            seen.insert(key);
+        }
+
+        let mut unique: Vec<K> = seen.into_iter().collect();
+        unique.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let key_to_idx: HashMap<K, usize> = unique
             .iter()
             .enumerate()
-            .map(|(i, &k)| (k.to_bits(), i))
+            .map(|(i, k)| (k.clone(), i))
             .collect();
 
         let mut groups: Vec<Vec<usize>> = vec![Vec::new(); unique.len()];
+
         for (i, row) in self.rows.iter().enumerate() {
-            let gi = key_to_idx[&key_selector(row).to_bits()];
+            let gi = key_to_idx[&key_selector(row)];
             groups[gi].push(i);
         }
 
         GroupedFrame { df: self, unique_keys: unique, groups }
     }
 
-    pub fn split_by<F>(self, key_selector: F) -> Vec<DataFrame<T>>
+    pub fn split_by<F, K>(self, key_selector: F) -> Vec<DataFrame<T>>
     where
         T: Clone,
-        F: Fn(&T) -> f64,
+        F: Fn(&T) -> K,
+        K: Clone + Eq + Hash + PartialOrd,
     {
         self.group_by(key_selector).split()
     }
 }
 
-impl<T> GroupedFrame<T> {
+impl<T, K> GroupedFrame<T, K> {
     /// Number of groups (unique key values).
     pub fn num_groups(&self) -> usize {
         self.unique_keys.len()
     }
 
     /// Sorted key values (x-axis values).
-    pub fn keys(&self) -> &[f64] {
+    pub fn keys(&self) -> &[K] {
         &self.unique_keys
     }
 
     /// Compute center and lower/upper bands for each group using `selector`.
-    pub fn summarize_by_group(&self, selector: &dyn Fn(&T) -> f64, mode: AggregationMode) -> GroupedSummaryBand {
+    pub fn summarize_by_group(&self, selector: &dyn Fn(&T) -> f64, mode: AggregationMode) -> GroupedSummaryBand<K>
+    where
+        K: Clone,
+    {
         let mut centers = Vec::with_capacity(self.num_groups());
         let mut lowers = Vec::with_capacity(self.num_groups());
         let mut uppers = Vec::with_capacity(self.num_groups());
@@ -244,10 +251,11 @@ impl<T> GroupedFrame<T> {
     /// Regroup rows from a single existing group by another numeric key.
     ///
     /// The returned [`GroupedFrame`] contains only rows from `group_index`.
-    pub fn subgroup_by<F>(&self, group_index: usize, key_selector: F) -> GroupedFrame<T>
+    pub fn subgroup_by<F, O>(&self, group_index: usize, key_selector: F) -> GroupedFrame<T, O>
     where
+        F: Fn(&T) -> O,
+        O: Clone + Eq + Hash + PartialOrd,
         T: Clone,
-        F: Fn(&T) -> f64,
     {
         let rows = self.groups.get(group_index)
             .expect(&format!("group index {} out of bounds (len={})", group_index, self.num_groups()))

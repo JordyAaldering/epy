@@ -1,13 +1,17 @@
+use std::hash::Hash;
+
+use ordered_float::OrderedFloat;
+
 use crate::{data::*, plot::*, tikzir::*};
 
-pub struct LinePlot<'a, Row> {
+pub struct LinePlot<'a, Row, K> {
     x_selector: Box<dyn Fn(&Row) -> f64>,
-    series: Vec<LineSeriesKind<'a, Row>>,
+    series: Vec<LineSeriesKind<'a, Row, K>>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-enum LineSeriesKind<'a, Row> {
+enum LineSeriesKind<'a, Row, K> {
     Plain {
         df: &'a DataFrame<Row>,
         selector: Box<dyn Fn(&Row) -> f64>,
@@ -17,13 +21,16 @@ enum LineSeriesKind<'a, Row> {
     },
     Grouped {
         df: &'a DataFrame<Row>,
-        group_by: Box<dyn Fn(&Row) -> f64>,
+        group_by: Box<dyn Fn(&Row) -> K>,
         y_selector: Box<dyn Fn(&Row) -> f64>,
         aggregation: AggregationMode,
     },
 }
 
-impl<'a, Row: Clone> LinePlot<'a, Row> {
+impl<'a, Row> LinePlot<'a, Row, usize>
+where
+    Row: Clone,
+{
     pub fn new<X>(x_selector: X, xaxis_label: &str, yaxis_label: &str) -> Self
     where
         X: Fn(&Row) -> f64 + 'static,
@@ -35,7 +42,13 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
             yaxis_label: yaxis_label.into(),
         }
     }
+}
 
+impl<'a, Row, K> LinePlot<'a, Row, K>
+where
+    Row: Clone,
+    K: Clone + Eq + Hash + PartialOrd + ToString,
+{
     pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, aggregation: AggregationMode, label: &str, color: &str) -> Self
     where
         Y: Fn(&Row) -> f64 + 'static,
@@ -52,7 +65,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
 
     pub fn grouped_series<G, Y>(mut self, df: &'a DataFrame<Row>, group_by: G, y_selector: Y, aggregation: AggregationMode) -> Self
     where
-        G: Fn(&Row) -> f64 + 'static,
+        G: Fn(&Row) -> K + 'static,
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(LineSeriesKind::Grouped {
@@ -76,7 +89,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
         for series in &self.series {
             match &series {
                 LineSeriesKind::Plain { df, selector, aggregation, label, color } => {
-                    let x_grouped = (*df).clone().group_by(|row| (self.x_selector)(row));
+                    let x_grouped = (*df).clone().group_by(|row| OrderedFloat((self.x_selector)(row)));
                     let stats = x_grouped.summarize_by_group(&**selector, *aggregation);
 
                     push_series_elements(
@@ -92,7 +105,7 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
                     let grouped = (*df).clone().group_by(|row| group_by(row));
 
                     for gi in 0..grouped.num_groups() {
-                        let subgroup = grouped.subgroup_by(gi, |row| (self.x_selector)(row));
+                        let subgroup = grouped.subgroup_by(gi, |row| OrderedFloat((self.x_selector)(row)));
                         let stats = subgroup.summarize_by_group(&**y_selector, *aggregation);
 
                         push_series_elements(
@@ -114,17 +127,17 @@ impl<'a, Row: Clone> LinePlot<'a, Row> {
 
 fn push_series_elements(
     elements: &mut Vec<AxisElement>,
-    stats: &GroupedSummaryBand,
+    stats: &GroupedSummaryBand<OrderedFloat<f64>>,
     color: String,
     marker: String,
     label: String,
 ) {
     let mut band = Vec::new();
     for (x, upper) in stats.keys.iter().zip(stats.uppers.iter()) {
-        band.push(Cs::Plain(*x, *upper));
+        band.push(Cs::Plain(**x, *upper));
     }
     for (x, lower) in stats.keys.iter().zip(stats.lowers.iter()).rev() {
-        band.push(Cs::Plain(*x, *lower));
+        band.push(Cs::Plain(**x, *lower));
     }
 
     let err_options = StyleBuilder::default()
@@ -144,7 +157,7 @@ fn push_series_elements(
     let line: Vec<Cs> = stats.keys
         .iter()
         .zip(stats.centers.iter())
-        .map(|(x, center)| Cs::Plain(*x, *center))
+        .map(|(x, center)| Cs::Plain(**x, *center))
         .collect();
 
     let plot_options = StyleBuilder::default()

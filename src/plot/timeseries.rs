@@ -1,12 +1,15 @@
+use std::hash::Hash;
+
 use crate::{data::*, plot::*, tikzir::*};
 
-pub struct TimeSeries<'a, Row> {
-    series: Vec<TimeSeriesKind<'a, Row>>,
+pub struct TimeSeries<'a, Row, K> {
+    series: Vec<TimeSeriesKind<'a, Row, K>>,
     xaxis_label: String,
     yaxis_label: String,
 }
 
-enum TimeSeriesKind<'a, Row> {
+enum TimeSeriesKind<'a, Row, K>
+{
     Plain {
         df: &'a DataFrame<Row>,
         selector: Box<dyn Fn(&Row) -> f64>,
@@ -15,12 +18,15 @@ enum TimeSeriesKind<'a, Row> {
     },
     Grouped {
         df: &'a DataFrame<Row>,
-        group_by: Box<dyn Fn(&Row) -> f64>,
+        group_by: Box<dyn Fn(&Row) -> K>,
         y_selector: Box<dyn Fn(&Row) -> f64>,
     },
 }
 
-impl<'a, Row: Clone> TimeSeries<'a, Row> {
+impl<'a, Row> TimeSeries<'a, Row, usize>
+where
+    Row: Clone,
+{
     pub fn new(xaxis_label: &str, yaxis_label: &str) -> Self {
         TimeSeries {
             series: Vec::new(),
@@ -28,7 +34,13 @@ impl<'a, Row: Clone> TimeSeries<'a, Row> {
             yaxis_label: yaxis_label.into(),
         }
     }
+}
 
+impl<'a, Row, K> TimeSeries<'a, Row, K>
+where
+    Row: Clone,
+    K: Clone + Eq + Hash + PartialOrd + ToString,
+{
     pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, label: &str, color: &str) -> Self
     where
         Y: Fn(&Row) -> f64 + 'static,
@@ -49,7 +61,7 @@ impl<'a, Row: Clone> TimeSeries<'a, Row> {
         y_selector: Y,
     ) -> Self
     where
-        G: Fn(&Row) -> f64 + 'static,
+        G: Fn(&Row) -> K + 'static,
         Y: Fn(&Row) -> f64 + 'static,
     {
         self.series.push(TimeSeriesKind::Grouped {
