@@ -47,8 +47,8 @@ fn twin(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
-    let (mut ax0, mut ax1) = TwinPlot::new(
-            |r: &Record| OrderedFloat(r.powercap),
+    let (mut ax0, mut ax1) = TwinPlot::<Record, _>::new(
+            |r| OrderedFloat(r.powercap),
             "Power limit (W)",
             "GFLOP/J",
             "GFLOP/s",
@@ -87,8 +87,8 @@ fn ipc(df: &DataFrame<Record>) {
     let max_t = max_threads(df);
     let filtered = df.clone().filter(|_, r| r.threads == max_t);
 
-    let mut ax = LinePlot::new(
-            |r: &Record| r.powercap,
+    let mut ax = LinePlot::<Record, usize>::new(
+            |r| r.powercap,
             "Power limit (W)",
             "IPC",
         )
@@ -111,8 +111,8 @@ fn ipc(df: &DataFrame<Record>) {
 }
 
 fn power(df: &DataFrame<Record>) {
-    let ax = LinePlot::new(
-            |r: &Record| r.powercap,
+    let ax = LinePlot::<Record, _>::new(
+            |r| r.powercap,
             "Configured power limit (W)",
             "Actual power draw (W)",
         )
@@ -161,7 +161,7 @@ struct TimeseriesRecord {
 fn timeseries() {
     let df: DataFrame<TimeseriesRecord> = DataFrame::from_csv("test_series.csv").unwrap();
 
-    let ax = TimeSeries::new(
+    let ax = TimeSeries::<TimeseriesRecord, usize>::new(
             "Iteration",
             "Energy consumption",
         )

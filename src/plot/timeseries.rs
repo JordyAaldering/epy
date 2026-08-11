@@ -23,9 +23,10 @@ enum TimeSeriesKind<'a, Row, K>
     },
 }
 
-impl<'a, Row> TimeSeries<'a, Row, usize>
+impl<'a, Row, K> TimeSeries<'a, Row, K>
 where
     Row: Clone,
+    K: Clone + Eq + Hash + PartialOrd + ToString,
 {
     pub fn new(xaxis_label: &str, yaxis_label: &str) -> Self {
         TimeSeries {
@@ -34,13 +35,7 @@ where
             yaxis_label: yaxis_label.into(),
         }
     }
-}
 
-impl<'a, Row, K> TimeSeries<'a, Row, K>
-where
-    Row: Clone,
-    K: Clone + Eq + Hash + PartialOrd + ToString,
-{
     pub fn series<Y>(mut self, df: &'a DataFrame<Row>, y_selector: Y, label: &str, color: &str) -> Self
     where
         Y: Fn(&Row) -> f64 + 'static,
