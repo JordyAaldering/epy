@@ -181,6 +181,32 @@ fn timeseries() {
     doc.write(".build/example_timeseries.tex").unwrap();
 }
 
+#[derive(Deserialize, Clone)]
+struct NeaRecord {
+    benchmark: String,
+    language: String,
+    rapl: f64,
+}
+
+fn grouped_bar() {
+    let df: DataFrame<NeaRecord> = DataFrame::from_csv("nea.csv").unwrap();
+
+    let ax = BarPlot::<NeaRecord, String, String>::new(
+            |r| r.benchmark.clone(),
+            "Benchmark",
+            "Energy",
+        )
+        .grouped_series(&df,
+            |r| r.language.clone(),
+            |r| r.rapl,
+            AggregationMode::Quartiles,
+        )
+        .build_axis();
+
+    let doc = TikzPicture::from_axis(ax);
+    doc.write(".build/example_nea.tex").unwrap();
+}
+
 fn main() {
     fs::create_dir_all(".build").unwrap();
     let df = DataFrame::from_csv("test_data.csv").unwrap();
@@ -189,4 +215,5 @@ fn main() {
     power(&df);
     zplot(&df);
     timeseries();
+    grouped_bar();
 }
