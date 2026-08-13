@@ -107,7 +107,7 @@ where
                     // Bars for the same category sit flush against each other since bar_width spans the full slot.
                     let xs: Vec<f64> = stats.keys.iter()
                         .map(|k| {
-                            categories.iter().position(|c| c == k).expect("category not found") as f64 + offset
+                            categories.iter().position(|c| c == k).unwrap() as f64 + offset
                         })
                         .collect();
 
@@ -127,8 +127,6 @@ where
 
 fn set_category_axis<C: ToString>(style: &mut Style, categories: &[C]) {
     let n = categories.len();
-    style.xmin = Some(-0.5);
-    style.xmax = Some(n as f64 - 0.5);
     style.xticks = (0..n).collect::<Vec<_>>().into();
     style.xtick_labels = Some(categories.iter().map(ToString::to_string).collect::<Vec<_>>().into());
 }
