@@ -801,7 +801,7 @@ impl From<Vec<usize>> for TickCs {
 }
 
 /// Coordinate system for specifying positions.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Cs {
     /// Plain Coordinates
     ///
@@ -963,7 +963,7 @@ impl CellAlign {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NumberFormat {
     Fixed(bool),
     Sep(usize, char),
@@ -1000,7 +1000,7 @@ impl NumberFormat {
 }
 
 /// https://nwalsh.com/tex/texhelp/Plain.html#dimensions
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Dimension {
     /// Point
     Pt(f64),
