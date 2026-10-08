@@ -436,6 +436,9 @@ pub struct Style {
     pub outer_xsep: Option<Dimension>,
     pub outer_ysep: Option<Dimension>,
 
+    pub xshift: Option<Dimension>,
+    pub yshift: Option<Dimension>,
+
     pub number_format: Option<NumberFormat>,
 
     pub style_overrides: OrderMap<String, Style>,
@@ -766,6 +769,13 @@ impl Style {
         }
         if let Some(s) = &self.outer_ysep {
             options.push(format!("outer ysep={}", s.render()));
+        }
+
+        if let Some(s) = &self.xshift {
+            options.push(format!("xshift={}", s.render()));
+        }
+        if let Some(s) = &self.yshift {
+            options.push(format!("yshift={}", s.render()));
         }
 
         if let Some(f) = &self.number_format {

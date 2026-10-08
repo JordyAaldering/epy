@@ -92,6 +92,10 @@ fn common_axis_style() -> Style {
                 .line_width(Dimension::Pt(0.4))
                 .build()
                 .unwrap(),
+            "title style".into() => StyleBuilder::default()
+                .yshift(Dimension::Ex(-1.0))
+                .build()
+                .unwrap(),
             "tick style".into() => StyleBuilder::default()
                 .color(GRID_COLOR)
                 .line_width(Dimension::Pt(0.4))
