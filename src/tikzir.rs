@@ -60,8 +60,16 @@ impl TikzPicture {
     fn picture(&self, ax0: &Axis, ax1: Option<&Axis>) -> String {
         let mut res = String::new();
         res.push_str("\\begin{tikzpicture}");
+        let mut opts: Vec<&str> = Vec::new();
         #[cfg(feature = "debug_rect")]
-        res.push_str("[show background rectangle]");
+        opts.push("show background rectangle");
+        if ax1.is_some() {
+            // Replaced by the macro argument in `render_twin`
+            opts.push("epy size={@@SIZE@@}");
+        }
+        if !opts.is_empty() {
+            res.push_str(&format!("[{}]", opts.join(",")));
+        }
         res.push('\n');
         res.push_str(&ax0.render());
         res.push('\n');
@@ -85,17 +93,22 @@ impl TikzPicture {
     /// current font and tick formatting into account.
     fn render_twin(&self, ax1: &Axis) -> String {
         // `#` has to be doubled inside of a macro definition
-        let pic = self.picture(&self.ax0, Some(ax1)).replace('#', "##");
+        let pic = self.picture(&self.ax0, Some(ax1))
+            .replace('#', "##")
+            .replace("@@SIZE@@", "#1");
         let mut res = String::new();
         res.push_str("\\ifdefined\\epytwinbox\\else\\newsavebox{\\epytwinbox}\\newlength{\\epytwinw}\\newlength{\\epyovw}\\newlength{\\epyfw}\\newlength{\\epyfh}\\fi%\n");
-        res.push_str("\\def\\epytwinpic{%\n");
+        res.push_str("\\tikzset{epy size/.style={}}%\n\\def\\epytwinpic#1{%\n");
         res.push_str(&pic);
         res.push_str("\n}%\n");
         res.push_str("\\setlength{\\epytwinw}{\\epyfigurewidth}%\n");
-        res.push_str("\\sbox{\\epytwinbox}{\\epytwinpic}%\n");
+        // Externalization skips pictures that it is not currently exporting,
+        // which would leave the box empty, so disable it for this pass.
+        res.push_str("\\sbox{\\epytwinbox}{\\ifdefined\\tikzexternaldisable\\tikzexternaldisable\\fi\\epytwinpic{0pt}}%\n");
         res.push_str("\\setlength{\\epyovw}{\\wd\\epytwinbox}\\addtolength{\\epyovw}{-\\epyfigurewidth}%\n");
         res.push_str("\\setlength{\\epytwinw}{\\epyfigurewidth}\\addtolength{\\epytwinw}{-\\epyovw}%\n");
-        res.push_str("\\epytwinpic%");
+        // Passing the width as an argument puts it in the externalization hash
+        res.push_str("\\expandafter\\epytwinpic\\expandafter{\\the\\epytwinw}%");
         res
     }
 }
