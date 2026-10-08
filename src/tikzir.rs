@@ -86,26 +86,32 @@ impl TikzPicture {
     }
 
     /// A twin plot has decorations (the right axis ticks and label) that are
-    /// not part of the main axis. To still fit the picture in `\epyfigurewidth`,
-    /// the picture is first typeset in a box at full width. The measured excess
-    /// width is then subtracted from the width of the main axis in the final
-    /// picture. As this is done by TeX at typesetting time, it takes the
-    /// current font and tick formatting into account.
+    /// not part of the main axis. To make the picture as wide as a single-axis
+    /// plot with the same `\epyfigurewidth`, two pictures are first typeset in
+    /// boxes at full width: the main axis alone, and the twin plot. The
+    /// difference in width is the space taken by the right axis, which is then
+    /// subtracted from the width of the main axis in the final picture. As this
+    /// is done by TeX at typesetting time, it takes the current font and tick
+    /// formatting into account.
     fn render_twin(&self, ax1: &Axis) -> String {
         // `#` has to be doubled inside of a macro definition
-        let pic = self.picture(&self.ax0, Some(ax1))
+        let twin = self.picture(&self.ax0, Some(ax1))
             .replace('#', "##")
             .replace("@@SIZE@@", "#1");
+        let single = self.picture(&self.ax0, None).replace('#', "##");
         let mut res = String::new();
-        res.push_str("\\ifdefined\\epytwinbox\\else\\newsavebox{\\epytwinbox}\\newlength{\\epytwinw}\\newlength{\\epyovw}\\newlength{\\epyfw}\\newlength{\\epyfh}\\fi%\n");
-        res.push_str("\\tikzset{epy size/.style={}}%\n\\def\\epytwinpic#1{%\n");
-        res.push_str(&pic);
+        res.push_str("\\ifdefined\\epytwinbox\\else\\newsavebox{\\epytwinbox}\\newsavebox{\\epyaxbox}\\newlength{\\epytwinw}\\newlength{\\epyovw}\\newlength{\\epyfw}\\newlength{\\epyfh}\\fi%\n");
+        res.push_str("\\tikzset{epy size/.style={}}%\n\\def\\epyaxpic{%\n");
+        res.push_str(&single);
+        res.push_str("\n}%\n\\def\\epytwinpic#1{%\n");
+        res.push_str(&twin);
         res.push_str("\n}%\n");
         res.push_str("\\setlength{\\epytwinw}{\\epyfigurewidth}%\n");
         // Externalization skips pictures that it is not currently exporting,
-        // which would leave the box empty, so disable it for this pass.
+        // which would leave the boxes empty, so disable it for these passes.
+        res.push_str("\\sbox{\\epyaxbox}{\\ifdefined\\tikzexternaldisable\\tikzexternaldisable\\fi\\epyaxpic}%\n");
         res.push_str("\\sbox{\\epytwinbox}{\\ifdefined\\tikzexternaldisable\\tikzexternaldisable\\fi\\epytwinpic{0pt}}%\n");
-        res.push_str("\\setlength{\\epyovw}{\\wd\\epytwinbox}\\addtolength{\\epyovw}{-\\epyfigurewidth}%\n");
+        res.push_str("\\setlength{\\epyovw}{\\wd\\epytwinbox}\\addtolength{\\epyovw}{-\\wd\\epyaxbox}%\n");
         res.push_str("\\setlength{\\epytwinw}{\\epyfigurewidth}\\addtolength{\\epytwinw}{-\\epyovw}%\n");
         // Passing the width as an argument puts it in the externalization hash
         res.push_str("\\expandafter\\epytwinpic\\expandafter{\\the\\epytwinw}%");

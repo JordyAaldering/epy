@@ -3,12 +3,17 @@
 
 \usepackage{pgfplots}
 \usetikzlibrary{patterns}
-% For debugging figure sizes
-\usetikzlibrary{backgrounds}
 \pgfplotsset{compat=newest}
 
+% For debugging figure sizes
+\usetikzlibrary{backgrounds}
+
+% Only externalize if -shell-escape is set
+\ifnum\pdfshellescape=1
 \usetikzlibrary{external}
+\tikzsetfigurename{figure}
 \tikzexternalize
+\fi
 
 \definecolor{energycolor}{RGB}{2,158,115}
 \definecolor{runtimecolor}{RGB}{1,115,178}
