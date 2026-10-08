@@ -17,11 +17,14 @@ impl TikzPicture {
     /// necessary to make them fit in the bounding box, and to mirror the
     /// ticks of the second axis on the right side of the plot.
     pub fn from_twin(mut ax0: Axis, mut ax1: Axis) -> Self {
-        // Shrink figure width to reserve space for right axis ticks and labels
-        ax0.style.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
-        ax1.style.width = Some(Dimension::Code("{\\epyfigurewidth-\\epyrpad}".into()));
+        // The width of the main axis is shrunk to reserve space for the right axis ticks and label, see `render_twin`.
+        ax0.style.width = Some(Dimension::Code("\\epytwinw".into()));
         // Add ax0 tag for positioning ax1
         ax0.style.name = Some("mainaxis".into());
+        // The second axis copies the exact size of the first axis, which is set from its measured size in `render_twin`.
+        ax1.style.scale_only_axis = true;
+        ax1.style.width = Some(Dimension::Code("\\epyfw".into()));
+        ax1.style.height = Some(Dimension::Code("\\epyfh".into()));
         // Anchor ax1 to bottom right of ax0
         ax1.style.anchor = Some(Anchor::SouthWest);
         ax1.style.at = Some("(mainaxis.south west)".into());
@@ -48,17 +51,25 @@ impl TikzPicture {
     }
 
     pub fn render(&self) -> String {
-        let mut res = String::new();
-        if let Some(ax1) = &self.ax1 {
-            res.push_str(&self.size_calculation(ax1));
+        match &self.ax1 {
+            Some(ax1) => self.render_twin(ax1),
+            None => self.picture(&self.ax0, None),
         }
+    }
+
+    fn picture(&self, ax0: &Axis, ax1: Option<&Axis>) -> String {
+        let mut res = String::new();
         res.push_str("\\begin{tikzpicture}");
         #[cfg(feature = "debug_rect")]
         res.push_str("[show background rectangle]");
         res.push('\n');
-        res.push_str(&self.ax0.render());
+        res.push_str(&ax0.render());
         res.push('\n');
-        if let Some(ax1) = &self.ax1 {
+        if let Some(ax1) = ax1 {
+            // Copy the size of the main axis to the second axis
+            res.push_str("\\pgfpointdiff{\\pgfpointanchor{mainaxis}{south west}}{\\pgfpointanchor{mainaxis}{north east}}%\n");
+            res.push_str("\\pgfgetlastxy{\\epyfwtmp}{\\epyfhtmp}%\n");
+            res.push_str("\\setlength{\\epyfw}{\\epyfwtmp}\\setlength{\\epyfh}{\\epyfhtmp}%\n");
             res.push_str(&ax1.render());
             res.push('\n');
         }
@@ -66,16 +77,25 @@ impl TikzPicture {
         res
     }
 
-    fn size_calculation(&self, ax1: &Axis) -> String {
-        let tick_estimate = ax1.style.ymax
-            .map_or("0".to_string(), |v| v.to_string());
+    /// A twin plot has decorations (the right axis ticks and label) that are
+    /// not part of the main axis. To still fit the picture in `\epyfigurewidth`,
+    /// the picture is first typeset in a box at full width. The measured excess
+    /// width is then subtracted from the width of the main axis in the final
+    /// picture. As this is done by TeX at typesetting time, it takes the
+    /// current font and tick formatting into account.
+    fn render_twin(&self, ax1: &Axis) -> String {
+        // `#` has to be doubled inside of a macro definition
+        let pic = self.picture(&self.ax0, Some(ax1)).replace('#', "##");
         let mut res = String::new();
-        res.push_str("\\ifx\\epyrpad\\undefined\\newlength{\\epyrpad}\\fi%\n".into());
-        res.push_str(&format!("\\settowidth{{\\epyrpad}}{{\\normalfont {tick_estimate}}}%\n"));
-        // "Ag" provides a stable height across fonts to estimate label height
-        res.push_str("\\begingroup\\settoheight{\\dimen0}{\\normalfont Ag}\\addtolength{\\epyrpad}{\\dimen0}\\endgroup%\n".into());
-        // Optionally add user-provided padding
-        res.push_str("\\ifdefined\\extrarpad\\addtolength{\\epyrpad}{\\extrarpad}\\fi%\n".into());
+        res.push_str("\\ifdefined\\epytwinbox\\else\\newsavebox{\\epytwinbox}\\newlength{\\epytwinw}\\newlength{\\epyovw}\\newlength{\\epyfw}\\newlength{\\epyfh}\\fi%\n");
+        res.push_str("\\def\\epytwinpic{%\n");
+        res.push_str(&pic);
+        res.push_str("\n}%\n");
+        res.push_str("\\setlength{\\epytwinw}{\\epyfigurewidth}%\n");
+        res.push_str("\\sbox{\\epytwinbox}{\\epytwinpic}%\n");
+        res.push_str("\\setlength{\\epyovw}{\\wd\\epytwinbox}\\addtolength{\\epyovw}{-\\epyfigurewidth}%\n");
+        res.push_str("\\setlength{\\epytwinw}{\\epyfigurewidth}\\addtolength{\\epytwinw}{-\\epyovw}%\n");
+        res.push_str("\\epytwinpic%");
         res
     }
 }
@@ -247,6 +267,8 @@ pub struct Style {
 
     pub width: Option<Dimension>,
     pub height: Option<Dimension>,
+
+    pub scale_only_axis: bool,
 
     pub anchor: Option<Anchor>,
     pub at: Option<String>,
@@ -454,6 +476,10 @@ impl Style {
         }
         if let Some(height) = &self.height {
             options.push(format!("height={}", height.render()));
+        }
+
+        if self.scale_only_axis {
+            options.push("scale only axis".into());
         }
 
         if let Some(anchor) = &self.anchor {
