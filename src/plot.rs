@@ -69,6 +69,7 @@ pub(crate) fn bar_legend_modifier(style: &mut Style) {
 
 fn common_axis_style() -> Style {
     StyleBuilder::default()
+        .scale_only_axis(cfg!(feature = "scale_only_axis"))
         .width(Dimension::Code("\\epyfigurewidth".into()))
         .height(Dimension::Code("{\\epyheightratio*\\epyfigurewidth}".into()))
         .scaled_ticks(false)

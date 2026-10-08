@@ -18,13 +18,19 @@ impl TikzPicture {
     /// ticks of the second axis on the right side of the plot.
     pub fn from_twin(mut ax0: Axis, mut ax1: Axis) -> Self {
         // The width of the main axis is shrunk to reserve space for the right axis ticks and label, see `render_twin`.
-        ax0.style.width = Some(Dimension::Code("\\epytwinw".into()));
+        #[cfg(not(feature = "scale_only_axis"))]
+        {
+            ax0.style.width = Some(Dimension::Code("\\epytwinw".into()));
+        }
         // Add ax0 tag for positioning ax1
         ax0.style.name = Some("mainaxis".into());
         // The second axis copies the exact size of the first axis, which is set from its measured size in `render_twin`.
-        ax1.style.scale_only_axis = true;
-        ax1.style.width = Some(Dimension::Code("\\epyfw".into()));
-        ax1.style.height = Some(Dimension::Code("\\epyfh".into()));
+        #[cfg(not(feature = "scale_only_axis"))]
+        {
+            ax1.style.scale_only_axis = true;
+            ax1.style.width = Some(Dimension::Code("\\epyfw".into()));
+            ax1.style.height = Some(Dimension::Code("\\epyfh".into()));
+        }
         // Anchor ax1 to bottom right of ax0
         ax1.style.anchor = Some(Anchor::SouthWest);
         ax1.style.at = Some("(mainaxis.south west)".into());
@@ -51,18 +57,21 @@ impl TikzPicture {
     }
 
     pub fn render(&self) -> String {
-        match &self.ax1 {
-            Some(ax1) => self.render_twin(ax1),
-            None => self.picture(&self.ax0, None),
+        #[cfg(not(feature = "scale_only_axis"))]
+        if let Some(ax1) = &self.ax1 {
+            return self.render_twin(ax1);
         }
+        self.picture(&self.ax0, self.ax1.as_ref())
     }
 
     fn picture(&self, ax0: &Axis, ax1: Option<&Axis>) -> String {
         let mut res = String::new();
         res.push_str("\\begin{tikzpicture}");
+        #[allow(unused_mut)]
         let mut opts: Vec<&str> = Vec::new();
         #[cfg(feature = "debug_rect")]
         opts.push("show background rectangle");
+        #[cfg(not(feature = "scale_only_axis"))]
         if ax1.is_some() {
             // Replaced by the macro argument in `render_twin`
             opts.push("epy size={@@SIZE@@}");
@@ -75,8 +84,11 @@ impl TikzPicture {
         res.push('\n');
         if let Some(ax1) = ax1 {
             // Copy the size of the main axis to the second axis
+            #[cfg(not(feature = "scale_only_axis"))]
             res.push_str("\\pgfpointdiff{\\pgfpointanchor{mainaxis}{south west}}{\\pgfpointanchor{mainaxis}{north east}}%\n");
+            #[cfg(not(feature = "scale_only_axis"))]
             res.push_str("\\pgfgetlastxy{\\epyfwtmp}{\\epyfhtmp}%\n");
+            #[cfg(not(feature = "scale_only_axis"))]
             res.push_str("\\setlength{\\epyfw}{\\epyfwtmp}\\setlength{\\epyfh}{\\epyfhtmp}%\n");
             res.push_str(&ax1.render());
             res.push('\n');
@@ -93,6 +105,7 @@ impl TikzPicture {
     /// subtracted from the width of the main axis in the final picture. As this
     /// is done by TeX at typesetting time, it takes the current font and tick
     /// formatting into account.
+    #[cfg(not(feature = "scale_only_axis"))]
     fn render_twin(&self, ax1: &Axis) -> String {
         // `#` has to be doubled inside of a macro definition
         let twin = self.picture(&self.ax0, Some(ax1))
