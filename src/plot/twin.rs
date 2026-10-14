@@ -153,25 +153,11 @@ where
             style.ymin = Some(0.0);
         }
 
-        // The first axis handles the legend of both axes, so check both
-        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar)
-            || self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar)
-        {
-            bar_legend_modifier(&mut style);
-        }
-        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Line)
-            || self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Line)
-        {
-            line_legend_modifier(&mut style);
-        }
-
         style.xticks = (0..n).collect::<Vec<_>>().into();
         style.xtick_labels = Some(keys.iter().map(ToString::to_string).collect::<Vec<_>>().into());
 
         let mut data = Vec::new();
-        self.push_axis_series_elements(&self.ax0_series, &mut data, true, 0);
-        let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
-        self.push_legend_images_for_series(&self.ax1_series, &mut data, ax0_line_count);
+        self.push_axis_series_elements(&self.ax0_series, &mut data, 0);
 
         Axis { style, data }
     }
@@ -188,9 +174,24 @@ where
             style.ymin = Some(0.0);
         }
 
+        // The right axis contains the legend of both axes, so we check both
+        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Bar)
+            || self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Bar)
+        {
+            bar_legend_modifier(&mut style);
+        }
+        if self.ax0_series.iter().any(|s| s.kind == TwinSeriesKind::Line)
+            || self.ax1_series.iter().any(|s| s.kind == TwinSeriesKind::Line)
+        {
+            line_legend_modifier(&mut style);
+        }
+
         let mut data = Vec::new();
+
         let ax0_line_count = self.ax0_series.iter().filter(|s| s.kind == TwinSeriesKind::Line).count();
-        self.push_axis_series_elements(&self.ax1_series, &mut data, false, ax0_line_count);
+        self.push_axis_series_elements(&self.ax1_series, &mut data, ax0_line_count);
+        self.push_legend_images_for_series(&self.ax0_series, &mut data, 0);
+        self.push_legend_images_for_series(&self.ax1_series, &mut data, ax0_line_count);
 
         Axis { style, data }
     }
@@ -205,7 +206,6 @@ where
         &self,
         series: &[TwinSeries<'a, Row>],
         elements: &mut Vec<AxisElement>,
-        include_in_legend: bool,
         line_marker_start_index: usize,
     ) {
         let mut line_series_count = 0;
@@ -226,7 +226,7 @@ where
                         .fill(color.clone())
                         .draw("none")
                         .area_legend(true)
-                        .forget_plot(!include_in_legend)
+                        .forget_plot(true)
                         .build()
                         .unwrap();
 
@@ -235,9 +235,6 @@ where
                         coordinates: bar_coords,
                         closed_cycle: false,
                     });
-                    if include_in_legend {
-                        elements.push(AxisElement::LegendEntry(spec.label.clone()));
-                    }
 
                     for i in 0..summary.lowers.len() {
                         let options = StyleBuilder::default()
@@ -292,7 +289,7 @@ where
                             .build()
                             .unwrap()
                         )
-                        .forget_plot(!include_in_legend)
+                        .forget_plot(true)
                         .build()
                         .unwrap();
 
@@ -301,10 +298,6 @@ where
                         coordinates: line,
                         closed_cycle: false,
                     });
-
-                    if include_in_legend {
-                        elements.push(AxisElement::LegendEntry(spec.label.clone()));
-                    }
 
                     line_series_count += 1;
                 }

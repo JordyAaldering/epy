@@ -17,6 +17,19 @@ impl TikzPicture {
     /// necessary to make them fit in the bounding box, and to mirror the
     /// ticks of the second axis on the right side of the plot.
     pub fn from_twin(mut ax0: Axis, mut ax1: Axis) -> Self {
+        ax1.style.legend_pos = ax0.style.legend_pos;
+        ax1.style.legend_cell_align = ax0.style.legend_cell_align;
+        for (key, style) in &ax0.style.style_overrides {
+            if key.starts_with("legend") || key.starts_with("area legend") {
+                ax1.style.style_overrides.insert(key.clone(), style.clone());
+            }
+        }
+        for (key, code) in &ax0.style.code_overrides {
+            if key.starts_with("legend") || key.starts_with("area legend") {
+                ax1.style.code_overrides.insert(key.clone(), code.clone());
+            }
+        }
+
         // The width of the main axis is shrunk to reserve space for the right axis ticks and label, see `render_twin`.
         #[cfg(not(feature = "scale_only_axis"))]
         {
@@ -416,7 +429,7 @@ pub struct Style {
     pub text_opacity: Option<f64>,
 
     pub line_width: Option<Dimension>,
-    // These options has much more complicated variants for patterns, but I omit those for now
+    // These options have more complicated variants for patterns, which we omit for now
     pub dashed: bool,
     pub pattern: Option<String>,
     pub pattern_color: Option<String>,
