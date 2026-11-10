@@ -211,7 +211,9 @@ impl Axis {
         }
         res.push('\n');
 
-        for element in &self.data {
+        let mut elements: Vec<_> = self.data.iter().collect();
+        elements.sort_by_key(|e| e.draw_order());
+        for element in elements {
             res.push_str(&element.render());
             res.push('\n');
         }
@@ -248,6 +250,16 @@ pub enum AxisElement {
 }
 
 impl AxisElement {
+    fn draw_order(&self) -> u8 {
+        match self {
+            Self::Fill { .. } => 0,
+            Self::LegendEntry(_) | Self::LegendImage(_) => 1,
+            Self::AddPlot { .. } => 2,
+            Self::Draw { .. } => 3,
+            Self::Node { .. } => 4,
+        }
+    }
+
     pub fn render(&self) -> String {
         use AxisElement::*;
         match self {
