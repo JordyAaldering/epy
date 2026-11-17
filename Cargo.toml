@@ -6,6 +6,8 @@ description = "Energy plotting library"
 
 [features]
 debug_rect = []
+# Set the figure font size to scriptsize globally.
+scriptsize = []
 # Size axes with `scale only axis`: `\epyfigurewidth` and `\epyheightratio` then
 # describe the plot area itself, and labels are placed outside of it.
 scale_only_axis = []

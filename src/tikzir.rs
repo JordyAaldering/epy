@@ -93,6 +93,8 @@ impl TikzPicture {
             res.push_str(&format!("[{}]", opts.join(",")));
         }
         res.push('\n');
+        #[cfg(feature = "scriptsize")]
+        res.push_str("\\scriptsize\n");
         res.push_str(&ax0.render());
         res.push('\n');
         if let Some(ax1) = ax1 {
