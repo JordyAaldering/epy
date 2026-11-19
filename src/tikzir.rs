@@ -450,6 +450,8 @@ pub struct Style {
     pub outer_sep: Option<Dimension>,
     pub outer_xsep: Option<Dimension>,
     pub outer_ysep: Option<Dimension>,
+    pub row_sep: Option<Dimension>,
+    pub column_sep: Option<Dimension>,
 
     pub xshift: Option<Dimension>,
     pub yshift: Option<Dimension>,
@@ -784,6 +786,12 @@ impl Style {
         }
         if let Some(s) = &self.outer_ysep {
             options.push(format!("outer ysep={}", s.render()));
+        }
+        if let Some(s) = &self.row_sep {
+            options.push(format!("row sep={}", s.render()));
+        }
+        if let Some(s) = &self.column_sep {
+            options.push(format!("column sep={}", s.render()));
         }
 
         if let Some(s) = &self.xshift {
